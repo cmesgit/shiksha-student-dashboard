@@ -62,12 +62,20 @@ export default function MyCourseDetail() {
             <>
               <span
                 className={`myCourseDetail__statusBadge ${
-                  sub.is_active
-                    ? "myCourseDetail__statusBadge--active"
-                    : "myCourseDetail__statusBadge--expired"
+                  sub.is_trial && sub.is_active
+                    ? "myCourseDetail__statusBadge--trial"
+                    : sub.is_active
+                      ? "myCourseDetail__statusBadge--active"
+                      : "myCourseDetail__statusBadge--expired"
                 }`}
               >
-                {sub.is_active ? "Active" : "Expired"}
+                {sub.is_trial && sub.is_active
+                  ? "Free trial"
+                  : sub.is_active
+                    ? "Active"
+                    : sub.is_trial
+                      ? "Trial ended"
+                      : "Expired"}
               </span>
 
               <div className="myCourseDetail__daysRemaining">
@@ -82,7 +90,7 @@ export default function MyCourseDetail() {
                   </>
                 ) : (
                   <span className="myCourseDetail__daysLabel">
-                    Subscription expired
+                    {sub.is_trial ? "Your trial has ended" : "Subscription expired"}
                   </span>
                 )}
               </div>
@@ -102,7 +110,13 @@ export default function MyCourseDetail() {
                   className="myCourseDetail__renewBtn"
                   onClick={() => setRenewOpen(true)}
                 >
-                  {sub.is_active ? "Renew / Extend" : "Renew Subscription"}
+                  {sub.is_trial && sub.is_active
+                    ? "Upgrade to full access"
+                    : sub.is_active
+                      ? "Renew / Extend"
+                      : sub.is_trial
+                        ? "Enroll to continue"
+                        : "Renew Subscription"}
                 </button>
               )}
             </>

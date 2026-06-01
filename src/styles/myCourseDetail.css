@@ -98,6 +98,11 @@
   color: #991b1b;
 }
 
+.myCourseDetail__statusBadge--trial {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .myCourseDetail__statusBadge--legacy {
   background: #f3f4f6;
   color: #4b5563;
