@@ -140,11 +140,11 @@
 }
 
 .session-badge.upcoming {
-  background: #14b8a6;
+  background: #83DBBD;
 }
 
 .session-badge.completed {
-  background: #3b82f6;
+  background: #015865;
 }
 
 .session-badge.cancelled {
@@ -157,6 +157,7 @@
 
 .session-card.completed {
   opacity: 0.75;
+  background: #015865;
 }
 
 .session-card.cancelled {

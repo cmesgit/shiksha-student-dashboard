@@ -254,11 +254,28 @@ export default function LiveSessions() {
     return () => { ws.close(); wsRef.current = null; };
   }, [activeCourse]);
 
-  const filtered = selectedSubject
-  ? sessions.filter(
-      (s) => String(s.subject_id) === String(selectedSubject)
-    )
-  : sessions;
+  const statusPriority = {
+  LIVE: 1,
+  WAITING_FOR_TEACHER: 2,
+  RECONNECTING: 2,
+  PAUSED: 2,
+  SCHEDULED: 3,
+  COMPLETED: 4,
+  CANCELLED: 5,
+};
+
+const filtered = (
+  selectedSubject
+    ? sessions.filter(
+        (s) => String(s.subject_id) === String(selectedSubject)
+      )
+    : sessions
+).sort((a, b) => {
+  return (
+    statusPriority[computeStatus(a)] -
+    statusPriority[computeStatus(b)]
+  );
+});
 
   if (loading) return <div className="liveSessionsPage"><div style={{padding:20,color:"#6b7280"}}>Loading sessions...</div></div>;
   if (error)   return <div className="liveSessionsPage"><div style={{padding:20,color:"red"}}>{error}</div></div>;
@@ -280,8 +297,21 @@ export default function LiveSessions() {
         ) : (
           <div className="liveGrid">
             {filtered.map((s) => (
-              <LiveCard key={s.id} session={s} tick={tick} onClick={(session) => navigate("/live/" + session.id)} />
-            ))}
+<LiveCard
+  key={s.id}
+  session={s}
+  tick={tick}
+  onClick={(session) => {
+    const status = computeStatus(session);
+
+    if (status === "COMPLETED") {
+      navigate(`/subjects/recordings/${session.subject_id}`);
+      return;
+    }
+
+    navigate(`/live/${session.id}`);
+  }}
+/>            ))}
           </div>
         )}
       </div>
