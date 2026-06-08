@@ -98,7 +98,7 @@
 
 .session-card-subject {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: white;
   line-height: 1.4;
@@ -106,7 +106,7 @@
 
 .session-card-course {
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
 }
 
