@@ -90,7 +90,6 @@ function LiveCard({ session, onClick, tick }) {
   const status = computeStatus(session);
   const canJoin = computeCanJoin(session);
 
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.SCHEDULED;
 
   const start = new Date(session.start_time);
   const end = new Date(session.end_time);
@@ -107,78 +106,67 @@ function LiveCard({ session, onClick, tick }) {
     hour12: true,
   });
 
-  const isClickable =
-    status === "LIVE" ||
-    status === "WAITING_FOR_TEACHER" ||
-    status === "RECONNECTING" ||
-    status === "PAUSED";
 
   return (
+  <div
+  className={`session-card ${
+    status === "COMPLETED"
+      ? "completed"
+      : status === "CANCELLED"
+      ? "cancelled"
+      : ""
+  }`}
+  onClick={() => {
+    if (canJoin) {
+      onClick(session);
+    }
+  }}
+>
     <div
-      className={`liveCardNew ${status.toLowerCase()} ${
-        !isClickable ? "liveCardNew--disabled" : ""
-      }`}
-      onClick={() => {
-        if (isClickable) {
-          onClick(session);
-        }
-      }}
-      role="button"
-      tabIndex={isClickable ? 0 : -1}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" && isClickable) {
-          onClick(session);
-        }
+      className="session-card-banner"
+      style={{
+        backgroundImage:
+          "url(https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600)",
       }}
     >
-      <div className="liveCardNew__banner">
-        <img
-          src={
-            session.thumbnail ||
-            "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600"
-          }
-          alt={session.title}
-          className="liveCardNew__cover"
-        />
-
-        <div className="liveCardNew__teacherAvatar">
-          <img
-            src={
-              session.teacher_image ||
-              session.teacher_avatar ||
-              "https://i.pravatar.cc/100?img=5"
-            }
-            alt="Teacher"
-          />
-        </div>
-
-        <span
-          className="liveCardNew__badge"
-          style={{
-            background: cfg.bg,
-            color: cfg.color,
-          }}
-        >
-          {cfg.label}
-        </span>
-      </div>
-
-      <div className="liveCardNew__content">
-        <h3>{session.subject_name || session.title}</h3>
-
-        <p>
-          {session.teacher_name ||
-            session.teacher_full_name ||
-            session.teacher ||
-            "Teacher"}
-        </p>
-
-        <div className="liveCardNew__time">
-          {timeStr} - {endStr}
-        </div>
+      <div
+        className={`session-badge ${
+          status === "LIVE"
+            ? "live"
+            : status === "COMPLETED"
+            ? "completed"
+            : status === "CANCELLED"
+            ? "cancelled"
+            : "upcoming"
+        }`}
+      >
+        {status === "LIVE"
+          ? "LIVE"
+          : status === "COMPLETED"
+          ? "COMPLETED"
+          : status === "CANCELLED"
+          ? "CANCELLED"
+          : "UPCOMING"}
       </div>
     </div>
-  );
+
+    <div className="session-card-content">
+      <h4 className="session-card-subject">
+        {session.subject_name}
+      </h4>
+
+      <p className="session-card-course">
+        {session.teacher_name ||
+          session.teacher_full_name ||
+          session.teacher}
+      </p>
+
+      <div className="session-card-time">
+        {timeStr} - {endStr}
+      </div>
+    </div>
+  </div>
+);
 }
 
 export default function LiveSessions() {
