@@ -133,10 +133,15 @@ function LiveCard({ session, onClick, tick }) {
       : ""
   }`}
   onClick={() => {
-    if (canJoin) {
-      onClick(session);
-    }
-  }}
+  if (status === "COMPLETED") {
+    onClick(session);
+    return;
+  }
+
+  if (canJoin) {
+    onClick(session);
+  }
+}}
 >
     <div
       className="session-card-banner"
