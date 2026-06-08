@@ -41,56 +41,140 @@ function computeCanJoin(session) {
 }
 
 const STATUS_CONFIG = {
-  LIVE:               { label: "🔴 Live Now",        color: "#fff",    bg: "#ef4444" },
-  PAUSED:             { label: "⏸ Paused",           color: "#fff",    bg: "#f59e0b" },
-  RECONNECTING:       { label: "🔄 Reconnecting",    color: "#fff",    bg: "#f59e0b" },
-  SCHEDULED:          { label: "🗓 Scheduled",        color: "#fff",    bg: "#6366f1" },
-  WAITING_FOR_TEACHER:{ label: "⏳ Starting Soon",   color: "#fff",    bg: "#10b981" },
-  COMPLETED:          { label: "✅ Completed",        color: "#fff",    bg: "#6b7280" },
-  CANCELLED:          { label: "🚫 Cancelled",        color: "#fff",    bg: "#6b7280" },
+  LIVE: {
+    label: "LIVE",
+    color: "#fff",
+    bg: "#ef4444",
+  },
+
+  PAUSED: {
+    label: "PAUSED",
+    color: "#fff",
+    bg: "#f59e0b",
+  },
+
+  RECONNECTING: {
+    label: "RECONNECTING",
+    color: "#fff",
+    bg: "#f59e0b",
+  },
+
+  SCHEDULED: {
+    label: "UPCOMING",
+    color: "#fff",
+    bg: "#10b981",
+  },
+
+  WAITING_FOR_TEACHER: {
+    label: "STARTING",
+    color: "#fff",
+    bg: "#3b82f6",
+  },
+
+  COMPLETED: {
+    label: "COMPLETED",
+    color: "#fff",
+    bg: "#9ca3af",
+  },
+
+  CANCELLED: {
+    label: "CANCELLED",
+    color: "#fff",
+    bg: "#6b7280",
+  },
 };
 
 function LiveCard({ session, onClick, tick }) {
   void tick;
-  const [tapped, setTapped] = React.useState(false);
+
   const status = computeStatus(session);
   const canJoin = computeCanJoin(session);
+
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.SCHEDULED;
+
   const start = new Date(session.start_time);
   const end = new Date(session.end_time);
-  const dateStr = start.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-  const timeStr = start.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-  const endStr  = end.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+
+  const timeStr = start.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  const endStr = end.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  const isClickable =
+    status === "LIVE" ||
+    status === "WAITING_FOR_TEACHER" ||
+    status === "RECONNECTING" ||
+    status === "PAUSED";
 
   return (
     <div
-      className={"liveCard" + (canJoin ? "" : " liveCard--disabled") + (tapped ? " tapped" : "")}
+      className={`liveCardNew ${status.toLowerCase()} ${
+        !isClickable ? "liveCardNew--disabled" : ""
+      }`}
       onClick={() => {
-        if (window.matchMedia("(hover: none)").matches) {
-          if (!tapped) { setTapped(true); return; }
+        if (isClickable) {
+          onClick(session);
         }
-        canJoin && onClick(session);
       }}
-      onBlur={() => setTapped(false)}
       role="button"
-      tabIndex={canJoin ? 0 : -1}
-      onKeyDown={(e) => e.key === "Enter" && canJoin && onClick(session)}
+      tabIndex={isClickable ? 0 : -1}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && isClickable) {
+          onClick(session);
+        }
+      }}
     >
-      <div className="liveCard__thumb">
-        <img src="https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600" alt={session.title} className="liveCard__img" />
-        <span className="liveCard__badge" style={{ color: cfg.color, background: cfg.bg }}>{cfg.label}</span>
-        <div className="liveCard__overlay">
-          <p className="liveCard__desc">{session.description || "No description provided."}</p>
-          {canJoin && <span className="liveCard__joinBtn">Join Session</span>}
+      <div className="liveCardNew__banner">
+        <img
+          src={
+            session.thumbnail ||
+            "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600"
+          }
+          alt={session.title}
+          className="liveCardNew__cover"
+        />
+
+        <div className="liveCardNew__teacherAvatar">
+          <img
+            src={
+              session.teacher_image ||
+              session.teacher_avatar ||
+              "https://i.pravatar.cc/100?img=5"
+            }
+            alt="Teacher"
+          />
         </div>
+
+        <span
+          className="liveCardNew__badge"
+          style={{
+            background: cfg.bg,
+            color: cfg.color,
+          }}
+        >
+          {cfg.label}
+        </span>
       </div>
-      <div className="liveCard__body">
-        <p className="liveCard__subject">{session.subject_name}</p>
-        <p className="liveCard__title">{session.title}</p>
-        <p className="liveCard__teacher">{session.teacher}</p>
-        <div className="liveCard__time">
-          <span>{dateStr}</span>
-          <span>{timeStr} to {endStr}</span>
+
+      <div className="liveCardNew__content">
+        <h3>{session.subject_name || session.title}</h3>
+
+        <p>
+          {session.teacher_name ||
+            session.teacher_full_name ||
+            session.teacher ||
+            "Teacher"}
+        </p>
+
+        <div className="liveCardNew__time">
+          {timeStr} - {endStr}
         </div>
       </div>
     </div>
@@ -160,13 +244,11 @@ export default function LiveSessions() {
     return () => { ws.close(); wsRef.current = null; };
   }, [activeCourse]);
 
-  const filtered = (selectedSubject
-    ? sessions.filter((s) => String(s.subject_id) === String(selectedSubject))
-    : sessions
-  ).filter((s) => {
-    const st = computeStatus(s);
-    return st !== "COMPLETED" && st !== "CANCELLED";
-  });
+  const filtered = selectedSubject
+  ? sessions.filter(
+      (s) => String(s.subject_id) === String(selectedSubject)
+    )
+  : sessions;
 
   if (loading) return <div className="liveSessionsPage"><div style={{padding:20,color:"#6b7280"}}>Loading sessions...</div></div>;
   if (error)   return <div className="liveSessionsPage"><div style={{padding:20,color:"red"}}>{error}</div></div>;
