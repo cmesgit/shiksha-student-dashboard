@@ -84,6 +84,22 @@ const STATUS_CONFIG = {
   },
 };
 
+function getLiveDuration(startTime) {
+  const now = Date.now();
+  const start = new Date(startTime).getTime();
+
+  const diffMinutes = Math.floor((now - start) / 60000);
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes} min live`;
+  }
+
+  const hours = Math.floor(diffMinutes / 60);
+  const mins = diffMinutes % 60;
+
+  return `${hours}h ${mins}m live`;
+}
+
 function LiveCard({ session, onClick, tick }) {
   void tick;
 
@@ -162,8 +178,14 @@ function LiveCard({ session, onClick, tick }) {
       </p>
 
       <div className="session-card-time">
-        {timeStr} - {endStr}
-      </div>
+  {status === "LIVE" ? (
+    <span className="live-duration">
+      🔴 {getLiveDuration(session.start_time)}
+    </span>
+  ) : (
+    `${timeStr} - ${endStr}`
+  )}
+</div>
     </div>
   </div>
 );
