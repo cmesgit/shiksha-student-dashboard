@@ -963,3 +963,505 @@
   }
   .sgLive__bannerSubject { display: none; }
 }
+
+.sg__page--figma {
+  padding: 8px 16px 40px;
+  min-height: calc(100vh - 70px);
+  box-sizing: border-box;
+}
+
+/* Top row: Select Course center + profile right */
+.sg__figmaTopbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  margin: 14px 0 26px;
+}
+
+.sg__courseSelect {
+  min-width: 160px;
+  height: 32px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 6px;
+  background: #015865;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(1, 88, 101, 0.18);
+}
+
+.sg__courseSelect option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.sg__figmaProfile {
+  justify-self: end;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #ffffff;
+  border: 2px solid rgba(1, 88, 101, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #015865;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.16);
+}
+
+.sg__figmaProfile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Main Figma card/panel */
+.sg__figmaPanel {
+  width: min(100%, 980px);
+  min-height: 590px;
+  margin: 0 auto;
+  padding: 34px 28px;
+  box-sizing: border-box;
+  background: #f2f9fc;
+  border: 1px solid rgba(1, 88, 101, 0.18);
+  border-radius: 18px;
+  box-shadow:
+    0 2px 0 rgba(1, 88, 101, 0.25),
+    0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.sg__figmaPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.sg__figmaPanelHeader h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.sg__figmaActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sg__figmaActionBtn {
+  min-width: 110px;
+  height: 34px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 7px;
+  background: #008a99;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(1, 88, 101, 0.18);
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sg__figmaActionBtn:hover {
+  background: #016c78;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(1, 88, 101, 0.24);
+}
+
+.sg__figmaActionBtn:active {
+  transform: translateY(0);
+}
+
+/* Card grid */
+.sg__figmaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 230px));
+  gap: 18px;
+  align-items: start;
+}
+
+/* Session card like Figma */
+.sg__sessionCard {
+  width: 100%;
+  min-height: 164px;
+  padding: 12px 12px 10px;
+  border: none;
+  border-radius: 8px;
+  background: #008996;
+  color: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.18);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.sg__sessionCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.22);
+  filter: brightness(1.02);
+}
+
+.sg__sessionCard--live {
+  background: #008996;
+}
+
+.sg__sessionCard--scheduled {
+  background: #008996;
+}
+
+.sg__sessionCard--completed,
+.sg__sessionCard--cancelled,
+.sg__sessionCard--expired {
+  background: #334155;
+  opacity: 0.9;
+}
+
+.sg__sessionCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sg__sessionHostBlock {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+}
+
+.sg__sessionAvatar {
+  width: 54px;
+  height: 58px;
+  flex: 0 0 54px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #d9eef2;
+  color: #015865;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.sg__sessionAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sg__sessionHostText {
+  min-width: 0;
+  padding-top: 50px;
+  margin-left: -63px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sg__sessionHostName {
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #ffffff;
+  max-width: 126px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sg__sessionTitle {
+  font-size: 10.5px;
+  line-height: 1.2;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 132px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sg__figmaStatus {
+  min-width: 52px;
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sg__figmaStatus--live {
+  background: #f1252f;
+}
+
+.sg__figmaStatus--live::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: #ffffff;
+  animation: sg__figmaLivePulse 1.2s ease-in-out infinite;
+}
+
+.sg__figmaStatus--scheduled {
+  background: #4fbf73;
+}
+
+.sg__figmaStatus--completed {
+  background: #64748b;
+}
+
+.sg__figmaStatus--cancelled,
+.sg__figmaStatus--expired {
+  background: #475569;
+}
+
+@keyframes sg__figmaLivePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.sg__sessionCardBottom {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-top: 14px;
+  color: #ffffff;
+}
+
+.sg__sessionCardBottom span {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  font-size: 10.5px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.sg__sessionCardBottom strong {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+/* Empty/loading inside Figma panel */
+.sg__loading--figma,
+.sg__empty--figma {
+  min-height: 170px;
+  padding: 58px 20px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px dashed rgba(1, 88, 101, 0.25);
+  color: #526b7a;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Small modal for Join Session and Host Session */
+.sg__smallModal {
+  width: 100%;
+  max-width: 430px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  box-sizing: border-box;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+}
+
+.sg__modalClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  font-size: 18px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sg__modalClose:hover {
+  background: #f1f5f9;
+}
+
+.sg__modalHint {
+  margin: 8px 0 16px;
+  padding-right: 24px;
+  line-height: 1.45;
+}
+
+.sg__modalFoot--compact {
+  padding: 18px 0 0;
+  border-top: none;
+}
+
+.sg__btnPrimary--teal {
+  background: #015865;
+}
+
+.sg__btnPrimary--teal:hover:not(:disabled) {
+  background: #014a55;
+}
+
+.sg__btnPrimary--teal:disabled {
+  background: #8ab9c1;
+}
+
+/* Host Session modal choices */
+.sg__hostChoiceList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.sg__hostChoice {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #cde2e7;
+  border-radius: 12px;
+  background: #f8fcfd;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.sg__hostChoice:hover:not(:disabled) {
+  background: #eef8fa;
+  border-color: #015865;
+  transform: translateY(-1px);
+}
+
+.sg__hostChoice:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.sg__hostChoice strong {
+  color: #015865;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.sg__hostChoice span {
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Keep old select mode checkbox usable if history/details reuse card */
+.sg__sessionCard .sg__cardSelectBox {
+  top: 8px;
+  left: 8px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .sg__figmaPanel {
+    width: 100%;
+    min-height: 520px;
+    padding: 26px 20px;
+  }
+
+  .sg__figmaGrid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .sg__figmaTopbar {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .sg__figmaTopbar > div:first-child {
+    display: none;
+  }
+
+  .sg__courseSelect {
+    width: 100%;
+  }
+
+  .sg__figmaProfile {
+    justify-self: end;
+  }
+
+  .sg__figmaPanelHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sg__figmaActions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sg__figmaActionBtn {
+    width: 100%;
+  }
+
+  .sg__figmaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sg__sessionCard {
+    min-height: 158px;
+  }
+}
+
+@media (max-width: 420px) {
+  .sg__page--figma {
+    padding: 8px 10px 32px;
+  }
+
+  .sg__figmaPanel {
+    padding: 22px 14px;
+    border-radius: 14px;
+  }
+
+  .sg__figmaActions {
+    grid-template-columns: 1fr;
+  }
+
+  .sg__smallModal {
+    padding: 22px 18px;
+  }
+}

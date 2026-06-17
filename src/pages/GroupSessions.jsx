@@ -1,240 +1,337 @@
 /**
- * FILE: STUDENT_DASHBOARD/src/pages/GroupSessions.jsx
+ * FILE: src/pages/GroupSessions.jsx
  *
- * Group Sessions page — parallel to PrivateSessions but visually
- * distinct (uses its own sg__* class prefix + groupSessions.css).
- * Tabs: Upcoming | Invitations | History.
- *
- * This page is additive: it does NOT import or change anything used
- * by the existing Private Sessions flow.
+ * Figma-style Group Sessions page.
+ * Flow included:
+ *   - Main Group Sessions cards page
+ *   - Join Session dialog
+ *   - Host Session dialog
+ *   - Scheduled Session create dialog: Details → Participants → Summary
+ *   - Scheduled Session details dialog for Host / Participant
+ *   - Edit Session dialog for Host: Details → Participants → Summary
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
 import { useAuth } from "../contexts/AuthContext";
+import api from "../api/apiClient";
 import groupSessionService, { extractApiError } from "../api/groupSessionService";
-import ConfirmDialog from "../components/ConfirmDialog";
 import "../styles/groupSessions.css";
 
 /* ═══════════════════════════════════════════════════════════
-   FORMATTING HELPERS
+   HELPERS
 ═══════════════════════════════════════════════════════════ */
 function formatDate(d) {
   if (!d) return "TBD";
   try {
-    return new Date(d + "T00:00:00").toLocaleDateString("en-IN", {
-      weekday: "short", year: "numeric", month: "short", day: "numeric",
+    return new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
     });
-  } catch { return d; }
+  } catch {
+    return d;
+  }
+}
+
+function formatDateLong(d) {
+  if (!d) return "TBD";
+  try {
+    return new Date(`${d}T00:00:00`).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return d;
+  }
 }
 
 function formatTime(t) {
   if (!t) return "TBD";
   try {
-    const [h, m] = t.split(":");
-    const hour = parseInt(h);
+    const [h, m] = String(t).split(":");
+    const hour = parseInt(h, 10);
     const ampm = hour >= 12 ? "PM" : "AM";
     const h12 = hour % 12 || 12;
-    return `${h12}:${m} ${ampm}`;
-  } catch { return t; }
+    return `${h12}:${m || "00"} ${ampm}`;
+  } catch {
+    return t;
+  }
 }
 
-function statusLabel(st) {
-  // For the "live" state, the leading red dot is rendered by CSS (::before
-  // on .sg__statusPill--live) so the pill stays the same shape across
-  // browsers/OS — emoji rendering was inconsistent and was making the
-  // Live pill look split on cards with long titles.
+function addMinutesToTime(time, minutes) {
+  if (!time || !minutes) return "TBD";
+  try {
+    const [h, m] = String(time).split(":").map(Number);
+    const d = new Date();
+    d.setHours(h || 0, m || 0, 0, 0);
+    d.setMinutes(d.getMinutes() + Number(minutes || 0));
+    return d.toTimeString().slice(0, 5);
+  } catch {
+    return "TBD";
+  }
+}
+
+function formatTiming(startTime, durationMinutes) {
+  if (!startTime) return "TBD";
+  const endTime = addMinutesToTime(startTime, durationMinutes);
+  return `${formatTime(startTime)} to ${formatTime(endTime)}`;
+}
+
+function statusLabel(status) {
   const m = {
-    scheduled: "📅 Scheduled", live: "Live",
-    completed: "✔ Completed", cancelled: "✗ Cancelled", expired: "⏰ Expired",
+    scheduled: "Scheduled",
+    live: "LIVE",
+    completed: "Completed",
+    cancelled: "Cancelled",
+    expired: "Expired",
   };
-  return m[st] || st;
+  return m[status] || status || "Scheduled";
 }
 
 function shortId(id) {
   if (!id) return "";
-  return String(id).length > 10 ? `${String(id).slice(0, 8)}…` : id;
+  const s = String(id);
+  return s.length > 12 ? `${s.slice(0, 10)}…` : s;
 }
 
-/**
- * Returns true if this group session should no longer appear in Upcoming.
- *
- * Three time-based exit triggers — any one suffices:
- *   1. status is terminal (completed/cancelled/expired). Backend should
- *      already have routed these to History, but we guard anyway.
- *   2. status is 'live' AND now >= room_started_at + duration. The
- *      Celery hard-cutoff and 6h cleanup cron handle this server-side,
- *      but neither fires the instant the duration elapses — this client
- *      check makes the card vanish exactly on time.
- *   3. status is still 'scheduled' but the entire scheduled window
- *      (start + duration) has elapsed without anyone opening the room.
- *      Same idea as the backend's past_orphan_q, but tighter — we use
- *      start+duration rather than just start, so a 5-minute "grace
- *      period" overlap (where the start time has passed but duration
- *      hasn't fully elapsed yet) keeps the card visible.
- */
+function getUserInitial(user) {
+  return (
+    user?.full_name ||
+    user?.name ||
+    user?.username ||
+    user?.email ||
+    "U"
+  ).charAt(0).toUpperCase();
+}
+
+function getHostPhoto(group) {
+  return (
+    group?.hostPhoto ||
+    group?.host_photo ||
+    group?.host_profile_photo ||
+    group?.hostAvatar ||
+    group?.host_avatar ||
+    ""
+  );
+}
+
 function isEndedNow(g) {
   if (!g) return false;
-  if (g.status === "completed" || g.status === "cancelled" || g.status === "expired") {
-    return true;
-  }
-  const durMs = (g.durationMinutes || 0) * 60_000;
+  if (["completed", "cancelled", "expired"].includes(g.status)) return true;
+
+  const durMs = Number(g.durationMinutes || 0) * 60_000;
+
   if (g.status === "live" && g.roomStartedAt && durMs > 0) {
     const end = new Date(g.roomStartedAt).getTime() + durMs;
-    if (!Number.isNaN(end) && Date.now() >= end) return true;
+    return !Number.isNaN(end) && Date.now() >= end;
   }
+
   if (g.status === "scheduled" && !g.roomStartedAt && g.date && g.time && durMs > 0) {
-    const start = new Date(`${g.date}T${g.time}`).getTime();
-    if (!Number.isNaN(start) && Date.now() >= start + durMs) return true;
+    const end = new Date(`${g.date}T${g.time}`).getTime() + durMs;
+    return !Number.isNaN(end) && Date.now() >= end;
   }
+
   return false;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   STUDY GROUP CARD
-═══════════════════════════════════════════════════════════ */
-function GroupSessionCard({ group, onOpen, selectMode = false, selected = false, onToggleSelect }) {
-  // In selection mode the card itself becomes a toggle, not an opener.
-  // The checkbox is rendered in the top-right corner so it doesn't fight
-  // the status pill for space.
-  const handleClick = (e) => {
-    if (selectMode) {
-      e.preventDefault();
-      onToggleSelect?.(group.id);
-    } else {
-      onOpen(group);
+function normalizeJoinError(err) {
+  const raw = extractApiError(err, "Couldn't join that session.");
+  const text = String(raw || "").toLowerCase();
+
+  if (err?.response?.status === 404 || text.includes("not found") || text.includes("does not exist")) {
+    return "Session ID Does not Exist";
+  }
+  if (text.includes("lock") || text.includes("locked")) {
+    return "Session is currently Locked by the Host. Try again later";
+  }
+  if (text.includes("ended") || text.includes("completed") || text.includes("expired")) {
+    return "This session has already ended.";
+  }
+  return raw;
+}
+
+function uniqueByUserId(list) {
+  const map = new Map();
+  (list || []).forEach((p) => {
+    const key = String(p.user_id || p.userId || p.id || "");
+    if (key && !map.has(key)) map.set(key, p);
+  });
+  return Array.from(map.values());
+}
+
+async function updateScheduledSession(sessionId, payload) {
+  // Your service file currently has create/cancel/decline/join APIs, but no
+  // update API. This helper tries the common backend routes. If your backend
+  // uses a different route, add it in groupSessionService.js later.
+  const candidates = [
+    { method: "patch", url: `/sessions/group-sessions/${sessionId}/` },
+    { method: "patch", url: `/sessions/group-sessions/${sessionId}/update/` },
+    { method: "post", url: `/sessions/group-sessions/${sessionId}/update/` },
+  ];
+
+  let lastErr = null;
+  for (const c of candidates) {
+    try {
+      const res = await api[c.method](c.url, payload);
+      if (res?.data) return res.data;
+    } catch (err) {
+      lastErr = err;
+      const status = err?.response?.status;
+      if (status && ![404, 405].includes(status)) throw err;
     }
-  };
-  const cardClass = `sg__card sg__card--${group.status}${selectMode ? " sg__card--selectMode" : ""}${selected ? " sg__card--selected" : ""}`;
+  }
+  throw lastErr || new Error("Update endpoint not available.");
+}
+
+const DURATIONS = [
+  { label: "30 minutes", value: 30 },
+  { label: "60 minutes", value: 60 },
+  { label: "90 minutes", value: 90 },
+];
+
+const MAX_PARTICIPANTS = 10;
+
+/* ═══════════════════════════════════════════════════════════
+   SESSION CARD
+═══════════════════════════════════════════════════════════ */
+function GroupSessionCard({ group, onOpen }) {
+  const status = isEndedNow(group) ? "completed" : (group.status || "scheduled");
+  const isLive = status === "live";
+  const isScheduled = status === "scheduled";
+  const hostPhoto = getHostPhoto(group);
+  const startedAt = group.roomStartedAt ? new Date(group.roomStartedAt) : null;
+  const startTime = startedAt && !Number.isNaN(startedAt.getTime())
+    ? startedAt.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })
+    : formatTime(group.time);
+  const participantCount = Math.max(1, 1 + Number(group.acceptedCount || 0));
+
   return (
-    <div className={cardClass} onClick={handleClick}>
-      {selectMode && (
-        <span
-          className={`sg__cardSelectBox${selected ? " sg__cardSelectBox--on" : ""}`}
-          aria-hidden="true"
-        >
-          {selected ? "✓" : ""}
-        </span>
-      )}
-      <div className="sg__cardTop">
-        <div className="sg__cardSubject">{group.subjectName}</div>
-        <span className={`sg__statusPill sg__statusPill--${group.status}`}>
-          {statusLabel(group.status)}
-        </span>
-      </div>
-      {group.courseTitle && (
-        <div className="sg__cardCourse">{group.courseTitle}</div>
-      )}
-      {group.topic && <div className="sg__cardTopic">“{group.topic}”</div>}
-      <div className="sg__cardMetaRow">
-        <span className="sg__metaChip">👤 Host: {group.hostName}</span>
-        {group.invitedTeacher && (
-          <span className="sg__metaChip">🎓 {group.invitedTeacher}</span>
-        )}
-      </div>
-      <div className="sg__cardMetaRow">
-        <span className="sg__metaChip">📆 {formatDate(group.date)}</span>
-        <span className="sg__metaChip">🕑 {formatTime(group.time)}</span>
-        <span className="sg__metaChip">⏱ {group.durationMinutes} min</span>
-      </div>
-      <div className="sg__cardCountsRow">
-        <span className="sg__countChip sg__countChip--accepted">
-          ✅ {group.acceptedCount} accepted
-        </span>
-        <span className="sg__countChip sg__countChip--pending">
-          ⏳ {group.pendingCount} pending
-        </span>
-        {group.declinedCount > 0 && (
-          <span className="sg__countChip sg__countChip--declined">
-            ✗ {group.declinedCount} declined
+    <button
+      type="button"
+      className={`sg__sessionCard sg__sessionCard--${status}`}
+      onClick={() => onOpen(group)}
+    >
+      <div className="sg__sessionCardTop">
+        <div className="sg__sessionHostBlock">
+          <span className="sg__sessionAvatar">
+            {hostPhoto ? (
+              <img src={hostPhoto} alt={group.hostName || "Host"} />
+            ) : (
+              <span>{(group.hostName || "H").charAt(0).toUpperCase()}</span>
+            )}
           </span>
+
+          <div className="sg__sessionHostText">
+            <span className="sg__sessionHostName">{group.hostName || "Host Name"}</span>
+            <span className="sg__sessionTitle">{group.topic || "Title (Only If Entered)"}</span>
+          </div>
+        </div>
+
+        <span className={`sg__figmaStatus sg__figmaStatus--${status}`}>
+          {isLive ? "LIVE" : isScheduled ? "Scheduled" : statusLabel(status)}
+        </span>
+      </div>
+
+      <div className="sg__sessionCardBottom">
+        {isLive ? (
+          <>
+            <span><strong>Duration</strong> {group.durationMinutes ? `${group.durationMinutes} min` : "—"}</span>
+            <span><strong>Start Time</strong> {startTime}</span>
+            <span><strong>Participants</strong> {participantCount}</span>
+          </>
+        ) : (
+          <>
+            <span><strong>Date</strong> {formatDate(group.date)}</span>
+            <span><strong>Session Timing</strong> {formatTiming(group.time, group.durationMinutes)}</span>
+          </>
         )}
       </div>
-    </div>
+    </button>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   INVITEE PICKER  (mirrors PrivateSessions' StudentPicker UX)
+   PARTICIPANT SEARCH
 ═══════════════════════════════════════════════════════════ */
-function InviteePicker({ subjectId, excludeUserIds, onSelect }) {
+function ParticipantSearch({ subjectId, selected, onAdd, disabled }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState([]);
   const wrapRef = useRef(null);
 
-  const load = useCallback(async (q) => {
-    if (!subjectId) return;
-    setLoading(true);
-    try {
-      const data = await groupSessionService.getCourseStudents(subjectId, q);
-      const filtered = (data || []).filter(
-        (s) => !excludeUserIds.includes(s.user_id)
-      );
-      setResults(filtered);
-    } catch {
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [subjectId, excludeUserIds]);
+  const excludedIds = useMemo(
+    () => selected.map((p) => String(p.user_id || p.userId || p.id)),
+    [selected]
+  );
 
   useEffect(() => {
-    if (!open) return;
-    const id = setTimeout(() => load(query), 150);
-    return () => clearTimeout(id);
-  }, [query, open, load]);
-
-  useEffect(() => {
-    function onClickOutside(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
-        setOpen(false);
-      }
+    function handleOutside(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
     }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
-  const handleSelect = (s) => {
-    onSelect(s);
+  useEffect(() => {
+    if (!open || !subjectId) return undefined;
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const data = await groupSessionService.getCourseStudents(subjectId, query.trim());
+        const filtered = (data || []).filter((s) => !excludedIds.includes(String(s.user_id)));
+        setResults(filtered);
+      } catch {
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [query, open, subjectId, excludedIds]);
+
+  const choose = (student) => {
+    onAdd(student);
     setQuery("");
     setOpen(false);
   };
 
   return (
-    <div className="sg__picker" ref={wrapRef}>
+    <div ref={wrapRef} style={{ position: "relative", flex: 1 }}>
       <input
-        className="sg__pickerInput"
-        placeholder="Search classmate by name or ID…"
+        className="sg__input"
+        placeholder="Enter Student's Phone"
         value={query}
-        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        disabled={disabled || !subjectId}
         onFocus={() => setOpen(true)}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
       />
-      {open && (
-        <div className="sg__pickerDrop">
-          {loading && <div className="sg__pickerRow muted">Loading…</div>}
+
+      {open && !disabled && subjectId && (
+        <div style={styles.searchDrop}>
+          {loading && <div style={styles.searchRowMuted}>Searching…</div>}
           {!loading && results.length === 0 && (
-            <div className="sg__pickerRow muted">
-              {query ? `No students match "${query}"` : "No other enrolled students"}
+            <div style={styles.searchRowMuted}>
+              {query ? "No student found in this course" : "Start typing to search same-course students"}
             </div>
           )}
-          {results.map((s) => (
-            <div
+          {!loading && results.slice(0, 8).map((s) => (
+            <button
               key={s.user_id}
-              className="sg__pickerRow"
-              onMouseDown={(e) => { e.preventDefault(); handleSelect(s); }}
+              type="button"
+              style={styles.searchRow}
+              onMouseDown={(e) => { e.preventDefault(); choose(s); }}
             >
-              <span className="sg__pickerAv">{(s.name || "?").charAt(0).toUpperCase()}</span>
-              <div className="sg__pickerInfo">
-                <span className="sg__pickerName">{s.name}</span>
-                {s.student_id && (
-                  <span className="sg__pickerSub">{shortId(s.student_id)}</span>
-                )}
-              </div>
-              <span className="sg__pickerAdd">+ Add</span>
-            </div>
+              <span style={styles.searchAvatar}>{(s.name || "?").charAt(0).toUpperCase()}</span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <strong style={styles.searchName}>{s.name || "Student"}</strong>
+                <small style={styles.searchSub}>{s.phone || s.student_id || shortId(s.user_id)}</small>
+              </span>
+              <span style={styles.searchAdd}>Add</span>
+            </button>
           ))}
         </div>
       )}
@@ -242,573 +339,270 @@ function InviteePicker({ subjectId, excludeUserIds, onSelect }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   INSTANT MEETING DIALOG
-   ─────────────────────────────────────────────────────────────
-   Two-mode popup shown when the user clicks "Instant Meeting":
-     mode="menu"   → Create Instant Meeting | Enter Room ID
-     mode="enter"  → input + Join Room
-   X close button lives in the top-right of the modal.
-═══════════════════════════════════════════════════════════ */
-function InstantMeetingDialog({ open, busy, error, onClose, onCreate, onEnter }) {
-  const [mode, setMode] = useState("menu");
-  const [code, setCode] = useState("");
+function ParticipantsStep({ subjectId, participants, setParticipants, disabled }) {
+  const addParticipant = (student) => {
+    if (participants.length >= MAX_PARTICIPANTS) return;
+    const next = uniqueByUserId([
+      ...participants,
+      {
+        user_id: student.user_id,
+        name: student.name || "Student",
+        student_id: student.student_id || student.phone || "",
+      },
+    ]);
+    setParticipants(next.slice(0, MAX_PARTICIPANTS));
+  };
 
-  // Reset back to the menu whenever the dialog is reopened — otherwise a
-  // user who closed mid-"enter" would see the input on next open.
-  useEffect(() => {
-    if (open) {
-      setMode("menu");
-      setCode("");
-    }
-  }, [open]);
+  const removeParticipant = (userId) => {
+    setParticipants(participants.filter((p) => String(p.user_id || p.userId) !== String(userId)));
+  };
 
-  if (!open) return null;
-
-  // Self-contained, inline-styled modal — does not depend on any CSS file,
-  // so it renders identically on both dashboards even if the local stylesheet
-  // is missing the .modalOverlay / .modal rules.
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="im-title"
-      onClick={() => !busy && onClose()}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15, 23, 42, 0.55)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 20,
-        zIndex: 9999,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "100%",
-          maxWidth: 420,
-          background: "#ffffff",
-          borderRadius: 16,
-          boxShadow: "0 24px 60px rgba(0, 0, 0, 0.28)",
-          padding: "24px 24px 22px",
-          position: "relative",
-          fontFamily: "inherit",
-          boxSizing: "border-box",
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => !busy && onClose()}
-          aria-label="Close"
-          title="Close"
-          style={{
-            position: "absolute",
-            top: 12,
-            right: 12,
-            width: 32,
-            height: 32,
-            border: "none",
-            background: "transparent",
-            cursor: busy ? "not-allowed" : "pointer",
-            borderRadius: 8,
-            fontSize: 18,
-            color: "#475569",
-            lineHeight: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          onMouseEnter={(e) => { if (!busy) e.currentTarget.style.background = "#f1f5f9"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-        >
-          ✕
-        </button>
+    <div>
+      <label className="sg__label">Enter Student:</label>
+      <div style={styles.studentSearchLine}>
+        <ParticipantSearch
+          subjectId={subjectId}
+          selected={participants}
+          onAdd={addParticipant}
+          disabled={disabled || participants.length >= MAX_PARTICIPANTS}
+        />
+      </div>
 
-        <h3
-          id="im-title"
-          style={{
-            margin: 0,
-            paddingRight: 32,
-            fontSize: 18,
-            fontWeight: 700,
-            color: "#0f172a",
-            letterSpacing: "-0.01em",
-          }}
-        >
-          Instant Meeting
-        </h3>
-        <p style={{ margin: "6px 0 18px", fontSize: 13.5, color: "#475569", lineHeight: 1.45 }}>
-          {mode === "menu"
-            ? "Start a brand-new room right now, or join one with a room code shared by the host."
-            : "Paste a Group Session room code or the full link the host sent you."}
-        </p>
-
-        {mode === "menu" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onCreate}
-              style={{
-                width: "100%",
-                background: "#015865",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: 10,
-                padding: "12px 16px",
-                fontWeight: 600,
-                fontSize: 14.5,
-                cursor: busy ? "not-allowed" : "pointer",
-                opacity: busy ? 0.7 : 1,
-              }}
-            >
-              {busy ? "Starting…" : "+ Create Instant Meeting"}
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setMode("enter")}
-              style={{
-                width: "100%",
-                background: "#ffffff",
-                color: "#0f172a",
-                border: "1px solid #cbd5e1",
-                borderRadius: 10,
-                padding: "11px 16px",
-                fontWeight: 600,
-                fontSize: 14.5,
-                cursor: busy ? "not-allowed" : "pointer",
-                opacity: busy ? 0.55 : 1,
-              }}
-            >
-              Enter Room ID
-            </button>
-            {error && (
-              <div
-                role="alert"
-                style={{
-                  marginTop: 4,
-                  padding: "10px 12px",
-                  borderRadius: 8,
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  color: "#b91c1c",
-                  fontSize: 13,
-                }}
-              >
-                {error}
-              </div>
-            )}
-          </div>
-        )}
-
-        {mode === "enter" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <label
-              htmlFor="im-code-input"
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: "#334155",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-              }}
-            >
-              Room ID
-            </label>
-            <input
-              id="im-code-input"
-              placeholder="e.g. xyz-abcd-efg"
-              value={code}
-              autoFocus
-              autoComplete="off"
-              spellCheck="false"
-              onChange={(e) => setCode(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && code.trim() && !busy) onEnter(code.trim());
-              }}
-              style={{
-                width: "100%",
-                padding: "11px 12px",
-                fontSize: 14,
-                border: "1px solid #cbd5e1",
-                borderRadius: 10,
-                outline: "none",
-                background: "#fff",
-                color: "#0f172a",
-                boxSizing: "border-box",
-                transition: "border-color 120ms, box-shadow 120ms",
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "#015865";
-                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(1, 88, 101, 0.15)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "#cbd5e1";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            />
-            {error && (
-              <div
-                role="alert"
-                style={{
-                  marginTop: 2,
-                  padding: "10px 12px",
-                  borderRadius: 8,
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  color: "#b91c1c",
-                  fontSize: 13,
-                }}
-              >
-                {error}
-              </div>
-            )}
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 6 }}>
+      <div style={styles.participantListBox}>
+        {participants.length === 0 ? (
+          <div style={styles.noParticipants}>No participants added yet.</div>
+        ) : (
+          participants.map((p, index) => (
+            <div key={p.user_id || p.userId || index} style={styles.participantEditRow}>
+              <span style={styles.participantIndex}>{index + 1}.</span>
+              <span style={styles.participantNameBox}>
+                {p.name || "Student"}
+                {(p.student_id || p.studentId) ? ` (${p.student_id || p.studentId})` : ""}
+              </span>
               <button
                 type="button"
-                disabled={busy}
-                onClick={() => setMode("menu")}
-                style={{
-                  background: "transparent",
-                  color: "#0f172a",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: 10,
-                  padding: "10px 14px",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  cursor: busy ? "not-allowed" : "pointer",
-                  opacity: busy ? 0.55 : 1,
-                }}
+                style={styles.removeBtn}
+                onClick={() => removeParticipant(p.user_id || p.userId)}
               >
-                ‹ Back
-              </button>
-              <button
-                type="button"
-                disabled={busy || !code.trim()}
-                onClick={() => onEnter(code.trim())}
-                style={{
-                  background: "#015865",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: 10,
-                  padding: "10px 18px",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  cursor: busy || !code.trim() ? "not-allowed" : "pointer",
-                  opacity: busy || !code.trim() ? 0.6 : 1,
-                }}
-              >
-                {busy ? "Joining…" : "Join Room"}
+                x
               </button>
             </div>
-          </div>
+          ))
         )}
       </div>
+
+      <div style={styles.participantCount}>Participants: {participants.length}/{MAX_PARTICIPANTS}</div>
+      {participants.length >= MAX_PARTICIPANTS && (
+        <p className="sg__hint" style={{ textAlign: "center", marginTop: 6 }}>
+          Maximum {MAX_PARTICIPANTS} participants allowed.
+        </p>
+      )}
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CREATE MODAL
+   SCHEDULE / EDIT MODAL
 ═══════════════════════════════════════════════════════════ */
-function CreateGroupSessionModal({ onClose, onCreated }) {
+function ScheduleSessionModal({
+  mode = "create",
+  open,
+  onClose,
+  onCreated,
+  onUpdated,
+  selectedSubjectId,
+  initialSession = null,
+}) {
+  const isEdit = mode === "edit";
   const [step, setStep] = useState(1);
-
-  const [subjectGroups, setSubjectGroups] = useState([]);
-  const [subjectId, setSubjectId] = useState("");
-  const [topic, setTopic] = useState("");
-  const [teachers, setTeachers] = useState([]);
-  const [teacherId, setTeacherId] = useState("");
-  const [invitees, setInvitees] = useState([]);   // [{user_id, name, student_id}]
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [duration, setDuration] = useState(groupSessionService.DURATIONS[1]);
-  const [submitting, setSubmitting] = useState(false);
+  const [duration, setDuration] = useState(30);
+  const [topic, setTopic] = useState("");
+  const [participants, setParticipants] = useState([]);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Load subjects on mount
   useEffect(() => {
-    let cancelled = false;
-    groupSessionService.getMySubjects()
-      .then((g) => { if (!cancelled) setSubjectGroups(g || []); })
-      .catch(() => { if (!cancelled) setSubjectGroups([]); });
-    return () => { cancelled = true; };
-  }, []);
-
-  // Load teachers whenever subject changes
-  useEffect(() => {
-    if (!subjectId) { setTeachers([]); setTeacherId(""); return; }
-    let cancelled = false;
-    groupSessionService.getTeachers(subjectId)
-      .then((t) => { if (!cancelled) setTeachers(t || []); })
-      .catch(() => { if (!cancelled) setTeachers([]); });
-    return () => { cancelled = true; };
-  }, [subjectId]);
-
-  // Clear invitees when subject changes (they're course-scoped)
-  useEffect(() => { setInvitees([]); }, [subjectId]);
-
-  const minDate = useMemo(() => {
-    const d = new Date();
-    return d.toISOString().split("T")[0];
-  }, []);
-
-  // If the user picked today, any slot earlier than "now" is invalid —
-  // the backend rejects past schedules. Compute that cutoff here so the
-  // UI can disable those buttons instead of letting the user hit a 400.
-  const isToday = date === minDate;
-  const nowHHMM = useMemo(() => {
-    const d = new Date();
-    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  }, [date]); // recompute when the chosen date changes (cheap)
-
-  const isSlotPast = (slotValue) => isToday && slotValue <= nowHHMM;
-
-  // If the currently-picked slot becomes invalid (e.g. user changes date
-  // from tomorrow back to today), drop the selection.
-  useEffect(() => {
-    if (time && isSlotPast(time)) setTime("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date]);
-
-  const selectedSubjectName = useMemo(() => {
-    for (const g of subjectGroups) {
-      const s = (g.subjects || []).find((x) => x.id === subjectId);
-      if (s) return s.name;
+    if (!open) return;
+    setStep(1);
+    setError("");
+    if (isEdit && initialSession) {
+      setDate(initialSession.date || "");
+      setTime(initialSession.time || "");
+      setDuration(Number(initialSession.durationMinutes || 30));
+      setTopic(initialSession.topic || "");
+      setParticipants((initialSession.invites || []).map((inv) => ({
+        user_id: inv.userId,
+        name: inv.name,
+        student_id: inv.studentId,
+      })));
+    } else {
+      setDate(new Date().toISOString().split("T")[0]);
+      setTime("");
+      setDuration(30);
+      setTopic("");
+      setParticipants([]);
     }
-    return "";
-  }, [subjectGroups, subjectId]);
+  }, [open, isEdit, initialSession]);
 
-  const addInvitee = (s) => {
-    if (invitees.find((x) => x.user_id === s.user_id)) return;
-    if (invitees.length >= groupSessionService.MAX_INVITEES) return;
-    setInvitees([...invitees, {
-      user_id: s.user_id, name: s.name, student_id: s.student_id,
-    }]);
+  if (!open) return null;
+
+  const canStep1 = Boolean(date && time && duration);
+  const canStep2 = participants.length > 0;
+  const title = isEdit ? "Edit Session" : "Schedule a Session";
+  const endTime = addMinutesToTime(time, duration);
+
+  const payload = {
+    subject_id: selectedSubjectId || initialSession?.subjectId,
+    invited_user_ids: participants.map((p) => p.user_id || p.userId),
+    scheduled_date: date,
+    scheduled_time: time,
+    duration_minutes: Number(duration),
+    topic: topic || "",
   };
-
-  const removeInvitee = (uid) => {
-    setInvitees(invitees.filter((x) => x.user_id !== uid));
-  };
-
-  const canNext1 = !!subjectId;
-  const canNext2 = invitees.length >= 1;
-  const canNext3 = !!date && !!time && !!duration;
 
   const submit = async () => {
-    setSubmitting(true);
+    setSaving(true);
     setError("");
     try {
-      const sg = await groupSessionService.createGroupSession({
-        subject_id: subjectId,
-        invited_teacher_id: teacherId || null,
-        invited_user_ids: invitees.map((i) => i.user_id),
-        scheduled_date: date,
-        scheduled_time: time,
-        duration_minutes: duration.value,
-        topic,
-      });
-      onCreated?.(sg);
+      if (isEdit) {
+        const raw = await updateScheduledSession(initialSession.id, payload);
+        let fresh = raw;
+        try {
+          fresh = await groupSessionService.getDetail(initialSession.id);
+        } catch {
+          // ignore; use raw response if detail refresh fails
+        }
+        localStorage.setItem(`sg_edit_used_${initialSession.id}`, "1");
+        onUpdated?.(fresh);
+      } else {
+        if (!payload.subject_id) {
+          throw new Error("Please select a course before scheduling a session.");
+        }
+        const created = await groupSessionService.createGroupSession(payload);
+        onCreated?.(created);
+      }
       onClose();
     } catch (err) {
-      // Log the raw response so it shows up in the browser console for
-      // debugging, and surface the user-friendly message in the UI.
-      // eslint-disable-next-line no-console
-      console.error("createGroupSession failed:", err?.response?.data);
-      setError(extractApiError(err, "Could not create the group session."));
+      setError(
+        err?.message === "Please select a course before scheduling a session."
+          ? err.message
+          : extractApiError(err, isEdit
+              ? "Could not save changes. Please check if the backend edit API is available."
+              : "Could not create scheduled session.")
+      );
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
   return (
-    <div className="sg__modalOverlay" onClick={onClose}>
-      <div className="sg__modal" onClick={(e) => e.stopPropagation()}>
-        <div className="sg__modalHead">
-          <h3 className="sg__modalTitle">Create Group Session</h3>
-          <div className="sg__stepDots">
-            {[1, 2, 3, 4].map((n) => (
-              <span key={n} className={`sg__stepDot ${n === step ? "active" : ""} ${n < step ? "done" : ""}`}>{n}</span>
-            ))}
-          </div>
-        </div>
+    <div className="sg__modalOverlay" onClick={() => !saving && onClose()}>
+      <div style={styles.figmaDialog} onClick={(e) => e.stopPropagation()}>
+        <h3 style={styles.dialogTitle}>{title}</h3>
 
+        <StepHeader step={step} />
         {error && <div className="sg__errorBox">{error}</div>}
 
         {step === 1 && (
-          <div className="sg__step">
-            <label className="sg__label">Subject</label>
-            <select
-              className="sg__input"
-              value={subjectId}
-              onChange={(e) => setSubjectId(e.target.value)}
-            >
-              <option value="">-- Select a subject --</option>
-              {subjectGroups.map((g) => (
-                <optgroup key={g.course_id} label={g.course_label}>
-                  {(g.subjects || []).map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-
-            <label className="sg__label">Topic (optional)</label>
-            <input
-              className="sg__input"
-              placeholder="e.g. Trigonometric identities revision"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              maxLength={255}
-            />
-
-            <label className="sg__label">Invite a teacher (optional)</label>
-            <select
-              className="sg__input"
-              value={teacherId}
-              onChange={(e) => setTeacherId(e.target.value)}
-              disabled={!subjectId}
-            >
-              <option value="">-- No teacher (peers only) --</option>
-              {teachers.map((t) => (
-                // Backend returns teachers as { id, name } — use `id` as the
-                // UUID that gets sent to /group-sessions/create/.
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="sg__step">
-            <label className="sg__label">
-              Invite classmates (min 1, max {groupSessionService.MAX_INVITEES})
-            </label>
-            <p className="sg__hint">
-              You can only invite students enrolled in the same course.
-              Your group session opens as soon as <strong>one classmate accepts</strong>.
-            </p>
-
-            {/* Selected pills */}
-            <div className="sg__pillRow">
-              {invitees.map((i) => (
-                <div key={i.user_id} className="sg__pill">
-                  <span className="sg__pillAv">{(i.name || "?").charAt(0).toUpperCase()}</span>
-                  <span className="sg__pillName">{i.name}</span>
-                  <button className="sg__pillX" onClick={() => removeInvitee(i.user_id)}>×</button>
-                </div>
-              ))}
-              {invitees.length === 0 && (
-                <div className="sg__emptyPill">No classmates added yet.</div>
-              )}
-            </div>
-
-            {/* Picker */}
-            {invitees.length < groupSessionService.MAX_INVITEES && (
-              <InviteePicker
-                subjectId={subjectId}
-                excludeUserIds={invitees.map((i) => i.user_id)}
-                onSelect={addInvitee}
+          <div style={styles.formArea}>
+            <div style={styles.inlineField}>
+              <label style={styles.compactLabel}>Select Date:</label>
+              <input
+                type="date"
+                className="sg__input"
+                style={styles.dateInput}
+                value={date}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setDate(e.target.value)}
               />
-            )}
-            <div className="sg__count">
-              {invitees.length} / {groupSessionService.MAX_INVITEES} invited
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="sg__step">
-            <label className="sg__label">Date</label>
-            <input
-              type="date"
-              className="sg__input"
-              min={minDate}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-
-            <label className="sg__label">Time</label>
-            <div className="sg__slotGrid">
-              {groupSessionService.TIME_SLOTS.map((t) => {
-                const past = isSlotPast(t.value);
-                return (
-                  <button
-                    key={t.value}
-                    type="button"
-                    disabled={past}
-                    title={past ? "This time has already passed today" : undefined}
-                    className={`sg__slotBtn ${time === t.value ? "selected" : ""} ${past ? "disabled" : ""}`}
-                    onClick={() => { if (!past) setTime(t.value); }}
-                  >
-                    {t.label}
-                  </button>
-                );
-              })}
             </div>
 
-            <label className="sg__label">Duration</label>
-            <div className="sg__slotGrid sg__slotGrid--dur">
-              {groupSessionService.DURATIONS.map((d) => (
+            <div style={styles.inlineField}>
+              <label style={styles.compactLabel}>Start Time:</label>
+              <input
+                type="time"
+                className="sg__input"
+                style={styles.timeInput}
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+              />
+              {time && duration ? (
+                <span style={styles.endTimeHint}>End: {formatTime(endTime)}</span>
+              ) : null}
+            </div>
+
+            <label style={styles.compactLabel}>Select Duration:</label>
+            <div style={styles.durationRow}>
+              {DURATIONS.map((d) => (
                 <button
                   key={d.value}
                   type="button"
-                  className={`sg__slotBtn ${duration?.value === d.value ? "selected" : ""}`}
-                  onClick={() => setDuration(d)}
+                  style={duration === d.value ? styles.durationBtnActive : styles.durationBtn}
+                  onClick={() => setDuration(d.value)}
                 >
                   {d.label}
                 </button>
               ))}
             </div>
-            <p className="sg__hint">
-              The room ends exactly {duration?.label || "…"} after the first
-              person joins, or when it's empty for 7 minutes.
-            </p>
+
+            <label style={styles.compactLabel}>Topic (optional):</label>
+            <input
+              className="sg__input"
+              style={styles.topicInput}
+              value={topic}
+              maxLength={255}
+              placeholder='Discussion on "What comes first ?"'
+              onChange={(e) => setTopic(e.target.value)}
+            />
           </div>
         )}
 
-        {step === 4 && (
-          <div className="sg__step">
-            <h4 className="sg__summaryHead">Summary</h4>
-            <div className="sg__summary">
-              <div className="sg__summaryRow"><span>Subject</span><strong>{selectedSubjectName || "—"}</strong></div>
-              <div className="sg__summaryRow"><span>Topic</span><strong>{topic || "—"}</strong></div>
-              <div className="sg__summaryRow"><span>Teacher</span><strong>{teachers.find((t) => t.id === teacherId)?.name || "None"}</strong></div>
-              <div className="sg__summaryRow"><span>Invitees</span><strong>{invitees.length}</strong></div>
-              <div className="sg__summaryRow"><span>Date</span><strong>{date ? formatDate(date) : "—"}</strong></div>
-              <div className="sg__summaryRow"><span>Time</span><strong>{formatTime(time) || "—"}</strong></div>
-              <div className="sg__summaryRow"><span>Duration</span><strong>{duration?.label}</strong></div>
-            </div>
+        {step === 2 && (
+          <div style={styles.formArea}>
+            <ParticipantsStep
+              subjectId={selectedSubjectId || initialSession?.subjectId}
+              participants={participants}
+              setParticipants={setParticipants}
+            />
           </div>
         )}
 
-        <div className="sg__modalFoot">
-          {step > 1 ? (
-            <button className="sg__btnGhost" onClick={() => setStep(step - 1)}>Back</button>
-          ) : (
-            <button className="sg__btnGhost" onClick={onClose}>Cancel</button>
-          )}
-          {step < 4 ? (
-            <button
-              className="sg__btnPrimary"
-              disabled={(step === 1 && !canNext1) || (step === 2 && !canNext2) || (step === 3 && !canNext3)}
-              onClick={() => setStep(step + 1)}
-            >
-              Next
+        {step === 3 && (
+          <SummaryStep
+            date={date}
+            time={time}
+            duration={duration}
+            topic={topic}
+            participants={participants}
+          />
+        )}
+
+        <div style={styles.dialogFoot}>
+          {step === 1 ? (
+            <button type="button" style={styles.tealGhostBtn} disabled={saving} onClick={onClose}>
+              Cancel
             </button>
           ) : (
+            <button type="button" style={styles.tealGhostBtn} disabled={saving} onClick={() => setStep(step - 1)}>
+              Back
+            </button>
+          )}
+
+          {step < 3 ? (
             <button
-              className="sg__btnPrimary"
-              disabled={submitting}
-              onClick={submit}
+              type="button"
+              style={styles.tealBtn}
+              disabled={saving || (step === 1 && !canStep1) || (step === 2 && !canStep2)}
+              onClick={() => setStep(step + 1)}
             >
-              {submitting ? "Creating…" : "Create Group Session"}
+              Continue
+            </button>
+          ) : (
+            <button type="button" style={styles.tealBtn} disabled={saving} onClick={submit}>
+              {saving ? "Saving…" : isEdit ? "Save Changes" : "Confirm"}
             </button>
           )}
         </div>
@@ -817,591 +611,282 @@ function CreateGroupSessionModal({ onClose, onCreated }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   DETAIL VIEW
-═══════════════════════════════════════════════════════════ */
-function GroupSessionDetail({ group, onBack, onChanged }) {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+function StepHeader({ step }) {
+  const items = ["Details", "Participants", "Summary"];
+  return (
+    <div style={styles.stepWrap}>
+      {items.map((name, index) => {
+        const n = index + 1;
+        const active = step >= n;
+        return (
+          <div key={name} style={styles.stepItem}>
+            <span style={active ? styles.stepCircleActive : styles.stepCircle}>{n}</span>
+            <span style={active ? styles.stepTextActive : styles.stepText}>{name}</span>
+            {index < items.length - 1 && <span style={styles.stepLine} />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
+function SummaryStep({ date, time, duration, topic, participants }) {
+  return (
+    <div style={styles.summaryBox}>
+      <SummaryRow label="Date:" value={formatDateLong(date)} />
+      <SummaryRow label="Timing:" value={formatTiming(time, duration)} />
+      <SummaryRow label="Duration:" value={`${duration} minutes`} />
+      <SummaryRow label="Participants:" value={`${participants.length} people`} />
+      <SummaryRow label="Topic:" value={topic || "—"} />
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }) {
+  return (
+    <div style={styles.summaryRow}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DETAILS MODAL
+═══════════════════════════════════════════════════════════ */
+function SessionDetailsDialog({
+  session,
+  user,
+  open,
+  onClose,
+  onEdit,
+  onChanged,
+  onJoinLive,
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  // eslint-disable-next-line no-unused-vars
-  const [showInvite, setShowInvite] = useState(false);
-  const [data, setData] = useState(group);
-  const [dlg, setDlg] = useState(null);
 
-  useEffect(() => { setData(group); }, [group]);
-
-  // eslint-disable-next-line no-unused-vars
-  const refresh = useCallback(async () => {
-    try {
-      const fresh = await groupSessionService.getDetail(data.id);
-      setData(fresh);
-      onChanged?.(fresh);
-    } catch {}
-  }, [data.id, onChanged]);
+  if (!open || !session) return null;
 
   const userId = user?.id ? String(user.id) : null;
-  const isHost = userId && data.hostId && String(data.hostId) === userId;
-  const myInvite = data.invites.find(
-    (i) => userId && String(i.userId) === userId
-  );
-  const myInviteStatus = myInvite?.status || null;
+  const isHost = userId && session.hostId && String(session.hostId) === userId;
+  const isScheduled = session.status === "scheduled";
+  const editUsed = Boolean(session.editedAt || session.edited_at || localStorage.getItem(`sg_edit_used_${session.id}`));
 
-  const accepted = data.invites.filter((i) => i.status === "accepted");
-  const pending = data.invites.filter((i) => i.status === "pending");
-  const declined = data.invites.filter((i) => i.status === "declined");
+  const participants = [
+    {
+      id: "host",
+      name: session.hostName || "Host",
+      studentId: session.hostStudentId || "",
+      isHost: true,
+    },
+    ...(session.invites || []).map((i) => ({
+      id: i.id || i.userId,
+      userId: i.userId,
+      name: i.name,
+      studentId: i.studentId,
+      status: i.status,
+      isHost: false,
+    })),
+  ];
 
-  // Response-window: true while backend still allows accept/decline/unaccept.
-  // Mirrors the gating in group_session_views.py.
-  const scheduledAt = useMemo(() => {
-    if (!data.date || !data.time) return null;
-    const d = new Date(`${data.date}T${data.time}`);
-    return isNaN(d.getTime()) ? null : d;
-  }, [data.date, data.time]);
-  const isPast = scheduledAt ? scheduledAt.getTime() <= Date.now() : false;
-  const roomOpened = Boolean(data.roomStartedAt);
-
-  // Time-based "session has ended" check. The backend flips status to
-  // 'completed' via the Celery hard-cutoff task and the join-attempt
-  // fallback (group_session_views.join_group_session line ~916), but those
-  // fire at trigger points — if the user has the detail page open at the
-  // exact moment the duration elapses, the status flip arrives via
-  // refresh/broadcast, not by itself. Computing this client-side here
-  // means STATUS and the JOIN ROOM button update instantly without
-  // waiting for a re-fetch, AND it prevents the "click JOIN ROOM, get
-  // 400 from /join/" failure mode that prompted this fix.
-  const isEndedByTime = useMemo(() => {
-    if (data.status === "live" && data.roomStartedAt && data.durationMinutes) {
-      const end =
-        new Date(data.roomStartedAt).getTime() + data.durationMinutes * 60_000;
-      if (!Number.isNaN(end) && Date.now() >= end) return true;
-    }
-    return false;
-  }, [data.status, data.roomStartedAt, data.durationMinutes]);
-
-  // What the UI should treat the status as. Backend may still say "live",
-  // but if duration has elapsed we render it as completed.
-  const effectiveStatus = isEndedByTime ? "completed" : data.status;
-
-  // Host is implicitly accepted, but is the only one who can start the
-  // room. Once the host has opened the room (room_started_at is set and
-  // status has flipped to live), every accepted invitee can join.
-  //
-  // Button label depends on who's looking and what state we're in:
-  //   * host & not yet opened → "Start room"  (gated on >= 1 non-host
-  //                                            invitee having accepted)
-  //   * host & live           → "Join room"
-  //   * invitee accepted & live → "Join room"
-  //   * invitee accepted & scheduled → no button, "waiting for host"
-  //                                    note shown below instead.
-  const acceptedNonHost = accepted.filter(
-    (i) => !data.hostId || String(i.userId) !== String(data.hostId)
-  );
-  const canHostStart =
-    isHost &&
-    effectiveStatus === "scheduled" &&
-    !roomOpened &&
-    !isPast &&
-    acceptedNonHost.length >= 1;
-  const canJoinLive =
-    (isHost || myInviteStatus === "accepted") &&
-    effectiveStatus === "live" &&
-    roomOpened;
-  const canJoin = canHostStart || canJoinLive;
-  const joinLabel = canHostStart ? "START ROOM" : "JOIN ROOM";
-
-  const enterRoom = async () => {
-    setBusy(true); setError("");
+  const decline = async () => {
+    setBusy(true);
+    setError("");
     try {
-      await groupSessionService.joinRoom(data.id);
-      navigate(`/group-session/live/${data.id}`);
+      const fresh = await groupSessionService.declineInvite(session.id);
+      onChanged?.(fresh);
+      onClose();
     } catch (err) {
-      setError(extractApiError(err, "Unable to join the group session right now."));
+      setError(extractApiError(err, "Could not decline this session."));
+    } finally {
       setBusy(false);
     }
   };
 
-  const doAccept = async () => {
-    setBusy(true); setError("");
+  const cancelSession = async () => {
+    if (!window.confirm("Cancel this scheduled session?")) return;
+    setBusy(true);
+    setError("");
     try {
-      const fresh = await groupSessionService.acceptInvite(data.id);
-      setData(fresh); onChanged?.(fresh);
+      const fresh = await groupSessionService.cancelGroupSession(session.id);
+      onChanged?.(fresh);
+      onClose();
     } catch (err) {
-      setError(extractApiError(err, "Failed to accept."));
-    } finally { setBusy(false); }
+      setError(extractApiError(err, "Could not cancel this session."));
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const doDecline = async () => {
-    setBusy(true); setError("");
+  const startSession = async () => {
+    setBusy(true);
+    setError("");
     try {
-      const fresh = await groupSessionService.declineInvite(data.id);
-      setData(fresh); onChanged?.(fresh);
-      setDlg(null);
+      await groupSessionService.joinRoom(session.id);
+      onJoinLive(session.id);
     } catch (err) {
-      setError(extractApiError(err, "Failed to decline."));
-    } finally { setBusy(false); }
-  };
-
-  // Student invitee who previously accepted flips back to 'pending'. The
-  // backend permits this any time before the room actually opens.
-  const doUnaccept = async () => {
-    setBusy(true); setError("");
-    try {
-      const fresh = await groupSessionService.unacceptInvite(data.id);
-      setData(fresh); onChanged?.(fresh);
-      setDlg(null);
-    } catch (err) {
-      setError(extractApiError(err, "Could not cancel your attendance."));
-    } finally { setBusy(false); }
-  };
-
-  const doReinvite = async (uid) => {
-    setBusy(true); setError("");
-    try {
-      const fresh = await groupSessionService.reinvite(data.id, uid);
-      setData(fresh); onChanged?.(fresh);
-    } catch (err) {
-      setError(extractApiError(err, "Failed to re-invite."));
-    } finally { setBusy(false); }
-  };
-
-  const doCancel = async () => {
-    setBusy(true); setError("");
-    try {
-      const fresh = await groupSessionService.cancelGroupSession(data.id);
-      setData(fresh); onChanged?.(fresh);
-      setDlg(null);
-    } catch (err) {
-      setError(extractApiError(err, "Failed to cancel."));
-    } finally { setBusy(false); }
-  };
-
-  const confirmCancelGroup = () => {
-    setDlg({
-      title: "Cancel this group session?",
-      message:
-        "Everyone you invited will be notified that the session is cancelled. " +
-        "This can't be undone.",
-      confirmLabel: "Yes, cancel group session",
-      cancelLabel: "Keep it",
-      danger: true,
-      busy: false,
-      onConfirm: doCancel,
-    });
-  };
-
-  const confirmDecline = () => {
-    setDlg({
-      title: "Decline this invite?",
-      message:
-        "You won't be able to join this group session unless the host sends a new invite.",
-      confirmLabel: "Decline invite",
-      cancelLabel: "Keep it",
-      danger: true,
-      busy: false,
-      onConfirm: doDecline,
-    });
-  };
-
-  const confirmUnaccept = () => {
-    setDlg({
-      title: "Cancel your attendance?",
-      message:
-        "The host and other participants will see you're no longer coming. " +
-        "You can re-accept any time before the room opens.",
-      confirmLabel: "Yes, cancel attendance",
-      cancelLabel: "Keep attending",
-      danger: true,
-      busy: false,
-      onConfirm: doUnaccept,
-    });
+      setError(extractApiError(err, "Unable to start the session right now."));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <div className="sg__detail">
-      <div className="sg__detailBack">
-        <button className="sg__backBtn" onClick={onBack}>‹ Back to Group Sessions</button>
-      </div>
+    <div className="sg__modalOverlay" onClick={() => !busy && onClose()}>
+      <div style={styles.detailsDialog} onClick={(e) => e.stopPropagation()}>
+        <h3 style={styles.dialogTitle}>Session Details</h3>
+        {error && <div className="sg__errorBox">{error}</div>}
 
-      <div className={`sg__statusBar sg__statusBar--${effectiveStatus}`}>
-        <span>STATUS: {statusLabel(effectiveStatus)}</span>
-        {canJoin && (
-          <button
-            className="sg__joinBtn"
-            disabled={busy}
-            onClick={enterRoom}
-          >
-            {joinLabel}
-          </button>
-        )}
-        {isHost && effectiveStatus === "scheduled" && !roomOpened && (
-          <button
-            className="sg__cancelBtn"
-            onClick={confirmCancelGroup}
-            disabled={busy}
-          >
-            Cancel Group Session
-          </button>
-        )}
-      </div>
-
-      {data.status === "cancelled" && (
-        <div className="sg__cancelBanner">
-          <strong>
-            {isHost
-              ? "You cancelled this group session."
-              : "This group session was cancelled by the host."}
-          </strong>
-          {data.cancelReason && (
-            <span className="sg__cancelBannerReason">
-              Reason: {data.cancelReason}
-            </span>
-          )}
+        <div style={styles.detailsGrid}>
+          <SummaryRow label="Date:" value={formatDateLong(session.date)} />
+          <SummaryRow label="Timing:" value={formatTiming(session.time, session.durationMinutes)} />
+          <SummaryRow label="Duration:" value={`${session.durationMinutes || "—"} minutes`} />
+          <SummaryRow label="Participants:" value={`${participants.length} people`} />
         </div>
-      )}
 
-      {/* "Duration elapsed while the user has the page open" — surfaced
-          immediately so we don't have to wait for the next list refresh
-          or for the host to manually close the room. Skipped when the
-          group is already in a terminal state, since those have their
-          own banners above. */}
-      {isEndedByTime && data.status !== "cancelled" && (
-        <div className="sg__cancelBanner sg__cancelBanner--muted">
-          <strong>This group session has ended.</strong>
-          <span className="sg__cancelBannerReason">
-            The scheduled duration has elapsed. It will move to History
-            on the next refresh.
-          </span>
-        </div>
-      )}
-
-      {((data.status === "expired" && !roomOpened) ||
-        (data.status === "scheduled" && isPast && !roomOpened)) && (
-        <div className="sg__cancelBanner sg__cancelBanner--muted">
-          <strong>Not attended.</strong>
-          <span className="sg__cancelBannerReason">
-            The scheduled time has passed and nobody opened the room, so this
-            group session has been moved to History.
-          </span>
-        </div>
-      )}
-
-      {error && <div className="sg__errorBox">{error}</div>}
-
-      <div className="sg__detailBody">
-        <div className="sg__detailLeft">
-          {[
-            ["Subject", data.subjectName],
-            ["Course", data.courseTitle || "—"],
-            ["Topic", data.topic || "—"],
-            ["Host", data.hostName],
-            ["Teacher", data.invitedTeacher || "None"],
-            ["Date", formatDate(data.date)],
-            ["Time", formatTime(data.time)],
-            ["Duration", `${data.durationMinutes} minutes`],
-          ].map(([k, v]) => (
-            <div key={k} className="sg__detailRow">
-              <span className="sg__detailKey">{k}:</span>
-              <span className="sg__detailVal">{v}</span>
+        <div style={styles.detailsParticipantsBox}>
+          {participants.map((p, index) => (
+            <div key={p.id || index} style={styles.detailsParticipantRow}>
+              <span style={styles.participantIndex}>{index + 1}.</span>
+              <span style={{ flex: 1 }}>
+                {p.name || "Participant"}
+                {p.studentId ? ` (${shortId(p.studentId)})` : ""}
+              </span>
+              {p.isHost && <span style={styles.hostLabel}>HOST</span>}
+              {!p.isHost && p.status === "declined" && <span style={styles.declinedLabel}>DECLINED</span>}
             </div>
           ))}
-          {data.cancelReason && (
-            <div className="sg__detailRow">
-              <span className="sg__detailKey">Cancel reason:</span>
-              <span className="sg__detailVal">{data.cancelReason}</span>
-            </div>
-          )}
         </div>
 
-        <div className="sg__detailRight">
-          <div className="sg__sectionHead">
-            Participants ({1 + accepted.length + pending.length + declined.length})
+        <div style={styles.detailsTopic}>
+          <strong>Topic:</strong>
+          <span>{session.topic || "—"}</span>
+        </div>
+
+        <div style={styles.dialogFoot}>
+          <button type="button" style={styles.tealGhostBtn} disabled={busy} onClick={onClose}>
+            Back
+          </button>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {isHost && isScheduled && (
+              <button type="button" style={styles.cancelTextBtn} disabled={busy} onClick={cancelSession}>
+                Cancel Session
+              </button>
+            )}
+
+            {isHost && isScheduled && (
+              <button
+                type="button"
+                style={editUsed ? styles.tealBtnMuted : styles.tealBtn}
+                disabled={busy || editUsed}
+                title={editUsed ? "Can be edited only once" : "Edit session details"}
+                onClick={onEdit}
+              >
+                Edit
+              </button>
+            )}
+
+            {isHost && isScheduled && (
+              <button type="button" style={styles.tealBtn} disabled={busy} onClick={startSession}>
+                Start Session
+              </button>
+            )}
+
+            {!isHost && isScheduled && (
+              <button type="button" style={styles.cancelTextBtn} disabled={busy} onClick={decline}>
+                Decline
+              </button>
+            )}
           </div>
-
-          {/* Host — always implicitly accepted, sits at the top of the
-              list as the source of truth for who started the group. */}
-          <div className="sg__participantList">
-            <div className="sg__participant sg__participant--host">
-              <span className="sg__pAv">{(data.hostName || "?").charAt(0).toUpperCase()}</span>
-              <div className="sg__pInfo">
-                <span className="sg__pName">
-                  {data.hostName}
-                  {isHost && <span className="sg__pSelfTag"> (you)</span>}
-                </span>
-                <span className="sg__pRole">Host · implicitly accepted</span>
-              </div>
-              <span className="sg__pStatusPill sg__pStatusPill--host">Host</span>
-            </div>
-          </div>
-
-          {/* Accepted */}
-          {accepted.length > 0 && (
-            <>
-              <div className="sg__sectionSubHead">
-                ✅ Accepted ({accepted.length})
-              </div>
-              <div className="sg__participantList">
-                {accepted.map((inv) => (
-                  <div key={inv.id} className="sg__participant sg__participant--accepted">
-                    <span className="sg__pAv">{(inv.name || "?").charAt(0).toUpperCase()}</span>
-                    <div className="sg__pInfo">
-                      <span className="sg__pName">
-                        {inv.name}
-                        {userId && String(inv.userId) === userId && (
-                          <span className="sg__pSelfTag"> (you)</span>
-                        )}
-                      </span>
-                      <span className="sg__pRole">
-                        {inv.role === "teacher" ? "Invited teacher" : "Invited student"}
-                        {inv.studentId ? ` · ${shortId(inv.studentId)}` : ""}
-                      </span>
-                    </div>
-                    <span className="sg__pStatusPill sg__pStatusPill--accepted">
-                      Accepted
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Pending */}
-          {pending.length > 0 && (
-            <>
-              <div className="sg__sectionSubHead">
-                ⏳ Pending ({pending.length})
-              </div>
-              <div className="sg__participantList">
-                {pending.map((inv) => (
-                  <div key={inv.id} className="sg__participant sg__participant--pending">
-                    <span className="sg__pAv">{(inv.name || "?").charAt(0).toUpperCase()}</span>
-                    <div className="sg__pInfo">
-                      <span className="sg__pName">
-                        {inv.name}
-                        {userId && String(inv.userId) === userId && (
-                          <span className="sg__pSelfTag"> (you)</span>
-                        )}
-                      </span>
-                      <span className="sg__pRole">
-                        {inv.role === "teacher" ? "Invited teacher" : "Invited student"}
-                        {inv.studentId ? ` · ${shortId(inv.studentId)}` : ""}
-                      </span>
-                    </div>
-                    <span className="sg__pStatusPill sg__pStatusPill--pending">
-                      Pending
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Declined */}
-          {declined.length > 0 && (
-            <>
-              <div className="sg__sectionSubHead">
-                ✗ Declined ({declined.length})
-              </div>
-              <div className="sg__participantList">
-                {declined.map((inv) => (
-                  <div key={inv.id} className="sg__participant sg__participant--declined">
-                    <span className="sg__pAv">{(inv.name || "?").charAt(0).toUpperCase()}</span>
-                    <div className="sg__pInfo">
-                      <span className="sg__pName">
-                        {inv.name}
-                        {userId && String(inv.userId) === userId && (
-                          <span className="sg__pSelfTag"> (you)</span>
-                        )}
-                      </span>
-                      <span className="sg__pRole">
-                        {inv.role === "teacher" ? "Invited teacher" : "Invited student"}
-                        {inv.studentId ? ` · ${shortId(inv.studentId)}` : ""}
-                      </span>
-                    </div>
-                    <span className="sg__pStatusPill sg__pStatusPill--declined">
-                      Declined
-                    </span>
-                    {isHost &&
-                     data.status === "scheduled" &&
-                     !inv.reinvitedAt &&
-                     inv.declineCount < 2 && (
-                      <button
-                        className="sg__reinviteBtn"
-                        disabled={busy}
-                        onClick={() => doReinvite(inv.userId)}
-                      >
-                        Re-invite
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {isHost && data.status === "scheduled" && (
-            <InviteMoreInline
-              session={data}
-              onDone={(fresh) => { setData(fresh); onChanged?.(fresh); }}
-            />
-          )}
         </div>
       </div>
-
-      {/* Invitee actions */}
-      {!isHost &&
-        myInviteStatus === "pending" &&
-        data.status === "scheduled" &&
-        !isPast && (
-          <div className="sg__inviteeBar">
-            <button
-              className="sg__btnPrimary"
-              disabled={busy}
-              onClick={doAccept}
-            >
-              Accept
-            </button>
-            <button
-              className="sg__btnGhost"
-              disabled={busy}
-              onClick={confirmDecline}
-            >
-              Decline
-            </button>
-          </div>
-      )}
-
-      {!isHost &&
-        myInviteStatus === "pending" &&
-        data.status === "scheduled" &&
-        isPast && (
-          <div className="sg__inviteeNote sg__inviteeNote--past">
-            The scheduled start time has passed, so you can no longer respond
-            to this invite. It will move to History automatically.
-          </div>
-      )}
-
-      {!isHost &&
-        myInviteStatus === "accepted" &&
-        data.status === "scheduled" &&
-        !roomOpened && (
-          <div className="sg__inviteeBar">
-            <span className="sg__inviteeNote sg__inviteeNote--inline">
-              You're in. Waiting for {data.hostName || "the host"} to start
-              the room — only the host can open it. You'll be able to join
-              the moment they do.
-            </span>
-            <button
-              className="sg__btnGhost"
-              disabled={busy}
-              onClick={confirmUnaccept}
-            >
-              Cancel attendance
-            </button>
-          </div>
-      )}
-
-      {!isHost && myInviteStatus === "declined" && (
-        <div className="sg__inviteeNote">
-          You declined this group session{data.status === "scheduled" ? "" : " (it has already moved on)"}.
-        </div>
-      )}
-
-      <ConfirmDialog
-        dialog={dlg ? { ...dlg, busy } : null}
-        onClose={() => (busy ? null : setDlg(null))}
-      />
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   INVITE-MORE (host, inline)
+   JOIN / HOST DIALOGS
 ═══════════════════════════════════════════════════════════ */
-function InviteMoreInline({ session, onDone }) {
-  const [open, setOpen] = useState(false);
-  const [picked, setPicked] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
+function JoinSessionDialog({ open, busy, error, onClose, onEnter }) {
+  const [code, setCode] = useState("");
 
-  const existingIds = session.invites.map((i) => String(i.userId));
-  const currentCount = session.invites.length;
-  const remaining = session.maxInvitees - currentCount;
+  useEffect(() => {
+    if (open) setCode("");
+  }, [open]);
 
-  // The picker queries /sessions/subjects/<id>/students/, which restricts
-  // results to students enrolled in the subject's course. `subjectId` is
-  // mapped through transformGroupSession; the legacy fallback covers any
-  // older session shape that hasn't gone through the new transform.
-  const inviteSubjectId = session.subjectId || session.subject_id || null;
-
-  const submit = async () => {
-    if (picked.length === 0) return;
-    setBusy(true); setErr("");
-    try {
-      const fresh = await groupSessionService.inviteMore(
-        session.id, picked.map((p) => p.user_id),
-      );
-      onDone?.(fresh);
-      setPicked([]); setOpen(false);
-    } catch (e) {
-      setErr(extractApiError(e, "Failed to invite."));
-    } finally { setBusy(false); }
-  };
-
-  if (remaining <= 0) return null;
+  if (!open) return null;
 
   return (
-    <div className="sg__inviteMore">
-      {!open ? (
-        <button className="sg__btnGhost" onClick={() => setOpen(true)}>
-          + Invite more ({remaining} slot{remaining === 1 ? "" : "s"} left)
+    <div className="sg__modalOverlay" onClick={() => !busy && onClose()}>
+      <div style={styles.joinDialog} onClick={(e) => e.stopPropagation()}>
+        <h3 style={styles.dialogTitle}>Join Session</h3>
+
+        <label style={{ ...styles.compactLabel, textAlign: "center" }}>Enter Session ID:</label>
+        <input
+          className="sg__input"
+          style={styles.joinInput}
+          value={code}
+          autoFocus
+          placeholder="SHR7J2"
+          onChange={(e) => setCode(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && code.trim() && !busy) onEnter(code.trim());
+          }}
+        />
+
+        {error && <div style={styles.joinError}>Error:<br />{error}</div>}
+
+        <div style={styles.dialogFootCenter}>
+          <button type="button" style={styles.tealGhostBtn} disabled={busy} onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            style={styles.tealBtn}
+            disabled={busy || !code.trim()}
+            onClick={() => onEnter(code.trim())}
+          >
+            {busy ? "Joining…" : "Join"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HostSessionDialog({ open, busy, error, onClose, onInstant, onScheduled }) {
+  if (!open) return null;
+
+  return (
+    <div className="sg__modalOverlay" onClick={() => !busy && onClose()}>
+      <div className="sg__smallModal" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="sg__modalClose"
+          onClick={() => !busy && onClose()}
+          aria-label="Close"
+        >
+          ✕
         </button>
-      ) : (
-        <>
-          <p className="sg__hint">
-            Only classmates enrolled in the same course who take this subject
-            can be invited. They'll need to accept the invitation before
-            joining the room.
-          </p>
-          <div className="sg__pillRow">
-            {picked.map((p) => (
-              <div key={p.user_id} className="sg__pill">
-                <span className="sg__pillAv">{(p.name || "?").charAt(0).toUpperCase()}</span>
-                <span className="sg__pillName">{p.name}</span>
-                <button
-                  className="sg__pillX"
-                  onClick={() => setPicked(picked.filter((x) => x.user_id !== p.user_id))}
-                >×</button>
-              </div>
-            ))}
-          </div>
-          <InviteePicker
-            subjectId={inviteSubjectId}
-            excludeUserIds={[...existingIds, ...picked.map((p) => p.user_id)]}
-            onSelect={(s) => {
-              if (picked.length >= remaining) return;
-              if (!picked.find((x) => x.user_id === s.user_id)) {
-                setPicked([...picked, s]);
-              }
-            }}
-          />
-          {err && <div className="sg__errorBox">{err}</div>}
-          <div className="sg__inviteMoreFoot">
-            <button className="sg__btnGhost" onClick={() => { setOpen(false); setPicked([]); setErr(""); }}>
-              Cancel
-            </button>
-            <button
-              className="sg__btnPrimary"
-              disabled={picked.length === 0 || busy}
-              onClick={submit}
-            >
-              {busy ? "Inviting…" : `Send ${picked.length} invite${picked.length === 1 ? "" : "s"}`}
-            </button>
-          </div>
-        </>
-      )}
+
+        <h3 className="sg__modalTitle">Host Session</h3>
+        <p className="sg__hint sg__modalHint">Choose how you want to host your group session.</p>
+        {error && <div className="sg__errorBox">{error}</div>}
+
+        <div className="sg__hostChoiceList">
+          <button type="button" className="sg__hostChoice" disabled={busy} onClick={onInstant}>
+            <strong>Instant Session</strong>
+            <span>Go LIVE directly and share the session ID with students.</span>
+          </button>
+
+          <button type="button" className="sg__hostChoice" disabled={busy} onClick={onScheduled}>
+            <strong>Scheduled Session</strong>
+            <span>Create a scheduled group session. It stays Scheduled until the host starts it.</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1411,343 +896,683 @@ function InviteMoreInline({ session, onDone }) {
 ═══════════════════════════════════════════════════════════ */
 export default function GroupSessions() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState("upcoming");
+  const { user } = useAuth();
+
+  const [subjectGroups, setSubjectGroups] = useState([]);
+  const [selectedCourseId, setSelectedCourseId] = useState("");
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
-  const [showInstantMenu, setShowInstantMenu] = useState(false);
-  const [instantBusy, setInstantBusy] = useState(false);
-  const [instantError, setInstantError] = useState("");
-  const [selected, setSelected] = useState(null);
-  const [pendingInvites, setPendingInvites] = useState(0);
 
-  // "+ Create Instant Meeting" inside the Instant Meeting popup.
-  // POSTs to /group-sessions/instant/ and walks the host straight into
-  // the live room — no invitees required (backend bypass already in place).
-  const startInstantMeeting = async () => {
-    setInstantBusy(true);
-    setInstantError("");
-    try {
-      const sg = await groupSessionService.createInstant({});
-      setShowInstantMenu(false);
-      navigate(`/group-session/live/${sg.id}`);
-    } catch (err) {
-      setInstantError(extractApiError(err, "Could not start an instant meeting."));
-    } finally {
-      setInstantBusy(false);
-    }
-  };
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [showHostDialog, setShowHostDialog] = useState(false);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [detailsSession, setDetailsSession] = useState(null);
+  const [editingSession, setEditingSession] = useState(null);
 
-  // "Enter Room ID" inside the Instant Meeting popup.
-  // Looks up the session by short_code (or UUID), then navigates into the
-  // live room with the resolved session id. The actual LiveKit token is
-  // still issued by /join/ when the live route mounts.
-  const enterRoomByCode = async (code) => {
-    if (!code) return;
-    setInstantBusy(true);
-    setInstantError("");
-    try {
-      const { session_id } = await groupSessionService.joinByCode(code);
-      setShowInstantMenu(false);
-      navigate(`/group-session/live/${session_id}`);
-    } catch (err) {
-      setInstantError(extractApiError(err, "Couldn't join that room."));
-    } finally {
-      setInstantBusy(false);
-    }
-  };
+  const [joinBusy, setJoinBusy] = useState(false);
+  const [hostBusy, setHostBusy] = useState(false);
+  const [joinError, setJoinError] = useState("");
+  const [hostError, setHostError] = useState("");
 
-  // History selection state — Clear All and Select / Delete N for cleanup.
-  // Reset whenever the tab changes so we don't carry stale selections in.
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState(() => new Set());
-  const [historyBusy, setHistoryBusy] = useState(false);
-  const [historyDlg, setHistoryDlg] = useState(null);
-
-  // Ticker that bumps every 15s while the Upcoming tab is showing. Used
-  // only to trigger the isEndedNow re-evaluation in the useMemo below —
-  // not for re-fetching, since the time-based filter is a pure client
-  // computation. The list itself still refreshes on tab change / explicit
-  // user action.
-  // eslint-disable-next-line no-unused-vars
+  // Small ticker so ended scheduled/live cards update without page reload.
   const [_tick, setTick] = useState(0);
   useEffect(() => {
-    if (tab !== "upcoming") return undefined;
     const id = setInterval(() => setTick((t) => t + 1), 15_000);
     return () => clearInterval(id);
-  }, [tab]);
+  }, []);
 
-  // Reset selection state whenever the tab switches.
   useEffect(() => {
-    setSelectMode(false);
-    setSelectedIds(new Set());
-  }, [tab]);
+    let cancelled = false;
+    groupSessionService.getMySubjects()
+      .then((data) => {
+        if (cancelled) return;
+        const list = data || [];
+        setSubjectGroups(list);
+        if (!selectedCourseId && list.length > 0) setSelectedCourseId(String(list[0].course_id));
+      })
+      .catch(() => {
+        if (!cancelled) setSubjectGroups([]);
+      });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const loadGroups = useCallback(async (targetTab = tab) => {
+  const selectedCourse = useMemo(() => {
+    return subjectGroups.find((g) => String(g.course_id) === String(selectedCourseId)) || null;
+  }, [subjectGroups, selectedCourseId]);
+
+  const selectedSubjectId = useMemo(() => {
+    return selectedCourse?.subjects?.[0]?.id || "";
+  }, [selectedCourse]);
+
+  const loadGroups = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await groupSessionService.getMyGroupSessions(targetTab);
-      setGroups(data);
+      const [upcoming, invites] = await Promise.all([
+        groupSessionService.getMyGroupSessions("upcoming"),
+        groupSessionService.getMyGroupSessions("invites"),
+      ]);
+
+      const merged = new Map();
+      [...(upcoming || []), ...(invites || [])].forEach((g) => {
+        if (g?.id) merged.set(g.id, g);
+      });
+
+      setGroups(Array.from(merged.values()));
     } catch {
       setGroups([]);
     } finally {
       setLoading(false);
     }
-  }, [tab]);
-
-  // Pending invites count for the tab badge
-  const refreshPendingCount = useCallback(async () => {
-    try {
-      const data = await groupSessionService.getMyGroupSessions("invites");
-      setPendingInvites((data || []).length);
-    } catch {
-      setPendingInvites(0);
-    }
   }, []);
 
-  useEffect(() => { loadGroups(tab); }, [tab, loadGroups]);
-  useEffect(() => { refreshPendingCount(); }, [refreshPendingCount]);
+  useEffect(() => {
+    loadGroups();
+  }, [loadGroups]);
 
-  // Visible cards = backend response minus time-expired ones on Upcoming.
-  // _tick is referenced via setTick → state change → re-render, which
-  // re-runs isEndedNow with a fresh Date.now(). On History/Invitations
-  // tabs we pass through unchanged.
   const visibleGroups = useMemo(() => {
-    if (tab !== "upcoming") return groups;
-    return groups.filter((g) => !isEndedNow(g));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groups, tab, _tick]);
-
-  const handleCreated = (sg) => {
-    setTab("upcoming");
-    loadGroups("upcoming");
-    setSelected(sg);
-  };
-
-  const handleChanged = () => {
-    loadGroups(tab);
-    refreshPendingCount();
-  };
-
-  const toggleSelectId = (id) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const exitSelectMode = () => {
-    setSelectMode(false);
-    setSelectedIds(new Set());
-  };
-
-  const deleteSelected = async () => {
-    if (selectedIds.size === 0) return;
-    setHistoryBusy(true);
-    try {
-      await groupSessionService.clearHistory({
-        sessionIds: Array.from(selectedIds),
+    const active = groups
+      .filter((g) => !isEndedNow(g))
+      .filter((g) => {
+        if (!selectedCourseId) return true;
+        if (!g.courseId && !g.courseTitle) return true;
+        return String(g.courseId) === String(selectedCourseId) ||
+               String(g.courseTitle) === String(selectedCourse?.course_label);
       });
-      exitSelectMode();
-      loadGroups("history");
-    } catch {
-      // Errors here are rare (auth/transient) — swallow and let the user
-      // try again. A toast system would be ideal but the page doesn't have
-      // one wired in for this surface yet.
-    } finally {
-      setHistoryBusy(false);
-      setHistoryDlg(null);
-    }
-  };
 
-  const deleteAllHistory = async () => {
-    setHistoryBusy(true);
+    return active.sort((a, b) => {
+      const order = { live: 0, scheduled: 1, completed: 2, cancelled: 3, expired: 4 };
+      const aOrder = order[a.status] ?? 9;
+      const bOrder = order[b.status] ?? 9;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+
+      const aTime = new Date(`${a.date || "9999-12-31"}T${a.time || "23:59"}`).getTime();
+      const bTime = new Date(`${b.date || "9999-12-31"}T${b.time || "23:59"}`).getTime();
+      return (Number.isNaN(aTime) ? Infinity : aTime) - (Number.isNaN(bTime) ? Infinity : bTime);
+    });
+  }, [groups, selectedCourseId, selectedCourse, _tick]);
+
+  const refreshOne = async (sessionId) => {
     try {
-      await groupSessionService.clearHistory({ all: true });
-      exitSelectMode();
-      loadGroups("history");
+      const fresh = await groupSessionService.getDetail(sessionId);
+      setGroups((prev) => prev.map((g) => (g.id === sessionId ? fresh : g)));
+      setDetailsSession((current) => (current?.id === sessionId ? fresh : current));
+      return fresh;
     } catch {
-      // see note above
-    } finally {
-      setHistoryBusy(false);
-      setHistoryDlg(null);
+      await loadGroups();
+      return null;
     }
   };
 
-  const confirmDeleteSelected = () => {
-    setHistoryDlg({
-      title: `Delete ${selectedIds.size} from history?`,
-      message:
-        "These group sessions will disappear from your History. " +
-        "Other participants and the host will still see them.",
-      confirmLabel: `Delete ${selectedIds.size}`,
-      cancelLabel: "Keep",
-      danger: true,
-      onConfirm: deleteSelected,
-    });
+  const openCard = async (group) => {
+    if (group.status === "live") {
+      navigate(`/group-session/live/${group.id}`);
+      return;
+    }
+
+    try {
+      const fresh = await groupSessionService.getDetail(group.id);
+      setDetailsSession(fresh);
+    } catch {
+      setDetailsSession(group);
+    }
   };
 
-  const confirmDeleteAll = () => {
-    setHistoryDlg({
-      title: "Clear all history?",
-      message:
-        "Every past group session in your History will be removed from your " +
-        "view. Other participants and the host will still see them. " +
-        "This can't be undone.",
-      confirmLabel: "Clear all",
-      cancelLabel: "Keep",
-      danger: true,
-      onConfirm: deleteAllHistory,
-    });
+  const startInstantMeeting = async () => {
+    setHostBusy(true);
+    setHostError("");
+    try {
+      const sg = await groupSessionService.createInstant({});
+      setShowHostDialog(false);
+      navigate(`/group-session/live/${sg.id}`);
+    } catch (err) {
+      setHostError(extractApiError(err, "Could not start an instant session."));
+    } finally {
+      setHostBusy(false);
+    }
   };
 
-  if (selected) {
-    return (
-      <div className="sg__page">
-        <PageHeader title="Group Sessions" />
-        <GroupSessionDetail
-          group={selected}
-          onBack={() => { setSelected(null); handleChanged(); }}
-          onChanged={(fresh) => { setSelected(fresh); handleChanged(); }}
-        />
-      </div>
-    );
-  }
+  const enterRoomByCode = async (code) => {
+    if (!code) return;
+    setJoinBusy(true);
+    setJoinError("");
+    try {
+      const { session_id } = await groupSessionService.joinByCode(code);
+      setShowJoinDialog(false);
+      navigate(`/group-session/live/${session_id}`);
+    } catch (err) {
+      setJoinError(normalizeJoinError(err));
+    } finally {
+      setJoinBusy(false);
+    }
+  };
 
-  const isHistory = tab === "history";
+  const openScheduledSession = () => {
+    setShowHostDialog(false);
+    setHostError("");
+    if (!selectedSubjectId) {
+      setHostError("Please select a course before scheduling a session.");
+      setShowHostDialog(true);
+      return;
+    }
+    setShowScheduleDialog(true);
+  };
+
+  const handleCreated = (created) => {
+    setGroups((prev) => [created, ...prev.filter((g) => g.id !== created.id)]);
+    loadGroups();
+  };
+
+  const handleUpdated = (fresh) => {
+    if (fresh?.id) {
+      setGroups((prev) => prev.map((g) => (g.id === fresh.id ? fresh : g)));
+      setDetailsSession(fresh);
+    }
+    loadGroups();
+  };
+
+  const userInitial = getUserInitial(user);
 
   return (
-    <div className="sg__page">
+    <div className="sg__page sg__page--figma">
       <PageHeader title="Group Sessions" />
 
-      <div className="sg__header">
-        <div className="sg__tabs">
-          <button
-            className={`sg__tab ${tab === "upcoming" ? "active" : ""}`}
-            onClick={() => setTab("upcoming")}
-          >Upcoming</button>
-          <button
-            className={`sg__tab ${tab === "invites" ? "active" : ""}`}
-            onClick={() => setTab("invites")}
-          >
-            Invitations
-            {pendingInvites > 0 && (
-              <span className="sg__tabBadge">{pendingInvites}</span>
-            )}
-          </button>
-          <button
-            className={`sg__tab ${tab === "history" ? "active" : ""}`}
-            onClick={() => setTab("history")}
-          >History</button>
+
+      <div className="sg__figmaPanel">
+        <div className="sg__figmaPanelHeader">
+          <h2>Group Sessions</h2>
+          <div className="sg__figmaActions">
+            <button
+              type="button"
+              className="sg__figmaActionBtn"
+              onClick={() => { setJoinError(""); setShowJoinDialog(true); }}
+            >
+              Join Session
+            </button>
+            <button
+              type="button"
+              className="sg__figmaActionBtn"
+              onClick={() => { setHostError(""); setShowHostDialog(true); }}
+            >
+              Host Session
+            </button>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button className="sg__btnPrimary" onClick={() => setShowCreate(true)}>
-            + Create Group Session
-          </button>
-          <button
-            className="sg__btnPrimary"
-            onClick={() => { setInstantError(""); setShowInstantMenu(true); }}
-            style={{ background: "#1a73e8" }}
-            title="Start a new instant meeting or join one with a room code"
-          >
-            Instant Meeting
-          </button>
-        </div>
+
+        {loading ? (
+          <div className="sg__loading sg__loading--figma">Loading group sessions…</div>
+        ) : visibleGroups.length === 0 ? (
+          <div className="sg__empty sg__empty--figma">
+            No group sessions yet. Use <strong>Host Session</strong> to create one, or <strong>Join Session</strong> with a session ID.
+          </div>
+        ) : (
+          <div className="sg__figmaGrid">
+            {visibleGroups.map((g) => (
+              <GroupSessionCard key={g.id} group={g} onOpen={openCard} />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* History-tab cleanup controls. Only render when there's actually
-          something to clear, otherwise they'd be misleading. */}
-      {isHistory && !loading && groups.length > 0 && (
-        <div className="sg__historyTools">
-          {!selectMode ? (
-            <>
-              <button
-                className="sg__btnGhost"
-                onClick={() => setSelectMode(true)}
-                disabled={historyBusy}
-              >
-                Select
-              </button>
-              <button
-                className="sg__btnDangerGhost"
-                onClick={confirmDeleteAll}
-                disabled={historyBusy}
-              >
-                Clear All History
-              </button>
-            </>
-          ) : (
-            <>
-              <span className="sg__historyToolsLabel">
-                {selectedIds.size === 0
-                  ? "Select cards to delete"
-                  : `${selectedIds.size} selected`}
-              </span>
-              <button
-                className="sg__btnDanger"
-                onClick={confirmDeleteSelected}
-                disabled={historyBusy || selectedIds.size === 0}
-              >
-                Delete Selected
-              </button>
-              <button
-                className="sg__btnGhost"
-                onClick={exitSelectMode}
-                disabled={historyBusy}
-              >
-                Cancel
-              </button>
-            </>
-          )}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="sg__loading">Loading group sessions…</div>
-      ) : visibleGroups.length === 0 ? (
-        <div className="sg__empty">
-          {tab === "upcoming" && "No upcoming group sessions. Create one to get started!"}
-          {tab === "invites" && "You have no pending invitations."}
-          {tab === "history" && "No past group sessions yet."}
-        </div>
-      ) : (
-        <div className="sg__grid">
-          {visibleGroups.map((g) => (
-            <GroupSessionCard
-              key={g.id}
-              group={g}
-              onOpen={setSelected}
-              selectMode={isHistory && selectMode}
-              selected={selectedIds.has(g.id)}
-              onToggleSelect={toggleSelectId}
-            />
-          ))}
-        </div>
-      )}
-
-      {showCreate && (
-        <CreateGroupSessionModal
-          onClose={() => setShowCreate(false)}
-          onCreated={handleCreated}
-        />
-      )}
-
-      <ConfirmDialog
-        dialog={historyDlg ? { ...historyDlg, busy: historyBusy } : null}
-        onClose={() => (historyBusy ? null : setHistoryDlg(null))}
+      <JoinSessionDialog
+        open={showJoinDialog}
+        busy={joinBusy}
+        error={joinError}
+        onClose={() => { if (!joinBusy) { setShowJoinDialog(false); setJoinError(""); } }}
+        onEnter={enterRoomByCode}
       />
 
-      {/* Instant Meeting popup — Create | Enter Room ID | ✕ */}
-      <InstantMeetingDialog
-        open={showInstantMenu}
-        busy={instantBusy}
-        error={instantError}
-        onClose={() => { if (!instantBusy) { setShowInstantMenu(false); setInstantError(""); } }}
-        onCreate={startInstantMeeting}
-        onEnter={enterRoomByCode}
+      <HostSessionDialog
+        open={showHostDialog}
+        busy={hostBusy}
+        error={hostError}
+        onClose={() => { if (!hostBusy) { setShowHostDialog(false); setHostError(""); } }}
+        onInstant={startInstantMeeting}
+        onScheduled={openScheduledSession}
+      />
+
+      <ScheduleSessionModal
+        mode="create"
+        open={showScheduleDialog}
+        selectedSubjectId={selectedSubjectId}
+        onClose={() => setShowScheduleDialog(false)}
+        onCreated={handleCreated}
+      />
+
+      <SessionDetailsDialog
+        open={Boolean(detailsSession)}
+        session={detailsSession}
+        user={user}
+        onClose={() => setDetailsSession(null)}
+        onEdit={() => {
+          setEditingSession(detailsSession);
+          setDetailsSession(null);
+        }}
+        onChanged={(fresh) => {
+          if (fresh?.id) handleUpdated(fresh);
+          else loadGroups();
+        }}
+        onJoinLive={(sessionId) => navigate(`/group-session/live/${sessionId}`)}
+      />
+
+      <ScheduleSessionModal
+        mode="edit"
+        open={Boolean(editingSession)}
+        initialSession={editingSession}
+        selectedSubjectId={editingSession?.subjectId || selectedSubjectId}
+        onClose={() => {
+          if (editingSession) refreshOne(editingSession.id);
+          setEditingSession(null);
+        }}
+        onUpdated={(fresh) => {
+          setEditingSession(null);
+          handleUpdated(fresh);
+        }}
       />
     </div>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════
+   INLINE STYLES FOR FIGMA DIALOGS
+   These avoid requiring another CSS paste for the modal layout.
+═══════════════════════════════════════════════════════════ */
+const styles = {
+  figmaDialog: {
+    width: "min(92vw, 430px)",
+    background: "#eef7fb",
+    borderRadius: 10,
+    padding: "24px 28px 20px",
+    boxShadow: "0 20px 60px rgba(15,23,42,0.28)",
+    boxSizing: "border-box",
+  },
+  detailsDialog: {
+    width: "min(92vw, 430px)",
+    background: "#eef7fb",
+    borderRadius: 10,
+    padding: "24px 28px 20px",
+    boxShadow: "0 20px 60px rgba(15,23,42,0.28)",
+    boxSizing: "border-box",
+  },
+  joinDialog: {
+    width: "min(92vw, 250px)",
+    background: "#eef7fb",
+    borderRadius: 10,
+    padding: "24px 22px 18px",
+    boxShadow: "0 20px 60px rgba(15,23,42,0.28)",
+    boxSizing: "border-box",
+    textAlign: "center",
+  },
+  dialogTitle: {
+    margin: "0 0 18px",
+    textAlign: "center",
+    color: "#0f172a",
+    fontSize: 16,
+    fontWeight: 800,
+  },
+  stepWrap: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 0,
+    marginBottom: 20,
+  },
+  stepItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 5,
+  },
+  stepCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: "50%",
+    border: "1px solid #a8b8c0",
+    color: "#94a3b8",
+    background: "#fff",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 10,
+    fontWeight: 800,
+  },
+  stepCircleActive: {
+    width: 18,
+    height: 18,
+    borderRadius: "50%",
+    border: "1px solid #007181",
+    color: "#fff",
+    background: "#007181",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 10,
+    fontWeight: 800,
+  },
+  stepText: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: "#94a3b8",
+  },
+  stepTextActive: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "#007181",
+  },
+  stepLine: {
+    width: 38,
+    height: 1,
+    background: "#99aab3",
+    display: "inline-block",
+    margin: "0 7px",
+  },
+  formArea: {
+    padding: "0 4px",
+  },
+  inlineField: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 10,
+    flexWrap: "wrap",
+  },
+  compactLabel: {
+    fontSize: 12,
+    color: "#0f172a",
+    fontWeight: 700,
+    marginBottom: 6,
+    display: "block",
+  },
+  dateInput: {
+    width: 160,
+    height: 28,
+    padding: "3px 8px",
+    fontSize: 12,
+  },
+  timeInput: {
+    width: 100,
+    height: 28,
+    padding: "3px 8px",
+    fontSize: 12,
+  },
+  endTimeHint: {
+    fontSize: 11,
+    color: "#64748b",
+    fontWeight: 700,
+  },
+  durationRow: {
+    display: "flex",
+    gap: 18,
+    margin: "8px 0 14px",
+    flexWrap: "wrap",
+  },
+  durationBtn: {
+    border: "none",
+    background: "#2d83a0",
+    color: "#fff",
+    borderRadius: 5,
+    padding: "7px 14px",
+    fontSize: 11,
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  durationBtnActive: {
+    border: "none",
+    background: "#007181",
+    color: "#fff",
+    borderRadius: 5,
+    padding: "7px 14px",
+    fontSize: 11,
+    fontWeight: 800,
+    cursor: "pointer",
+    boxShadow: "0 0 0 2px rgba(0,113,129,0.22)",
+  },
+  topicInput: {
+    height: 30,
+    fontSize: 12,
+  },
+  dialogFoot: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 18,
+  },
+  dialogFootCenter: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 18,
+  },
+  tealBtn: {
+    border: "none",
+    background: "#008a99",
+    color: "#fff",
+    borderRadius: 5,
+    padding: "8px 16px",
+    fontSize: 12,
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  tealBtnMuted: {
+    border: "none",
+    background: "#94a3b8",
+    color: "#fff",
+    borderRadius: 5,
+    padding: "8px 16px",
+    fontSize: 12,
+    fontWeight: 800,
+    cursor: "not-allowed",
+    opacity: 0.75,
+  },
+  tealGhostBtn: {
+    border: "none",
+    background: "#008a99",
+    color: "#fff",
+    borderRadius: 5,
+    padding: "8px 16px",
+    fontSize: 12,
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  cancelTextBtn: {
+    border: "1px solid #fecaca",
+    background: "#fff",
+    color: "#dc2626",
+    borderRadius: 5,
+    padding: "7px 12px",
+    fontSize: 12,
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  studentSearchLine: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
+  participantListBox: {
+    maxHeight: 165,
+    overflowY: "auto",
+    paddingRight: 6,
+    marginTop: 10,
+  },
+  participantEditRow: {
+    display: "grid",
+    gridTemplateColumns: "24px 1fr 26px",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 7,
+    fontSize: 12,
+  },
+  participantIndex: {
+    color: "#0f172a",
+    fontWeight: 700,
+    fontSize: 12,
+  },
+  participantNameBox: {
+    background: "#fff",
+    border: "1px solid #9fb5bd",
+    borderRadius: 4,
+    padding: "5px 8px",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  removeBtn: {
+    border: "none",
+    background: "#2d83a0",
+    color: "#fff",
+    borderRadius: 4,
+    height: 24,
+    fontSize: 12,
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  participantCount: {
+    textAlign: "center",
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#0f172a",
+    marginTop: 10,
+  },
+  noParticipants: {
+    textAlign: "center",
+    color: "#64748b",
+    fontSize: 12,
+    padding: "18px 0",
+  },
+  searchDrop: {
+    position: "absolute",
+    top: "calc(100% + 4px)",
+    left: 0,
+    right: 0,
+    background: "#fff",
+    border: "1px solid #dbe7eb",
+    borderRadius: 8,
+    boxShadow: "0 10px 24px rgba(15,23,42,0.16)",
+    zIndex: 20,
+    maxHeight: 220,
+    overflowY: "auto",
+  },
+  searchRow: {
+    width: "100%",
+    border: "none",
+    background: "#fff",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "8px 10px",
+    cursor: "pointer",
+    textAlign: "left",
+  },
+  searchRowMuted: {
+    padding: "10px 12px",
+    color: "#94a3b8",
+    fontSize: 12,
+    textAlign: "left",
+  },
+  searchAvatar: {
+    width: 26,
+    height: 26,
+    borderRadius: "50%",
+    background: "#008a99",
+    color: "#fff",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 12,
+    fontWeight: 800,
+  },
+  searchName: {
+    display: "block",
+    fontSize: 12,
+    color: "#0f172a",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  searchSub: {
+    display: "block",
+    color: "#64748b",
+    fontSize: 10,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  searchAdd: {
+    color: "#008a99",
+    fontWeight: 800,
+    fontSize: 11,
+  },
+  summaryBox: {
+    marginTop: 10,
+    padding: "10px 4px",
+  },
+  summaryRow: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 18,
+    fontSize: 12,
+    marginBottom: 9,
+    color: "#0f172a",
+  },
+  detailsGrid: {
+    padding: "4px 0 6px",
+  },
+  detailsParticipantsBox: {
+    maxHeight: 165,
+    overflowY: "auto",
+    paddingRight: 6,
+    margin: "8px 0 12px",
+  },
+  detailsParticipantRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 12,
+    color: "#0f172a",
+    padding: "4px 0",
+  },
+  hostLabel: {
+    background: "#2d83a0",
+    color: "#fff",
+    borderRadius: 4,
+    padding: "3px 8px",
+    fontSize: 10,
+    fontWeight: 800,
+  },
+  declinedLabel: {
+    background: "#fee2e2",
+    color: "#b91c1c",
+    borderRadius: 4,
+    padding: "3px 8px",
+    fontSize: 10,
+    fontWeight: 800,
+  },
+  detailsTopic: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 3,
+    fontSize: 12,
+    color: "#0f172a",
+    marginTop: 8,
+  },
+  joinInput: {
+    width: 100,
+    height: 28,
+    padding: "3px 8px",
+    fontSize: 12,
+    textAlign: "center",
+    margin: "0 auto",
+  },
+  joinError: {
+    color: "#dc2626",
+    fontSize: 12,
+    fontWeight: 700,
+    lineHeight: 1.45,
+    marginTop: 12,
+    textAlign: "center",
+  },
+};
