@@ -22,6 +22,37 @@ import "../styles/groupSessions.css";
 /* ═══════════════════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════════════════ */
+
+function getLocalDateValue(dateObj = new Date()) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const d = String(dateObj.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function getLocalTimeValue(dateObj = new Date()) {
+  return `${String(dateObj.getHours()).padStart(2, "0")}:${String(dateObj.getMinutes()).padStart(2, "0")}`;
+}
+
+function getDefaultFutureTime(minutesAhead = 10) {
+  const d = new Date(Date.now() + minutesAhead * 60_000);
+  // Round up to the next 5-minute mark so the value looks clean.
+  const roundedMinutes = Math.ceil(d.getMinutes() / 5) * 5;
+  d.setMinutes(roundedMinutes, 0, 0);
+  return getLocalTimeValue(d);
+}
+
+function getScheduleStartMs(date, time) {
+  if (!date || !time) return NaN;
+  return new Date(`${date}T${time}:00`).getTime();
+}
+
+function isScheduleInPast(date, time, bufferMinutes = 2) {
+  const start = getScheduleStartMs(date, time);
+  if (Number.isNaN(start)) return false;
+  return start <= Date.now() + bufferMinutes * 60_000;
+}
+
 function formatDate(d) {
   if (!d) return "TBD";
   try {
@@ -193,6 +224,7 @@ const DURATIONS = [
 ];
 
 const MAX_PARTICIPANTS = 10;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /* ═══════════════════════════════════════════════════════════
    SESSION CARD
@@ -256,17 +288,18 @@ function GroupSessionCard({ group, onOpen }) {
 /* ═══════════════════════════════════════════════════════════
    PARTICIPANT SEARCH
 ═══════════════════════════════════════════════════════════ */
-function ParticipantSearch({ subjectId, selected, onAdd, disabled }) {
+function ParticipantSearch({ subjectId, selected, onAdd, disabled, currentUserId }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
   const wrapRef = useRef(null);
 
-  const excludedIds = useMemo(
-    () => selected.map((p) => String(p.user_id || p.userId || p.id)),
-    [selected]
-  );
+  const excludedIds = useMemo(() => {
+    const ids = selected.map((p) => String(p.user_id || p.userId || p.id));
+    if (currentUserId) ids.push(String(currentUserId));
+    return ids;
+  }, [selected, currentUserId]);
 
   useEffect(() => {
     function handleOutside(e) {
@@ -282,7 +315,10 @@ function ParticipantSearch({ subjectId, selected, onAdd, disabled }) {
       setLoading(true);
       try {
         const data = await groupSessionService.getCourseStudents(subjectId, query.trim());
-        const filtered = (data || []).filter((s) => !excludedIds.includes(String(s.user_id)));
+        const filtered = (data || []).filter((s) => {
+          const sid = String(s.user_id || "");
+          return UUID_RE.test(sid) && !excludedIds.includes(sid);
+        });
         setResults(filtered);
       } catch {
         setResults([]);
@@ -339,13 +375,16 @@ function ParticipantSearch({ subjectId, selected, onAdd, disabled }) {
   );
 }
 
-function ParticipantsStep({ subjectId, participants, setParticipants, disabled }) {
+function ParticipantsStep({ subjectId, participants, setParticipants, disabled, currentUserId }) {
   const addParticipant = (student) => {
+    const sid = String(student?.user_id || "");
+    if (!UUID_RE.test(sid)) return;
+    if (currentUserId && sid === String(currentUserId)) return;
     if (participants.length >= MAX_PARTICIPANTS) return;
     const next = uniqueByUserId([
       ...participants,
       {
-        user_id: student.user_id,
+        user_id: sid,
         name: student.name || "Student",
         student_id: student.student_id || student.phone || "",
       },
@@ -366,6 +405,7 @@ function ParticipantsStep({ subjectId, participants, setParticipants, disabled }
           selected={participants}
           onAdd={addParticipant}
           disabled={disabled || participants.length >= MAX_PARTICIPANTS}
+          currentUserId={currentUserId}
         />
       </div>
 
@@ -413,6 +453,7 @@ function ScheduleSessionModal({
   onUpdated,
   selectedSubjectId,
   initialSession = null,
+  currentUserId = null,
 }) {
   const isEdit = mode === "edit";
   const [step, setStep] = useState(1);
@@ -433,14 +474,17 @@ function ScheduleSessionModal({
       setTime(initialSession.time || "");
       setDuration(Number(initialSession.durationMinutes || 30));
       setTopic(initialSession.topic || "");
-      setParticipants((initialSession.invites || []).map((inv) => ({
-        user_id: inv.userId,
-        name: inv.name,
-        student_id: inv.studentId,
-      })));
+      setParticipants((initialSession.invites || [])
+        .map((inv) => ({
+          user_id: inv.userId,
+          name: inv.name,
+          student_id: inv.studentId,
+        }))
+        .filter((p) => UUID_RE.test(String(p.user_id || "")) && String(p.user_id) !== String(currentUserId || ""))
+      );
     } else {
-      setDate(new Date().toISOString().split("T")[0]);
-      setTime("");
+      setDate(getLocalDateValue());
+      setTime(getDefaultFutureTime(10));
       setDuration(30);
       setTopic("");
       setParticipants([]);
@@ -449,14 +493,20 @@ function ScheduleSessionModal({
 
   if (!open) return null;
 
-  const canStep1 = Boolean(date && time && duration);
+  const canStep1 = Boolean(date && time && duration && !isScheduleInPast(date, time, 2));
   const canStep2 = participants.length > 0;
   const title = isEdit ? "Edit Session" : "Schedule a Session";
   const endTime = addMinutesToTime(time, duration);
+  const minTimeToday = getLocalTimeValue(new Date(Date.now() + 2 * 60_000));
+  const schedulePast = isScheduleInPast(date, time, 2);
+
+  const invitedUserIds = participants
+    .map((p) => String(p.user_id || p.userId || ""))
+    .filter((id) => UUID_RE.test(id) && id !== String(currentUserId || ""));
 
   const payload = {
     subject_id: selectedSubjectId || initialSession?.subjectId,
-    invited_user_ids: participants.map((p) => p.user_id || p.userId),
+    invited_user_ids: invitedUserIds,
     scheduled_date: date,
     scheduled_time: time,
     duration_minutes: Number(duration),
@@ -464,6 +514,16 @@ function ScheduleSessionModal({
   };
 
   const submit = async () => {
+    if (isScheduleInPast(date, time, 2)) {
+      setStep(1);
+      setError("Please choose a future start time. Current or past time cannot be scheduled.");
+      return;
+    }
+    if (invitedUserIds.length < 1) {
+      setStep(2);
+      setError("Please add at least one valid student. You cannot invite yourself.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -515,8 +575,14 @@ function ScheduleSessionModal({
                 className="sg__input"
                 style={styles.dateInput}
                 value={date}
-                min={new Date().toISOString().split("T")[0]}
-                onChange={(e) => setDate(e.target.value)}
+                min={getLocalDateValue()}
+                onChange={(e) => {
+                  const nextDate = e.target.value;
+                  setDate(nextDate);
+                  if (nextDate === getLocalDateValue() && isScheduleInPast(nextDate, time, 2)) {
+                    setTime(getDefaultFutureTime(10));
+                  }
+                }}
               />
             </div>
 
@@ -527,12 +593,21 @@ function ScheduleSessionModal({
                 className="sg__input"
                 style={styles.timeInput}
                 value={time}
-                onChange={(e) => setTime(e.target.value)}
+                min={date === getLocalDateValue() ? minTimeToday : undefined}
+                onChange={(e) => {
+                  setTime(e.target.value);
+                  if (error && error.toLowerCase().includes("past")) setError("");
+                }}
               />
               {time && duration ? (
                 <span style={styles.endTimeHint}>End: {formatTime(endTime)}</span>
               ) : null}
             </div>
+            {schedulePast && (
+              <p className="sg__hint" style={{ color: "#b91c1c", marginTop: 6 }}>
+                Please select a future start time. Current or past time cannot be scheduled.
+              </p>
+            )}
 
             <label style={styles.compactLabel}>Select Duration:</label>
             <div style={styles.durationRow}>
@@ -926,11 +1001,32 @@ export default function GroupSessions() {
     groupSessionService.getMySubjects()
       .then((data) => {
         if (cancelled) return;
-        const list = data || [];
+
+        // Be defensive about backend key names so the course dropdown does
+        // not stay stuck on "Select Course" because of courseId/course_title
+        // vs course_id/course_label differences.
+        const list = (data || [])
+          .map((g) => ({
+            ...g,
+            course_id: g.course_id || g.courseId || g.id || "",
+            course_label:
+              g.course_label ||
+              g.courseTitle ||
+              g.course_title ||
+              g.title ||
+              g.name ||
+              "Course",
+            subjects: g.subjects || g.subject_list || [],
+          }))
+          .filter((g) => g.course_id);
+
         setSubjectGroups(list);
-        if (!selectedCourseId && list.length > 0) setSelectedCourseId(String(list[0].course_id));
+        if (!selectedCourseId && list.length > 0) {
+          setSelectedCourseId(String(list[0].course_id));
+        }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("getMySubjects failed:", err?.response?.data || err);
         if (!cancelled) setSubjectGroups([]);
       });
     return () => { cancelled = true; };
@@ -942,7 +1038,8 @@ export default function GroupSessions() {
   }, [subjectGroups, selectedCourseId]);
 
   const selectedSubjectId = useMemo(() => {
-    return selectedCourse?.subjects?.[0]?.id || "";
+    const firstSubject = selectedCourse?.subjects?.[0];
+    return firstSubject?.id || firstSubject?.subject_id || firstSubject?.subjectId || "";
   }, [selectedCourse]);
 
   const loadGroups = useCallback(async () => {
@@ -1022,10 +1119,16 @@ export default function GroupSessions() {
     setHostBusy(true);
     setHostError("");
     try {
-      const sg = await groupSessionService.createInstant({});
+      // Use 60 minutes instead of the old service default of 180.
+      // Many backends only allow 30/60/90 or 30/45/60 minute choices.
+      const sg = await groupSessionService.createInstant({
+        duration_minutes: 60,
+        topic: "",
+      });
       setShowHostDialog(false);
       navigate(`/group-session/live/${sg.id}`);
     } catch (err) {
+      console.error("createInstant failed:", err?.response?.data || err);
       setHostError(extractApiError(err, "Could not start an instant session."));
     } finally {
       setHostBusy(false);
@@ -1050,11 +1153,19 @@ export default function GroupSessions() {
   const openScheduledSession = () => {
     setShowHostDialog(false);
     setHostError("");
+
+    // Scheduled sessions need a subject_id for the create API.
+    // That subject_id comes from the selected course dropdown.
     if (!selectedSubjectId) {
-      setHostError("Please select a course before scheduling a session.");
+      setHostError(
+        subjectGroups.length === 0
+          ? "No course/subject found for this account. Check enrollment or the my-subjects API."
+          : "Please select a course before scheduling a session."
+      );
       setShowHostDialog(true);
       return;
     }
+
     setShowScheduleDialog(true);
   };
 
@@ -1076,7 +1187,6 @@ export default function GroupSessions() {
   return (
     <div className="sg__page sg__page--figma">
       <PageHeader title="Group Sessions" />
-
 
       <div className="sg__figmaPanel">
         <div className="sg__figmaPanelHeader">
@@ -1135,6 +1245,7 @@ export default function GroupSessions() {
         mode="create"
         open={showScheduleDialog}
         selectedSubjectId={selectedSubjectId}
+        currentUserId={user?.id}
         onClose={() => setShowScheduleDialog(false)}
         onCreated={handleCreated}
       />
@@ -1160,6 +1271,7 @@ export default function GroupSessions() {
         open={Boolean(editingSession)}
         initialSession={editingSession}
         selectedSubjectId={editingSession?.subjectId || selectedSubjectId}
+        currentUserId={user?.id}
         onClose={() => {
           if (editingSession) refreshOne(editingSession.id);
           setEditingSession(null);
