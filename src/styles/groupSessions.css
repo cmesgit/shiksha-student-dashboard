@@ -1070,14 +1070,11 @@
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 3px 8px rgba(1, 88, 101, 0.18);
-  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .sg__figmaActionBtn:hover {
   background: #016c78;
   transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(1, 88, 101, 0.24);
 }
 
 .sg__figmaActionBtn:active {
@@ -1518,7 +1515,6 @@
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 6px 14px rgba(1, 88, 101, 0.2);
 }
 
 .sg__figmaActionBtn:hover {

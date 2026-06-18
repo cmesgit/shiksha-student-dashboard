@@ -1210,17 +1210,13 @@ export default function GroupSessions() {
 
         {loading ? (
           <div className="sg__loading sg__loading--figma">Loading group sessions…</div>
-        ) : visibleGroups.length === 0 ? (
-          <div className="sg__empty sg__empty--figma">
-            No group sessions yet. Use <strong>Host Session</strong> to create one, or <strong>Join Session</strong> with a session ID.
-          </div>
-        ) : (
+        ) : visibleGroups.length > 0 ? (
           <div className="sg__figmaGrid">
             {visibleGroups.map((g) => (
               <GroupSessionCard key={g.id} group={g} onOpen={openCard} />
             ))}
           </div>
-        )}
+        ) : null}
       </div>
 
       <JoinSessionDialog
