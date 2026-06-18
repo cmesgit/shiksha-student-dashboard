@@ -1465,3 +1465,306 @@
     padding: 22px 18px;
   }
 }
+
+/* ============================================================
+   GROUP SESSION card
+  ============================================================ */
+
+/* Main white panel */
+.sg__figmaPanel {
+  width: calc(100% - 48px);
+  max-width: 1180px;
+  min-height: 520px;
+  margin: 20px auto 0;
+  padding: 42px 36px;
+  background: #f2f9fc;
+  border: 1px solid rgba(1, 88, 101, 0.16);
+  border-radius: 18px;
+  box-shadow: 0 2px 0 rgba(1, 88, 101, 0.22);
+  box-sizing: border-box;
+}
+
+/* Header: title left, buttons right */
+.sg__figmaPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 34px;
+}
+
+.sg__figmaPanelHeader h2 {
+  margin: 0;
+  color: #07162f;
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.sg__figmaActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sg__figmaActionBtn {
+  min-width: 132px;
+  height: 42px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 8px;
+  background: #008a99;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(1, 88, 101, 0.2);
+}
+
+.sg__figmaActionBtn:hover {
+  background: #016c78;
+}
+
+/* Cards grid */
+.sg__figmaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 205px);
+  gap: 18px;
+  align-items: start;
+}
+
+/* Card */
+.sg__sessionCard {
+  width: 205px;
+  height: 178px;
+  min-height: 178px;
+  padding: 12px 12px 10px;
+  border: none;
+  border-radius: 8px;
+  background: #008c96;
+  color: #ffffff;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.18);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.sg__sessionCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.24);
+}
+
+/* Top content */
+.sg__sessionCardTop {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
+.sg__sessionHostBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+}
+
+/* Avatar/image */
+.sg__sessionAvatar {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #d9eef2;
+  color: #015865;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.sg__sessionAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* FIX: remove old negative margin/padding overlap */
+.sg__sessionHostText {
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 130px;
+  min-width: 0;
+}
+
+.sg__sessionHostName {
+  display: block;
+  max-width: 130px;
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.1;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.28);
+}
+
+.sg__sessionTitle {
+  display: block;
+  max-width: 130px;
+  color: #ffffff;
+  font-size: 11px;
+  line-height: 1.15;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.22);
+}
+
+/* Status badge top right */
+.sg__figmaStatus {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  min-width: 52px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.sg__figmaStatus--live {
+  background: #ff2332;
+}
+
+.sg__figmaStatus--live::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.sg__figmaStatus--scheduled {
+  background: #58bd73;
+}
+
+.sg__figmaStatus--completed,
+.sg__figmaStatus--cancelled,
+.sg__figmaStatus--expired {
+  background: #64748b;
+}
+
+/* Bottom right details */
+.sg__sessionCardBottom {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  color: #ffffff;
+}
+
+.sg__sessionCardBottom span {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 1.15;
+  font-weight: 800;
+  text-align: right;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.sg__sessionCardBottom strong {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+/* Completed/dark card */
+.sg__sessionCard--completed,
+.sg__sessionCard--cancelled,
+.sg__sessionCard--expired {
+  background: #334155;
+  opacity: 0.92;
+}
+
+/* Empty state should not create huge dashed area */
+.sg__empty--figma,
+.sg__loading--figma {
+  width: 100%;
+  min-height: 130px;
+  padding: 46px 20px;
+  border-radius: 12px;
+  border: 1px dashed rgba(1, 88, 101, 0.22);
+  background: transparent;
+  color: #526b7a;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .sg__figmaPanel {
+    width: calc(100% - 24px);
+    padding: 30px 22px;
+  }
+
+  .sg__figmaPanelHeader {
+    align-items: flex-start;
+  }
+
+  .sg__figmaGrid {
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  }
+
+  .sg__sessionCard {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .sg__figmaPanelHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sg__figmaActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sg__figmaActionBtn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sg__figmaGrid {
+    grid-template-columns: 1fr;
+  }
+}
