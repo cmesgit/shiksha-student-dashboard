@@ -123,7 +123,7 @@
   border-radius: 0 0 12px 12px;
   border: none;
   border-top: 2px solid var(--ls-primary);
-  background: #27292E;
+  background: grey;
   box-sizing: border-box;
 }
 
