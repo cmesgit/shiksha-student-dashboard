@@ -1490,7 +1490,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  margin-bottom: 34px;
+  margin-bottom: 25px;
 }
 
 .sg__figmaPanelHeader h2 {
@@ -1701,7 +1701,7 @@
 .sg__sessionCardBottom strong {
   color: #ffffff;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 /* Completed/dark card */

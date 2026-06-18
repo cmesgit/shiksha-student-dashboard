@@ -1186,7 +1186,6 @@ export default function GroupSessions() {
 
   return (
     <div className="sg__page sg__page--figma">
-      <PageHeader title="Group Sessions" />
 
       <div className="sg__figmaPanel">
         <div className="sg__figmaPanelHeader">
