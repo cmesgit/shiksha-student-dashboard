@@ -60,34 +60,10 @@ export default function GroupSessionLive() {
   const [remainingMs, setRemainingMs] = useState(null);
 
   const { user } = useAuth();
-  const [copied, setCopied] = useState(false);
-  const [infoOpen, setInfoOpen] = useState(true);
 
   const isHost = !!(user?.id && sessionDetail?.hostId &&
                     String(user.id) === String(sessionDetail.hostId));
 
-  const roomCode = sessionDetail?.shortCode || id;
-  const inviteLink = `${window.location.origin}/group-session/live/${roomCode}`;
-
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      window.prompt("Copy this link:", inviteLink);
-    }
-  };
-
-  const handleCopyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(roomCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      window.prompt("Copy this room code:", roomCode);
-    }
-  };
 
   const handleEndSession = async () => {
     const ok = window.confirm(
@@ -265,131 +241,6 @@ export default function GroupSessionLive() {
         />
         <RoomAudioRenderer />
       </LiveKitRoom>
-
-      {/* Bottom-left "Room info" — visible to everyone in the room. */}
-      {infoOpen ? (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 18,
-            left: 18,
-            zIndex: 9999,
-            width: 320,
-            background: "#ffffff",
-            borderRadius: 12,
-            padding: "14px 14px 12px",
-            boxShadow: "0 6px 20px rgba(15,23,42,0.18)",
-            border: "1px solid #cbd5e1",
-            color: "#0f172a",
-            fontFamily: "system-ui, -apple-system, sans-serif",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <strong style={{ fontSize: 14, color: "#015865" }}>Room info</strong>
-            <button
-              onClick={() => setInfoOpen(false)}
-              aria-label="Hide room info"
-              title="Hide"
-              style={{
-                border: "none", background: "transparent", cursor: "pointer",
-                fontSize: 16, color: "#475569", lineHeight: 1, padding: 2,
-              }}
-            >
-              ✕
-            </button>
-          </div>
-
-          <div style={{ marginTop: 8, fontSize: 12, color: "#475569" }}>Room code</div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: "#f1f5f9",
-              borderRadius: 6,
-              padding: "6px 8px",
-              fontFamily: "monospace",
-              fontSize: 14,
-              fontWeight: 700,
-              color: "#0f172a",
-              letterSpacing: "0.5px",
-            }}
-          >
-            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {roomCode}
-            </span>
-            <button
-              onClick={handleCopyCode}
-              aria-label="Copy room code"
-              title="Copy code"
-              style={{
-                border: "none", background: "transparent", cursor: "pointer",
-                color: copied ? "#15803d" : "#015865", padding: 2,
-                fontSize: 12, fontWeight: 700,
-              }}
-            >
-              {copied ? "✓" : "Copy"}
-            </button>
-          </div>
-
-          <div style={{ marginTop: 10, fontSize: 12, color: "#475569" }}>Share link</div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: "#f1f5f9",
-              borderRadius: 6,
-              padding: "6px 8px",
-              fontFamily: "monospace",
-              fontSize: 11,
-              color: "#0f172a",
-            }}
-          >
-            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {inviteLink}
-            </span>
-            <button
-              onClick={handleCopyLink}
-              aria-label="Copy link"
-              title="Copy link"
-              style={{
-                border: "none", background: "transparent", cursor: "pointer",
-                color: copied ? "#15803d" : "#015865", padding: 2,
-                fontSize: 12, fontWeight: 700,
-              }}
-            >
-              {copied ? "✓" : "Copy"}
-            </button>
-          </div>
-
-          <p style={{ margin: "10px 0 0", fontSize: 11, color: "#64748b", lineHeight: 1.4 }}>
-            Only signed-in students and teachers on this site can join with the code or link.
-          </p>
-        </div>
-      ) : (
-        <button
-          onClick={() => setInfoOpen(true)}
-          title="Show room info"
-          style={{
-            position: "fixed",
-            bottom: 18,
-            left: 18,
-            zIndex: 9999,
-            background: "#015865",
-            color: "#fff",
-            border: "none",
-            borderRadius: 999,
-            padding: "8px 14px",
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(15,23,42,0.18)",
-          }}
-        >
-          Room: {roomCode}
-        </button>
-      )}
     </div>
   );
 }
