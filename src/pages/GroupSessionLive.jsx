@@ -5,8 +5,6 @@ import groupSessionService, { extractApiError } from "../api/groupSessionService
 import GroupSessionClassroomUI from "../components/live/GroupSessionClassroomUI";
 import { useAuth } from "../contexts/AuthContext";
 
-/* Layout matches PrivateSessionLive (the "other Live room") — teal
-   background + #015865 accent. Google-Meet dark theme has been removed. */
 const fullscreenWrap = {
   width: "100vw",
   height: "100vh",
@@ -37,19 +35,12 @@ const centerMsg = {
   background: "#c9dde1",
 };
 
-// UUIDs from the backend look like 8-4-4-4-12 hex. Anything else in the
-// URL :id slot is treated as a short_code that we resolve via join-by-code
-// before issuing the detail / token requests (which are UUID-only routes).
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function GroupSessionLive() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // The :id param from the URL might be a UUID (normal case) OR a short_code
-  // pasted from a shared link. resolvedId is the real session UUID we use for
-  // every API call. It starts equal to id; if id isn't a UUID we resolve it
-  // through join-by-code before doing anything else.
   const [resolvedId, setResolvedId] = useState(
     UUID_RE.test(String(id || "")) ? String(id) : null
   );
@@ -61,15 +52,18 @@ export default function GroupSessionLive() {
 
   const { user } = useAuth();
 
-  const isHost = !!(user?.id && sessionDetail?.hostId &&
-                    String(user.id) === String(sessionDetail.hostId));
-
+  const isHost = !!(
+    user?.id &&
+    sessionDetail?.hostId &&
+    String(user.id) === String(sessionDetail.hostId)
+  );
 
   const handleEndSession = async () => {
     const ok = window.confirm(
       "End this session for everyone? Participants will be disconnected immediately."
     );
     if (!ok) return;
+
     try {
       await groupSessionService.endSession(resolvedId || id);
     } catch (e) {
@@ -79,19 +73,20 @@ export default function GroupSessionLive() {
     }
   };
 
-  // Resolve a short_code → UUID before touching detail/join. Runs once per
-  // :id change. UUIDs short-circuit and become resolvedId immediately.
   useEffect(() => {
     let cancelled = false;
     if (!id) return undefined;
+
     if (UUID_RE.test(String(id))) {
       setResolvedId(String(id));
       return undefined;
     }
+
     (async () => {
       try {
         const res = await groupSessionService.joinByCode(id);
         if (cancelled) return;
+
         if (res?.session_id) {
           setResolvedId(String(res.session_id));
         } else {
@@ -104,12 +99,14 @@ export default function GroupSessionLive() {
         setLoading(false);
       }
     })();
+
     return () => { cancelled = true; };
   }, [id]);
 
   useEffect(() => {
     let cancelled = false;
     if (!resolvedId) return undefined;
+
     const load = async () => {
       try {
         const detail = await groupSessionService.getDetail(resolvedId);
@@ -127,12 +124,14 @@ export default function GroupSessionLive() {
         if (!cancelled) setLoading(false);
       }
     };
+
     load();
     return () => { cancelled = true; };
   }, [resolvedId]);
 
   useEffect(() => {
     if (remainingMs == null || remainingMs <= 0) return;
+
     const startedAt = Date.now();
     const startValue = remainingMs;
     const interval = setInterval(() => {
@@ -140,6 +139,7 @@ export default function GroupSessionLive() {
       setRemainingMs(next);
       if (next <= 0) clearInterval(interval);
     }, 1000);
+
     return () => clearInterval(interval);
   }, [livekitData]);
 
@@ -210,10 +210,6 @@ export default function GroupSessionLive() {
         onDisconnected={() => navigate("/group-sessions")}
       >
         <GroupSessionClassroomUI
-          // Instant meetings are peer-to-peer: every participant gets full
-          // mic/cam/screen-share control like Google Meet. For scheduled
-          // group sessions the student is gated by the host (raise-hand /
-          // teacher-grant) just like the original ClassroomUI flow.
           role={
             sessionDetail?.sessionType === "instant" || isHost
               ? "PRESENTER"
@@ -227,6 +223,9 @@ export default function GroupSessionLive() {
             shortCode: sessionDetail?.shortCode,
             sessionType: sessionDetail?.sessionType,
             admitMode: sessionDetail?.admitMode,
+            roomStartedAt: sessionDetail?.roomStartedAt,
+            hostId: sessionDetail?.hostId,
+            hostName: sessionDetail?.hostName,
           }}
           chatConfig={{
             restGetPath:  `/sessions/group-sessions/${resolvedId || id}/chat/`,

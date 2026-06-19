@@ -1,18 +1,20 @@
 /**
  * GroupSessionClassroomUI.jsx
  *
- * Figma-style group session live room:
- * - Main video/screen area
- * - Bottom control bar
- * - Right panels: Chat / Participants + Join Requests / Session Information
+ * Group-session-only live room:
+ * - Uses GroupSessionControlBar.jsx instead of shared ControlBar.jsx
+ * - Uses GroupSessionChatPanel.jsx instead of shared ChatPanel.jsx
+ * - Uses groupSessionLive.css instead of shared live.css
+ *
+ * This keeps Private Session and normal Live Sessions unchanged.
  */
 
 import { useTracks, VideoTrack, useRoomContext } from "@livekit/components-react";
 import { Track } from "livekit-client";
-import ChatPanel from "./ChatPanel";
-import ControlBar from "./ControlBar";
+import GroupSessionChatPanel from "./GroupSessionChatPanel";
+import GroupSessionControlBar from "./GroupSessionControlBar";
 import React, { useState, useRef, useEffect } from "react";
-import "../../styles/live.css";
+import "../../styles/groupSessionLive.css";
 import api from "../../api/apiClient";
 import { useAuth } from "../../contexts/AuthContext";
 import soundManager from "../../utils/soundManager";
@@ -59,6 +61,10 @@ function formatTiming(session) {
   return `${formatTime(session.time)}${end ? ` (${formatTime(end)})` : ""}`;
 }
 
+function sameId(a, b) {
+  return a && b && String(a) === String(b);
+}
+
 export default function GroupSessionClassroomUI({
   role,
   session,
@@ -84,13 +90,14 @@ export default function GroupSessionClassroomUI({
   const room = useRoomContext();
   const { user } = useAuth();
   const myUserId = user?.id ? String(user.id) : null;
+  const hostId = session?.hostId ? String(session.hostId) : null;
+  const hostName = session?.hostName || "";
 
   const togglePanel = (panel) => {
     setActivePanel((current) => (current === panel ? null : panel));
     if (panel === "people") setPeopleTab("participants");
   };
 
-  /* ── fullscreen ── */
   const toggleFullscreen = async () => {
     try {
       if (!document.fullscreenElement) {
@@ -110,41 +117,47 @@ export default function GroupSessionClassroomUI({
     const fn = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", fn);
     document.addEventListener("webkitfullscreenchange", fn);
+
     return () => {
       document.removeEventListener("fullscreenchange", fn);
       document.removeEventListener("webkitfullscreenchange", fn);
     };
   }, []);
 
-  /* ── re-render on track changes ── */
   useEffect(() => {
     if (!room) return;
+
     const events = [
       "trackMuted", "trackUnmuted", "trackPublished", "trackUnpublished",
       "trackSubscribed", "trackUnsubscribed", "participantConnected",
       "participantDisconnected", "localTrackPublished", "localTrackUnpublished",
     ];
+
     events.forEach((evt) => room.on(evt, bump));
     return () => events.forEach((evt) => room.off(evt, bump));
   }, [room]);
 
-  /* ── raise hand ── */
   useEffect(() => {
     if (!room) return;
 
     const handleData = (payload, participant) => {
       try {
         const msg = JSON.parse(new TextDecoder().decode(payload));
+
         if (msg.type === "raise-hand" || msg.type === "RAISE_HAND") {
           const identity = participant.identity;
           const displayName = participant.name || identity;
+
           setRaisedHands((prev) => ({ ...prev, [identity]: true }));
+
           const toastId = Date.now() + Math.random();
           setRaiseHandToasts((prev) => [...prev, { id: toastId, identity, displayName }]);
+
           setTimeout(() => {
             setRaiseHandToasts((prev) => prev.filter((t) => t.id !== toastId));
           }, 5000);
         }
+
         if (msg.type === "lower-hand" || msg.type === "LOWER_HAND") {
           const identity = participant.identity;
           setRaisedHands((prev) => {
@@ -160,9 +173,9 @@ export default function GroupSessionClassroomUI({
     return () => room.off("dataReceived", handleData);
   }, [room]);
 
-  /* ── load chat history ── */
   useEffect(() => {
     if (!chatConfig || !session?.id) return;
+
     api.get(chatConfig.restGetPath).then((res) => {
       setChatMessages((res.data || []).map((m) => ({
         id: m.id,
@@ -175,7 +188,6 @@ export default function GroupSessionClassroomUI({
     }).catch(() => {});
   }, [session?.id, myUserId, chatConfig?.restGetPath]);
 
-  /* ── WebSocket chat ── */
   useEffect(() => {
     if (!chatConfig || !session?.id) return;
 
@@ -193,6 +205,7 @@ export default function GroupSessionClassroomUI({
 
       try {
         ws = new WebSocket(`${proto}//${wsHost}${chatConfig.wsPath}${token ? `?token=${token}` : ""}`);
+
         ws.onmessage = (ev) => {
           try {
             const { data } = JSON.parse(ev.data);
@@ -215,9 +228,11 @@ export default function GroupSessionClassroomUI({
             });
           } catch {}
         };
+
         ws.onclose = () => {
           if (!unmounted) reconnectTimer = setTimeout(connect, 3000);
         };
+
         ws.onerror = () => ws.close();
       } catch {}
     };
@@ -242,6 +257,7 @@ export default function GroupSessionClassroomUI({
 
       setChatMessages((prev) => {
         if (prev.some((m) => m.id === msg.id)) return prev;
+
         return [...prev, {
           id: msg.id,
           sender: "You",
@@ -259,7 +275,6 @@ export default function GroupSessionClassroomUI({
     }
   };
 
-  /* ── tracks ── */
   const tracks = useTracks([
     { source: Track.Source.Camera, withPlaceholder: false },
     { source: Track.Source.ScreenShare, withPlaceholder: false },
@@ -272,40 +287,46 @@ export default function GroupSessionClassroomUI({
 
   if (!mainTrack) {
     return (
-      <div className="waiting-screen">
-        <div className="waiting-card">
-          <div className="waiting-pulse" />
+      <div className="gs-waiting-screen">
+        <div className="gs-waiting-card">
+          <div className="gs-waiting-pulse" />
           <h2>Enable your camera to start the session</h2>
         </div>
       </div>
     );
   }
 
-  const remoteParticipants = room.remoteParticipants
-    ? Array.from(room.remoteParticipants.values()).map((p) => ({
-        identity: p.identity,
-        name: p.name || p.identity,
-        role: "Student",
-        micOn: p.isMicrophoneEnabled,
-        camOn: p.isCameraEnabled,
-        handRaised: !!raisedHands[p.identity],
-        isTeacher: false,
-        isMe: false,
-      }))
-    : [];
-
   const localId = room.localParticipant?.identity;
   const localName = room.localParticipant?.name || localId || "You";
+
+  const remoteParticipants = room.remoteParticipants
+    ? Array.from(room.remoteParticipants.values()).map((p) => {
+        const participantIsHost =
+          sameId(p.identity, hostId) ||
+          (!!hostName && String(p.name || "").trim() === String(hostName).trim());
+
+        return {
+          identity: p.identity,
+          name: p.name || p.identity,
+          role: participantIsHost ? "Host" : "Student",
+          micOn: p.isMicrophoneEnabled,
+          camOn: p.isCameraEnabled,
+          handRaised: !!raisedHands[p.identity],
+          isHost: participantIsHost,
+          isMe: false,
+        };
+      })
+    : [];
 
   const peopleList = [
     {
       identity: localId,
       name: localName,
-      role: isPresenter ? "Host" : "Student",
+      role: isHost ? "Host" : "Student",
       micOn: room.localParticipant?.isMicrophoneEnabled,
       camOn: room.localParticipant?.isCameraEnabled,
       handRaised: false,
-      isTeacher: isPresenter,
+      isHost,
       isMe: true,
     },
     ...remoteParticipants,
@@ -316,38 +337,34 @@ export default function GroupSessionClassroomUI({
   return (
     <div
       className={
-        "classroom-layout" +
-        (isFullscreen ? " fs-mode" : "") +
-        (!activePanel ? " panel-closed" : "")
+        "gs-room" +
+        (isFullscreen ? " gs-room--fs" : "") +
+        (!activePanel ? " gs-room--panel-closed" : "")
       }
       ref={containerRef}
     >
-      {/* TOASTS */}
       {raiseHandToasts.length > 0 && (
-        <div className="rh-toasts">
+        <div className="gs-rh-toasts">
           {raiseHandToasts.map((t) => (
-            <div key={t.id} className="rh-toast">
+            <div key={t.id} className="gs-rh-toast">
               <span>✋ <strong>{t.displayName || t.identity}</strong> raised their hand</span>
             </div>
           ))}
         </div>
       )}
 
-      {/* LEFT COLUMN */}
-      <div className="classroom-main">
-
-        {/* VIDEO STAGE */}
-        <div className="main-stage">
+      <div className="gs-main">
+        <div className="gs-stage">
           <VideoTrack trackRef={mainTrack} />
 
           {pipTrack && (
-            <div className="pip-camera">
+            <div className="gs-pip-camera">
               <VideoTrack trackRef={pipTrack} />
             </div>
           )}
 
           <button
-            className="video-fs-btn"
+            className="gs-video-fs-btn"
             onClick={toggleFullscreen}
             aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
             title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
@@ -356,7 +373,7 @@ export default function GroupSessionClassroomUI({
           </button>
         </div>
 
-        <ControlBar
+        <GroupSessionControlBar
           onLeave={onLeave}
           role={role}
           activePanel={activePanel}
@@ -367,32 +384,29 @@ export default function GroupSessionClassroomUI({
         />
       </div>
 
-      {/* RIGHT SIDEBAR */}
       {activePanel && (
-        <div className="right-sidebar">
-
+        <div className="gs-right-sidebar">
           {activePanel === "chat" && (
-            <ChatPanel
-              role={role}
+            <GroupSessionChatPanel
               messages={chatMessages}
               onSendMessage={sendMessage}
-              participants={peopleList}
             />
           )}
 
           {activePanel === "people" && (
-            <div className="ppl-panel">
-              <div className="ppl-tabs">
+            <div className="gs-ppl-panel">
+              <div className="gs-ppl-tabs">
                 <button
                   type="button"
-                  className={`ppl-tab ${peopleTab === "participants" ? "ppl-tab--active" : ""}`}
+                  className={`gs-ppl-tab ${peopleTab === "participants" ? "gs-ppl-tab--active" : ""}`}
                   onClick={() => setPeopleTab("participants")}
                 >
                   Participants ({peopleList.length})
                 </button>
+
                 <button
                   type="button"
-                  className={`ppl-tab ${peopleTab === "requests" ? "ppl-tab--active" : ""}`}
+                  className={`gs-ppl-tab ${peopleTab === "requests" ? "gs-ppl-tab--active" : ""}`}
                   onClick={() => setPeopleTab("requests")}
                 >
                   Join Requests ({joinRequests.length})
@@ -400,36 +414,32 @@ export default function GroupSessionClassroomUI({
               </div>
 
               {peopleTab === "participants" && (
-                <div className="ppl-list">
+                <div className="gs-ppl-list">
                   {peopleList.length === 0 ? (
-                    <p className="ppl-empty">No participants yet.</p>
+                    <p className="gs-ppl-empty">No participants yet.</p>
                   ) : (
                     peopleList.map((p, i) => (
                       <div
                         key={p.identity || i}
-                        className={"ppl-card" + (p.isTeacher ? " ppl-card--teacher" : "")}
+                        className={"gs-ppl-card" + (p.isHost ? " gs-ppl-card--host" : "")}
                       >
-                        <div className="ppl-avatar">
+                        <div className="gs-ppl-avatar">
                           {p.avatarUrl
                             ? <img src={p.avatarUrl} alt={p.name} />
                             : p.name?.charAt(0)?.toUpperCase() || "?"}
                         </div>
-                        <div className="ppl-info">
-                          <div className="ppl-name">{p.isMe ? "You" : p.name}</div>
-                          <div className="ppl-role">{p.role}{p.isMe ? " (Host)" : ""}</div>
+
+                        <div className="gs-ppl-info">
+                          <div className="gs-ppl-name">{p.isMe ? "You" : p.name}</div>
+                          <div className="gs-ppl-role">{p.role}</div>
                         </div>
-                        <div className="ppl-actions">
-                          <div className={`ppl-mic ${p.micOn ? "ppl-mic--on" : "ppl-mic--off"}`}>
+
+                        <div className="gs-ppl-actions">
+                          <div className={`gs-ppl-mic ${p.micOn ? "gs-ppl-mic--on" : "gs-ppl-mic--off"}`}>
                             {p.micOn ? (
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                              </svg>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
                             ) : (
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <line x1="1" y1="1" x2="23" y2="23"/>
-                                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
-                              </svg>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/></svg>
                             )}
                           </div>
                         </div>
@@ -440,64 +450,36 @@ export default function GroupSessionClassroomUI({
               )}
 
               {peopleTab === "requests" && (
-                <div className="ppl-list">
-                  <p className="ppl-empty">No join requests yet.</p>
+                <div className="gs-ppl-list">
+                  <p className="gs-ppl-empty">No join requests yet.</p>
                 </div>
               )}
             </div>
           )}
 
           {activePanel === "info" && (
-            <div className="side-panel">
-              <div className="side-panel__header">
+            <div className="gs-info-panel">
+              <div className="gs-info-header">
                 <h3>Session Information</h3>
               </div>
 
-              <div className="side-panel__body">
-                <div className="side-panel__field">
-                  <div className="side-panel__field-label">Session ID:</div>
-                  <div className="side-panel__field-value">{session?.shortCode || session?.id || "—"}</div>
-                </div>
+              <div className="gs-info-body">
+                <div className="gs-info-field"><span className="gs-info-label">Session ID:</span><span className="gs-info-value">{session?.shortCode || session?.id || "—"}</span></div>
+                <div className="gs-info-field"><span className="gs-info-label">Session Type:</span><span className="gs-info-value">{session?.sessionType === "instant" ? "Instant Group" : "Study Group"}</span></div>
+                <div className="gs-info-field"><span className="gs-info-label">Host:</span><span className="gs-info-value">{session?.hostName || localName || "—"}</span></div>
 
-                <div className="side-panel__field">
-                  <div className="side-panel__field-label">Session Type:</div>
-                  <div className="side-panel__field-value">
-                    {session?.sessionType === "instant" ? "Instant Group" : "Study Group"}
-                  </div>
-                </div>
+                <div className="gs-info-gap" />
 
-                <div className="side-panel__field">
-                  <div className="side-panel__field-label">Host:</div>
-                  <div className="side-panel__field-value">{session?.hostName || localName || "—"}</div>
-                </div>
+                <div className="gs-info-field"><span className="gs-info-label">Subject:</span><span className="gs-info-value">{session?.subject || session?.subjectName || "—"}</span></div>
+                <div className="gs-info-field"><span className="gs-info-label">Topic:</span><span className="gs-info-value">{session?.topic || "(Entered by Host)"}</span></div>
 
-                <div className="side-panel__section-gap" />
+                <div className="gs-info-gap" />
 
-                <div className="side-panel__field">
-                  <div className="side-panel__field-label">Subject:</div>
-                  <div className="side-panel__field-value">{session?.subject || session?.subjectName || "—"}</div>
-                </div>
-
-                <div className="side-panel__field">
-                  <div className="side-panel__field-label">Topic:</div>
-                  <div className="side-panel__field-value">{session?.topic || "(Entered by Host)"}</div>
-                </div>
-
-                <div className="side-panel__section-gap" />
-
-                <div className="side-panel__field">
-                  <div className="side-panel__field-label">Date:</div>
-                  <div className="side-panel__field-value">{formatDate(session?.date)}</div>
-                </div>
-
-                <div className="side-panel__field">
-                  <div className="side-panel__field-label">Session Timing:</div>
-                  <div className="side-panel__field-value">{formatTiming(session)}</div>
-                </div>
+                <div className="gs-info-field"><span className="gs-info-label">Date:</span><span className="gs-info-value">{formatDate(session?.date)}</span></div>
+                <div className="gs-info-field"><span className="gs-info-label">Session Timing:</span><span className="gs-info-value">{formatTiming(session)}</span></div>
               </div>
             </div>
           )}
-
         </div>
       )}
     </div>
