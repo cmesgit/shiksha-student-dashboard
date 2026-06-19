@@ -232,11 +232,6 @@ export default function GroupSessionControlBar({
     }
   };
 
-  const invitePeople = () => {
-    setOtherOpen(false);
-    onTogglePanel?.("people");
-  };
-
   const openSettings = () => {
     setOtherOpen(false);
   };
@@ -302,7 +297,6 @@ export default function GroupSessionControlBar({
 
               {isHost && (
                 <>
-                  <button type="button" className="gs-cb-other-item" onClick={invitePeople}><span>Invite People</span><span>👥</span></button>
                   <button type="button" className="gs-cb-other-item" onClick={muteAllParticipants}><span>Mute All Participants</span><span className="gs-cb-other-check" /></button>
                   <button type="button" className="gs-cb-other-item" disabled={lockBusy} onClick={toggleLockSession}><span>{isLocked ? "Unlock Session" : "Lock Session"}</span><span className={`gs-cb-other-check ${isLocked ? "gs-cb-other-check--on" : ""}`} /></button>
                 </>

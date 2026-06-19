@@ -315,15 +315,31 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 7px 2px;
+  padding: 7px 8px;
   cursor: pointer;
   font-family: inherit;
   font-size: 13px;
   text-align: left;
+  border-radius: 5px;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 .gs-cb-other-item:hover:not(:disabled) {
   color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(2px);
+}
+
+.gs-cb-other-code-row button {
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.gs-cb-other-code-row button:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.06);
 }
 
 .gs-cb-other-item:disabled {
