@@ -33,7 +33,19 @@ export default function Header({ toggleMenu, menuOpen }) {
   const dropdownRef = useRef(null);
 
   const { courses, activeCourse, selectCourse } = useCourse();
-  const { user } = useAuth();
+  const { user, activeProfile, isTeacherContext } = useAuth();
+
+  // Name to greet: active learner profile, else teacher username, else account.
+  const greetName =
+    (!isTeacherContext && activeProfile?.display_name) ||
+    user?.username ||
+    (user?.email ? user.email.split("@")[0] : "") ||
+    "";
+
+  // Time-aware greeting so it reads naturally regardless of name presence.
+  const hour = new Date().getHours();
+  const timeGreeting =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   const [open, setOpen] = useState(false);
   const [myCoursesOpen, setMyCoursesOpen] = useState(false);
@@ -54,7 +66,9 @@ export default function Header({ toggleMenu, menuOpen }) {
 
       {isDashboard && (
         <div className="header__left">
-          <h3 className="header__title">Welcome Back</h3>
+          <h3 className="header__title">
+            {greetName ? `${timeGreeting}, ${greetName}` : "Welcome Back"}
+          </h3>
           <p className="header__subtitle">Let's learn something new today</p>
         </div>
       )}
