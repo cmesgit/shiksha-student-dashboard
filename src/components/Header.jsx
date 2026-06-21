@@ -16,6 +16,7 @@ import { BsBook } from "react-icons/bs";
 import { useCourse } from "../contexts/CourseContext";
 import { useAuth } from "../contexts/AuthContext";
 import ProfileSwitcher from "../shared/ProfileSwitcher";
+import TrackSwitcher from "./TrackSwitcher";
 import "../styles/header.css";
 import "../shared/ProfileSwitcher.css";
 import NotificationBell from "./NotificationBell";
@@ -70,6 +71,9 @@ export default function Header({ toggleMenu, menuOpen }) {
           <p className="header__subtitle">Let's learn something new today</p>
         </div>
       )}
+
+      {/* Academy ⟷ Skill-dev switch (locked track → buy on the homepage) */}
+      <TrackSwitcher />
 
       <div className="header__courseWrap" ref={dropdownRef}>
         <button className="header__btn" onClick={() => setOpen((p) => !p)}>
