@@ -11,6 +11,7 @@ import { FaClipboardList, FaBookOpen } from "react-icons/fa";
 import { RiLiveLine, RiLockLine, RiGroupLine } from "react-icons/ri";
 import { FaChalkboardTeacher } from "react-icons/fa";
 import { AiOutlineFileDone, AiOutlineClose } from "react-icons/ai";
+import { HOME_URL } from "../config/urls";
 
 export default function Sidebar({ setMenuOpen }) {
   const location = useLocation();
@@ -167,7 +168,7 @@ export default function Sidebar({ setMenuOpen }) {
       </nav>
       <div className="sidebar__bottom">
         <a
-          href={import.meta.env.VITE_HOME_URL || "https://shikshacom.com"}
+          href={HOME_URL}
           className="sidebar__homeBtn"
         >
           <FiHome />
