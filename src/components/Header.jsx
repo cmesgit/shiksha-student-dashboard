@@ -19,11 +19,9 @@ import ProfileSwitcher from "../shared/ProfileSwitcher";
 import "../styles/header.css";
 import "../shared/ProfileSwitcher.css";
 import NotificationBell from "./NotificationBell";
+import { HOME_URL, TEACHER_DASHBOARD_URL as TEACHER_URL } from "../config/urls";
 
 const DEFAULT_AVATAR = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100";
-
-const HOME_URL = import.meta.env.VITE_HOME_URL || "https://www.shikshacom.com";
-const TEACHER_URL = import.meta.env.VITE_TEACHER_URL || "https://teacher.shikshacom.com/teacher/dashboard";
 
 export default function Header({ toggleMenu, menuOpen }) {
   const navigate = useNavigate();

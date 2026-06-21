@@ -12,6 +12,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CourseProvider } from "./contexts/CourseContext";
+import { HOME_URL } from "./config/urls";
 
 import StudentLayout from "./layout/StudentLayout";
 
@@ -47,7 +48,6 @@ import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
 
-const HOME_URL = import.meta.env.VITE_HOME_URL || "https://www.shikshacom.com";
 
 /**
  * Wraps the whole student app.
