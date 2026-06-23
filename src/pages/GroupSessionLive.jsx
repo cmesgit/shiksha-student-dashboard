@@ -5,8 +5,6 @@ import groupSessionService, { extractApiError } from "../api/groupSessionService
 import GroupSessionClassroomUI from "../components/live/GroupSessionClassroomUI";
 import { useAuth } from "../contexts/AuthContext";
 
-/* Layout matches PrivateSessionLive (the "other Live room") — teal
-   background + #015865 accent. Google-Meet dark theme has been removed. */
 const fullscreenWrap = {
   width: "100vw",
   height: "100vh",
@@ -37,19 +35,12 @@ const centerMsg = {
   background: "#c9dde1",
 };
 
-// UUIDs from the backend look like 8-4-4-4-12 hex. Anything else in the
-// URL :id slot is treated as a short_code that we resolve via join-by-code
-// before issuing the detail / token requests (which are UUID-only routes).
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function GroupSessionLive() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // The :id param from the URL might be a UUID (normal case) OR a short_code
-  // pasted from a shared link. resolvedId is the real session UUID we use for
-  // every API call. It starts equal to id; if id isn't a UUID we resolve it
-  // through join-by-code before doing anything else.
   const [resolvedId, setResolvedId] = useState(
     UUID_RE.test(String(id || "")) ? String(id) : null
   );
@@ -60,40 +51,19 @@ export default function GroupSessionLive() {
   const [remainingMs, setRemainingMs] = useState(null);
 
   const { user } = useAuth();
-  const [copied, setCopied] = useState(false);
-  const [infoOpen, setInfoOpen] = useState(true);
 
-  const isHost = !!(user?.id && sessionDetail?.hostId &&
-                    String(user.id) === String(sessionDetail.hostId));
-
-  const roomCode = sessionDetail?.shortCode || id;
-  const inviteLink = `${window.location.origin}/group-session/live/${roomCode}`;
-
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      window.prompt("Copy this link:", inviteLink);
-    }
-  };
-
-  const handleCopyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(roomCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      window.prompt("Copy this room code:", roomCode);
-    }
-  };
+  const isHost = !!(
+    user?.id &&
+    sessionDetail?.hostId &&
+    String(user.id) === String(sessionDetail.hostId)
+  );
 
   const handleEndSession = async () => {
     const ok = window.confirm(
       "End this session for everyone? Participants will be disconnected immediately."
     );
     if (!ok) return;
+
     try {
       await groupSessionService.endSession(resolvedId || id);
     } catch (e) {
@@ -103,19 +73,20 @@ export default function GroupSessionLive() {
     }
   };
 
-  // Resolve a short_code → UUID before touching detail/join. Runs once per
-  // :id change. UUIDs short-circuit and become resolvedId immediately.
   useEffect(() => {
     let cancelled = false;
     if (!id) return undefined;
+
     if (UUID_RE.test(String(id))) {
       setResolvedId(String(id));
       return undefined;
     }
+
     (async () => {
       try {
         const res = await groupSessionService.joinByCode(id);
         if (cancelled) return;
+
         if (res?.session_id) {
           setResolvedId(String(res.session_id));
         } else {
@@ -128,12 +99,14 @@ export default function GroupSessionLive() {
         setLoading(false);
       }
     })();
+
     return () => { cancelled = true; };
   }, [id]);
 
   useEffect(() => {
     let cancelled = false;
     if (!resolvedId) return undefined;
+
     const load = async () => {
       try {
         const detail = await groupSessionService.getDetail(resolvedId);
@@ -151,12 +124,14 @@ export default function GroupSessionLive() {
         if (!cancelled) setLoading(false);
       }
     };
+
     load();
     return () => { cancelled = true; };
   }, [resolvedId]);
 
   useEffect(() => {
     if (remainingMs == null || remainingMs <= 0) return;
+
     const startedAt = Date.now();
     const startValue = remainingMs;
     const interval = setInterval(() => {
@@ -164,6 +139,7 @@ export default function GroupSessionLive() {
       setRemainingMs(next);
       if (next <= 0) clearInterval(interval);
     }, 1000);
+
     return () => clearInterval(interval);
   }, [livekitData]);
 
@@ -234,10 +210,6 @@ export default function GroupSessionLive() {
         onDisconnected={() => navigate("/group-sessions")}
       >
         <GroupSessionClassroomUI
-          // Instant meetings are peer-to-peer: every participant gets full
-          // mic/cam/screen-share control like Google Meet. For scheduled
-          // group sessions the student is gated by the host (raise-hand /
-          // teacher-grant) just like the original ClassroomUI flow.
           role={
             sessionDetail?.sessionType === "instant" || isHost
               ? "PRESENTER"
@@ -251,6 +223,9 @@ export default function GroupSessionLive() {
             shortCode: sessionDetail?.shortCode,
             sessionType: sessionDetail?.sessionType,
             admitMode: sessionDetail?.admitMode,
+            roomStartedAt: sessionDetail?.roomStartedAt,
+            hostId: sessionDetail?.hostId,
+            hostName: sessionDetail?.hostName,
           }}
           chatConfig={{
             restGetPath:  `/sessions/group-sessions/${resolvedId || id}/chat/`,
@@ -265,131 +240,6 @@ export default function GroupSessionLive() {
         />
         <RoomAudioRenderer />
       </LiveKitRoom>
-
-      {/* Bottom-left "Room info" — visible to everyone in the room. */}
-      {infoOpen ? (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 18,
-            left: 18,
-            zIndex: 9999,
-            width: 320,
-            background: "#ffffff",
-            borderRadius: 12,
-            padding: "14px 14px 12px",
-            boxShadow: "0 6px 20px rgba(15,23,42,0.18)",
-            border: "1px solid #cbd5e1",
-            color: "#0f172a",
-            fontFamily: "system-ui, -apple-system, sans-serif",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <strong style={{ fontSize: 14, color: "#015865" }}>Room info</strong>
-            <button
-              onClick={() => setInfoOpen(false)}
-              aria-label="Hide room info"
-              title="Hide"
-              style={{
-                border: "none", background: "transparent", cursor: "pointer",
-                fontSize: 16, color: "#475569", lineHeight: 1, padding: 2,
-              }}
-            >
-              ✕
-            </button>
-          </div>
-
-          <div style={{ marginTop: 8, fontSize: 12, color: "#475569" }}>Room code</div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: "#f1f5f9",
-              borderRadius: 6,
-              padding: "6px 8px",
-              fontFamily: "monospace",
-              fontSize: 14,
-              fontWeight: 700,
-              color: "#0f172a",
-              letterSpacing: "0.5px",
-            }}
-          >
-            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {roomCode}
-            </span>
-            <button
-              onClick={handleCopyCode}
-              aria-label="Copy room code"
-              title="Copy code"
-              style={{
-                border: "none", background: "transparent", cursor: "pointer",
-                color: copied ? "#15803d" : "#015865", padding: 2,
-                fontSize: 12, fontWeight: 700,
-              }}
-            >
-              {copied ? "✓" : "Copy"}
-            </button>
-          </div>
-
-          <div style={{ marginTop: 10, fontSize: 12, color: "#475569" }}>Share link</div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: "#f1f5f9",
-              borderRadius: 6,
-              padding: "6px 8px",
-              fontFamily: "monospace",
-              fontSize: 11,
-              color: "#0f172a",
-            }}
-          >
-            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {inviteLink}
-            </span>
-            <button
-              onClick={handleCopyLink}
-              aria-label="Copy link"
-              title="Copy link"
-              style={{
-                border: "none", background: "transparent", cursor: "pointer",
-                color: copied ? "#15803d" : "#015865", padding: 2,
-                fontSize: 12, fontWeight: 700,
-              }}
-            >
-              {copied ? "✓" : "Copy"}
-            </button>
-          </div>
-
-          <p style={{ margin: "10px 0 0", fontSize: 11, color: "#64748b", lineHeight: 1.4 }}>
-            Only signed-in students and teachers on this site can join with the code or link.
-          </p>
-        </div>
-      ) : (
-        <button
-          onClick={() => setInfoOpen(true)}
-          title="Show room info"
-          style={{
-            position: "fixed",
-            bottom: 18,
-            left: 18,
-            zIndex: 9999,
-            background: "#015865",
-            color: "#fff",
-            border: "none",
-            borderRadius: 999,
-            padding: "8px 14px",
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(15,23,42,0.18)",
-          }}
-        >
-          Room: {roomCode}
-        </button>
-      )}
     </div>
   );
 }

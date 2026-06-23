@@ -6,6 +6,7 @@ import QuizCard from "../components/QuizCard";
 import NotificationCard from "../components/NotificationCard";
 import DropdownMenu from "../components/DropdownMenu";
 import TopSliderTabs from "../components/TopSliderTabs";
+import SkillDevStudentSection from "../components/SkillDevStudentSection";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
 import useNotificationSocket from "../hooks/useNotificationSocket";
@@ -49,7 +50,7 @@ const SCHEDULE_TYPE_LABELS = {
 };
 
 export default function Dashboard() {
-  const { activeCourse } = useCourse();
+  const { activeCourse, activeTrack } = useCourse();
   const navigate = useNavigate();
 
   const [selectedDate, setSelectedDate] = useState(null);
@@ -605,6 +606,15 @@ export default function Dashboard() {
   };
 
   if (loading) return <div style={{ padding: 20 }}>Loading dashboard...</div>;
+
+  // ── Skill Dev track — render the new design instead of the academic dashboard
+  if (activeTrack === "skill") {
+    return (
+      <div style={{ height: "100%", background: "#f7f1de", display: "flex", overflow: "hidden" }}>
+        <SkillDevStudentSection data={data} />
+      </div>
+    );
+  }
 
   if (!activeCourse) {
     return (

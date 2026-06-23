@@ -41,60 +41,159 @@ function computeCanJoin(session) {
 }
 
 const STATUS_CONFIG = {
-  LIVE:               { label: "🔴 Live Now",        color: "#fff",    bg: "#ef4444" },
-  PAUSED:             { label: "⏸ Paused",           color: "#fff",    bg: "#f59e0b" },
-  RECONNECTING:       { label: "🔄 Reconnecting",    color: "#fff",    bg: "#f59e0b" },
-  SCHEDULED:          { label: "🗓 Scheduled",        color: "#fff",    bg: "#6366f1" },
-  WAITING_FOR_TEACHER:{ label: "⏳ Starting Soon",   color: "#fff",    bg: "#10b981" },
-  COMPLETED:          { label: "✅ Completed",        color: "#fff",    bg: "#6b7280" },
-  CANCELLED:          { label: "🚫 Cancelled",        color: "#fff",    bg: "#6b7280" },
+  LIVE: {
+    label: "LIVE",
+    color: "#fff",
+    bg: "#ef4444",
+  },
+
+  PAUSED: {
+    label: "PAUSED",
+    color: "#fff",
+    bg: "#f59e0b",
+  },
+
+  RECONNECTING: {
+    label: "RECONNECTING",
+    color: "#fff",
+    bg: "#f59e0b",
+  },
+
+  SCHEDULED: {
+    label: "UPCOMING",
+    color: "#fff",
+    bg: "#10b981",
+  },
+
+  WAITING_FOR_TEACHER: {
+    label: "STARTING",
+    color: "#fff",
+    bg: "#3b82f6",
+  },
+
+  COMPLETED: {
+    label: "COMPLETED",
+    color: "#fff",
+    bg: "#9ca3af",
+  },
+
+  CANCELLED: {
+    label: "CANCELLED",
+    color: "#fff",
+    bg: "#6b7280",
+  },
 };
+
+function getLiveDuration(startTime) {
+  const now = Date.now();
+  const start = new Date(startTime).getTime();
+
+  const diffMinutes = Math.floor((now - start) / 60000);
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes} min live`;
+  }
+
+  const hours = Math.floor(diffMinutes / 60);
+  const mins = diffMinutes % 60;
+
+  return `${hours}h ${mins}m live`;
+}
 
 function LiveCard({ session, onClick, tick }) {
   void tick;
-  const [tapped, setTapped] = React.useState(false);
+
   const status = computeStatus(session);
   const canJoin = computeCanJoin(session);
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.SCHEDULED;
+
+
   const start = new Date(session.start_time);
   const end = new Date(session.end_time);
-  const dateStr = start.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-  const timeStr = start.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-  const endStr  = end.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+
+  const timeStr = start.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  const endStr = end.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
 
   return (
+  <div
+  className={`session-card ${
+    status === "COMPLETED"
+      ? "completed"
+      : status === "CANCELLED"
+      ? "cancelled"
+      : ""
+  }`}
+  onClick={() => {
+  if (status === "COMPLETED") {
+    onClick(session);
+    return;
+  }
+
+  if (canJoin) {
+    onClick(session);
+  }
+}}
+>
     <div
-      className={"liveCard" + (canJoin ? "" : " liveCard--disabled") + (tapped ? " tapped" : "")}
-      onClick={() => {
-        if (window.matchMedia("(hover: none)").matches) {
-          if (!tapped) { setTapped(true); return; }
-        }
-        canJoin && onClick(session);
+      className="session-card-banner"
+      style={{
+        backgroundImage:
+          "url(https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600)",
       }}
-      onBlur={() => setTapped(false)}
-      role="button"
-      tabIndex={canJoin ? 0 : -1}
-      onKeyDown={(e) => e.key === "Enter" && canJoin && onClick(session)}
     >
-      <div className="liveCard__thumb">
-        <img src="https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600" alt={session.title} className="liveCard__img" />
-        <span className="liveCard__badge" style={{ color: cfg.color, background: cfg.bg }}>{cfg.label}</span>
-        <div className="liveCard__overlay">
-          <p className="liveCard__desc">{session.description || "No description provided."}</p>
-          {canJoin && <span className="liveCard__joinBtn">Join Session</span>}
-        </div>
-      </div>
-      <div className="liveCard__body">
-        <p className="liveCard__subject">{session.subject_name}</p>
-        <p className="liveCard__title">{session.title}</p>
-        <p className="liveCard__teacher">{session.teacher}</p>
-        <div className="liveCard__time">
-          <span>{dateStr}</span>
-          <span>{timeStr} to {endStr}</span>
-        </div>
+      <div
+        className={`session-badge ${
+          status === "LIVE"
+            ? "live"
+            : status === "COMPLETED"
+            ? "completed"
+            : status === "CANCELLED"
+            ? "cancelled"
+            : "upcoming"
+        }`}
+      >
+        {status === "LIVE"
+          ? "LIVE"
+          : status === "COMPLETED"
+          ? "COMPLETED"
+          : status === "CANCELLED"
+          ? "CANCELLED"
+          : "UPCOMING"}
       </div>
     </div>
-  );
+
+    <div className="session-card-content">
+      <h4 className="session-card-subject">
+        {session.subject_name}
+      </h4>
+
+      <p className="session-card-course">
+        {session.teacher_name ||
+          session.teacher_full_name ||
+          session.teacher}
+      </p>
+
+      <div className="session-card-time">
+  {status === "LIVE" ? (
+    <span className="live-duration">
+      🔴 {getLiveDuration(session.start_time)}
+    </span>
+  ) : (
+    `${timeStr} - ${endStr}`
+  )}
+</div>
+    </div>
+  </div>
+);
 }
 
 export default function LiveSessions() {
@@ -160,13 +259,28 @@ export default function LiveSessions() {
     return () => { ws.close(); wsRef.current = null; };
   }, [activeCourse]);
 
-  const filtered = (selectedSubject
-    ? sessions.filter((s) => String(s.subject_id) === String(selectedSubject))
+  const statusPriority = {
+  LIVE: 1,
+  WAITING_FOR_TEACHER: 2,
+  RECONNECTING: 2,
+  PAUSED: 2,
+  SCHEDULED: 3,
+  COMPLETED: 4,
+  CANCELLED: 5,
+};
+
+const filtered = (
+  selectedSubject
+    ? sessions.filter(
+        (s) => String(s.subject_id) === String(selectedSubject)
+      )
     : sessions
-  ).filter((s) => {
-    const st = computeStatus(s);
-    return st !== "COMPLETED" && st !== "CANCELLED";
-  });
+).sort((a, b) => {
+  return (
+    statusPriority[computeStatus(a)] -
+    statusPriority[computeStatus(b)]
+  );
+});
 
   if (loading) return <div className="liveSessionsPage"><div style={{padding:20,color:"#6b7280"}}>Loading sessions...</div></div>;
   if (error)   return <div className="liveSessionsPage"><div style={{padding:20,color:"red"}}>{error}</div></div>;
@@ -188,8 +302,21 @@ export default function LiveSessions() {
         ) : (
           <div className="liveGrid">
             {filtered.map((s) => (
-              <LiveCard key={s.id} session={s} tick={tick} onClick={(session) => navigate("/live/" + session.id)} />
-            ))}
+<LiveCard
+  key={s.id}
+  session={s}
+  tick={tick}
+  onClick={(session) => {
+    const status = computeStatus(session);
+
+    if (status === "COMPLETED") {
+      navigate(`/subjects/recordings/${session.subject_id}`);
+      return;
+    }
+
+    navigate(`/live/${session.id}`);
+  }}
+/>            ))}
           </div>
         )}
       </div>

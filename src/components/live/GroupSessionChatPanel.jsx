@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { IoSend } from "react-icons/io5";
-import "./ChatPanel.css";
 
-export default function ChatPanel({
+/**
+ * GroupSessionChatPanel.jsx
+ *
+ * Group-session-only chat panel.
+ * Uses gs-* classes from groupSessionLive.css so shared ChatPanel.css is untouched.
+ */
+export default function GroupSessionChatPanel({
   messages = [],
   onSendMessage,
 }) {
@@ -11,6 +16,7 @@ export default function ChatPanel({
 
   useEffect(() => {
     if (!containerRef.current) return;
+
     const el = containerRef.current;
     const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
     if (isNearBottom) el.scrollTop = el.scrollHeight;
@@ -18,6 +24,7 @@ export default function ChatPanel({
 
   const sendMessage = async () => {
     if (!input.trim()) return;
+
     const text = input.trim();
     setInput("");
 
@@ -36,13 +43,13 @@ export default function ChatPanel({
       : "";
 
   return (
-    <div className="cp-outer">
-      <div className="cp-header">Chat</div>
+    <div className="gs-chat">
+      <div className="gs-chat-header">Chat</div>
 
-      <div className="cp-wrap">
-        <div className="cp-messages" ref={containerRef}>
+      <div className="gs-chat-body">
+        <div className="gs-chat-messages" ref={containerRef}>
           {messages.length === 0 && (
-            <p className="cp-empty">No messages yet. Say hello!</p>
+            <p className="gs-chat-empty">No messages yet. Say hello!</p>
           )}
 
           {messages.map((msg, i) => {
@@ -51,24 +58,24 @@ export default function ChatPanel({
             return (
               <div
                 key={msg.id || i}
-                className={`cp-row ${isMe ? "cp-row--me" : "cp-row--other"}`}
+                className={`gs-chat-row ${isMe ? "gs-chat-row--me" : "gs-chat-row--other"}`}
               >
-                <div className={`cp-meta ${isMe ? "cp-meta--me" : "cp-meta--other"}`}>
+                <div className={`gs-chat-meta ${isMe ? "gs-chat-meta--me" : "gs-chat-meta--other"}`}>
                   {isMe ? (
                     <>
-                      <span className="cp-time">{fmt(msg.time)}</span>
-                      <span className="cp-name">You</span>
+                      <span className="gs-chat-time">{fmt(msg.time)}</span>
+                      <span className="gs-chat-name">You</span>
                     </>
                   ) : (
                     <>
-                      <span className="cp-name">{msg.sender}</span>
-                      <span className="cp-time">{fmt(msg.time)}</span>
+                      <span className="gs-chat-name">{msg.sender}</span>
+                      <span className="gs-chat-time">{fmt(msg.time)}</span>
                     </>
                   )}
                 </div>
 
-                <div className={`cp-bubble ${isMe ? "cp-bubble--me" : "cp-bubble--other"}`}>
-                  <span className="cp-text">{msg.text}</span>
+                <div className={`gs-chat-bubble ${isMe ? "gs-chat-bubble--me" : "gs-chat-bubble--other"}`}>
+                  <span>{msg.text}</span>
                 </div>
               </div>
             );
@@ -76,16 +83,16 @@ export default function ChatPanel({
         </div>
       </div>
 
-      <div className="cp-input-area">
+      <div className="gs-chat-input-area">
         <input
-          className="cp-input"
+          className="gs-chat-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Your message here"
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
         />
 
-        <button className="cp-send-btn" onClick={sendMessage} aria-label="Send">
+        <button className="gs-chat-send-btn" onClick={sendMessage} aria-label="Send">
           <IoSend size={22} />
         </button>
       </div>

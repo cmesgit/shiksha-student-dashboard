@@ -8,14 +8,18 @@
 /* ─── Container card ────────────────────────────── */
 .profileContainer {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 18px;
   overflow: hidden;
+  box-shadow: 0 12px 32px rgba(11, 46, 24, 0.10);
+  border: 1px solid #E3EDE6;
 }
 
-/* ─── Header ────────────────────────────────────── */
+/* ─── Header (PPT dark-green hero band) ─────────── */
 .profileHeader {
-  background: linear-gradient(135deg, #b8dde6 0%, #d8eef3 45%, #eef7f9 100%);
-  padding: 24px 28px;
+  background:
+    radial-gradient(120% 140% at 12% 0%, rgba(50, 220, 120, 0.18) 0%, rgba(50, 220, 120, 0) 45%),
+    linear-gradient(135deg, #0B2E18 0%, #15502A 55%, #1E7B3C 100%);
+  padding: 28px 30px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -44,13 +48,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e0f0f4;
+  background: #E8F5EC;
 }
 
 .profileHeader__avatarFallback {
   font-size: 40px;
   font-weight: 700;
-  color: #0a4d55;
+  color: #15502A;
   text-transform: uppercase;
 }
 
@@ -95,7 +99,7 @@
 
 .profileHeader__avatarPlus {
   font-size: 28px;
-  color: #0a4d55;
+  color: #15502A;
   font-weight: 300;
   line-height: 1;
 }
@@ -117,7 +121,7 @@
 .profileHeader__name {
   font-size: 22px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #ffffff;
   margin: 0 0 4px 0;
 }
 
@@ -131,20 +135,24 @@
 .profileHeader__nameInput {
   font-size: 22px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #ffffff;
   border: none;
   background: transparent;
   outline: none;
-  border-bottom: 2px solid #0a4d55;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.6);
   padding: 2px 4px;
   min-width: 140px;
+}
+
+.profileHeader__nameInput::placeholder {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .profileHeader__nameClear {
   background: none;
   border: none;
   font-size: 14px;
-  color: #888;
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   padding: 0;
   line-height: 1;
@@ -154,7 +162,7 @@
   display: flex;
   gap: 16px;
   font-size: 13px;
-  color: #333;
+  color: rgba(255, 255, 255, 0.85);
   align-items: center;
 }
 
@@ -178,22 +186,23 @@
 }
 
 .profileBadge--online {
-  background: #0a7a55;
+  background: #2F9D42;
   color: #fff;
+  box-shadow: 0 2px 8px rgba(47, 157, 66, 0.4);
 }
 
 .profileBadge__dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #7fffb2;
+  background: #BFF3D2;
   flex-shrink: 0;
 }
 
 .profileBadge--lang {
-  border: 1.5px solid #0a4d55;
-  color: #0a4d55;
-  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* Header actions */
@@ -223,14 +232,14 @@
 }
 
 .profileBtn--outline {
-  background: transparent;
-  border: 1.5px solid #999;
-  color: #333;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  color: #ffffff;
 }
 
 .profileBtn--outline:hover {
-  background: rgba(0, 0, 0, 0.05);
-  border-color: #666;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #ffffff;
 }
 
 .profileBtn--private {
@@ -238,19 +247,19 @@
 }
 
 .profileBtn--solid {
-  background: #0a4d55;
-  border: 1.5px solid #0a4d55;
+  background: #2F9D42;
+  border: 1.5px solid #2F9D42;
   color: #fff;
 }
 
 .profileBtn--solid:hover:not(:disabled) {
-  background: #0a6d75;
-  border-color: #0a6d75;
+  background: #268537;
+  border-color: #268537;
 }
 
 .profileBtn--solid:disabled {
-  background: #ccc;
-  border-color: #ccc;
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.25);
   cursor: not-allowed;
 }
 
@@ -269,8 +278,21 @@
 .profileSection__title {
   font-size: 15px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #14241B;
   margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.profileSection__title::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2F9D42;
+  box-shadow: 0 0 0 3px rgba(47, 157, 66, 0.18);
+  flex-shrink: 0;
 }
 
 .profileSection__text {
@@ -302,7 +324,7 @@
 }
 
 .profileSection__textarea:focus {
-  border-color: #0a4d55;
+  border-color: #15502A;
 }
 
 /* ─── Interests ──────────────────────────────────── */
@@ -380,7 +402,7 @@
   background: none;
   border: none;
   font-size: 16px;
-  color: #0a4d55;
+  color: #15502A;
   cursor: pointer;
   line-height: 1;
   padding: 0 2px;
@@ -389,7 +411,7 @@
 }
 
 .interests__addBtn:hover {
-  color: #0a7a55;
+  color: #2F9D42;
 }
 
 /* ─── Activity ───────────────────────────────────── */
@@ -465,7 +487,7 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  border: 2px solid #0a4d55;
+  border: 2px solid #15502A;
   background: #f0f0f0;
   display: flex;
   align-items: center;
@@ -501,7 +523,7 @@
 
 .avatarPicker__uploadBtn {
   display: inline-block;
-  background: #0a4d55;
+  background: #2F9D42;
   color: #fff;
   padding: 8px 16px;
   border-radius: 6px;
@@ -511,7 +533,7 @@
 }
 
 .avatarPicker__uploadBtn:hover {
-  background: #0a6d75;
+  background: #268537;
 }
 
 .avatarPicker__emojiGrid {
@@ -552,7 +574,7 @@
 }
 
 .avatarPicker__emojiBtn--selected {
-  background: #0a4d55;
+  background: #2F9D42;
 }
 
 .avatarPicker__actions {
@@ -581,7 +603,7 @@
   flex: 1;
   padding: 10px;
   border: none;
-  background: #0a4d55;
+  background: #2F9D42;
   color: #fff;
   border-radius: 6px;
   font-size: 12px;
@@ -591,7 +613,7 @@
 }
 
 .avatarPicker__saveBtn:hover:not(:disabled) {
-  background: #0a6d75;
+  background: #268537;
 }
 
 .avatarPicker__saveBtn:disabled {
@@ -602,8 +624,10 @@
 /* ─── Courses Section ────────────────────────────── */
 .coursesSection {
   background: white;
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 20px 24px;
+  box-shadow: 0 12px 32px rgba(11, 46, 24, 0.10);
+  border: 1px solid #E3EDE6;
 }
 
 .coursesSection__table {
@@ -746,7 +770,7 @@
 }
 
 .editModal__input:focus {
-  border-color: #0a4d55;
+  border-color: #15502A;
 }
 
 .editModal__textarea {
@@ -766,7 +790,7 @@
 }
 
 .editModal__textarea:focus {
-  border-color: #0a4d55;
+  border-color: #15502A;
 }
 
 /* Tag list (subjects / hobbies / languages) */
@@ -833,14 +857,14 @@
   border: none;
   font-size: 12px;
   font-weight: 600;
-  color: #0a4d55;
+  color: #15502A;
   cursor: pointer;
   white-space: nowrap;
   padding: 0;
 }
 
 .editModal__addBtn:hover {
-  color: #0a7a55;
+  color: #2F9D42;
 }
 
 /* Footer */
@@ -873,7 +897,7 @@
   flex: 1;
   padding: 11px;
   border: none;
-  background: #0a4d55;
+  background: #2F9D42;
   color: #fff;
   border-radius: 8px;
   font-size: 13px;
@@ -883,7 +907,7 @@
 }
 
 .editModal__saveBtn:hover {
-  background: #0a6d75;
+  background: #268537;
 }
 
 .profileLoading {

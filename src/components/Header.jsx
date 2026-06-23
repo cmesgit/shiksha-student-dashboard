@@ -1,84 +1,37 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+/**
+ * student_dashboard/src/components/Header.jsx
+ *
+ * Header: greeting + notifications + ProfileSwitcher.
+ * The Academy⟷Skill-dev switch and the "Select Course" dropdown have been
+ * removed — the active track/course now comes from CourseContext (enrollment
+ * + DEFAULT_TRACK fallback), not from header controls.
+ */
+import { useLocation } from "react-router-dom";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
-import { IoChevronDown } from "react-icons/io5";
-import { BsBook } from "react-icons/bs";
-import { useCourse } from "../contexts/CourseContext";
 import { useAuth } from "../contexts/AuthContext";
+import ProfileSwitcher from "../shared/ProfileSwitcher";
+import TrackSwitcher from "./TrackSwitcher";
 import "../styles/header.css";
+import "../shared/ProfileSwitcher.css";
 import NotificationBell from "./NotificationBell";
-
-const DEFAULT_AVATAR =
-  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100";
+import { HOME_URL, TEACHER_DASHBOARD_URL as TEACHER_URL } from "../config/urls";
 
 export default function Header({ toggleMenu, menuOpen }) {
-  const navigate = useNavigate();
   const { pathname } = useLocation();
   const isDashboard = pathname === "/";
 
-  const dropdownRef = useRef(null);
-  const profileRef = useRef(null);
+  const { user, activeProfile, isTeacherContext } = useAuth();
 
-  const { courses, activeCourse, selectCourse } = useCourse();
-  const { user, logout } = useAuth();
+  // Name to greet: active learner profile, else teacher username, else account.
+  const greetName =
+    (!isTeacherContext && activeProfile?.display_name) ||
+    user?.username ||
+    (user?.email ? user.email.split("@")[0] : "") ||
+    "";
 
-  const [open, setOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [myCoursesOpen, setMyCoursesOpen] = useState(false);
-
-  useEffect(() => {
-    const handleOutsideClick = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-      if (profileRef.current && !profileRef.current.contains(e.target)) {
-        setProfileOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
-
-  const handleLogout = async () => {
-    await logout();
-  };
-
-  const renderAvatar = (size = "small") => {
-    const isSmall = size === "small";
-
-    if (user?.profile?.avatar_type === "emoji") {
-      return (
-        <span className={isSmall ? "header__avatarEmoji" : "header__profileEmoji"}>
-          {user.profile.avatar}
-        </span>
-      );
-    }
-
-    if (user?.profile?.avatar_type === "image") {
-      return (
-        <img
-          src={user.profile.avatar}
-          alt="Profile"
-          className={isSmall ? "header__avatarImg" : "header__profileImg"}
-        />
-      );
-    }
-
-    return (
-      <img
-        src={DEFAULT_AVATAR}
-        alt="Profile"
-        className={isSmall ? "header__avatarImg" : "header__profileImg"}
-      />
-    );
-  };
-
-  const rawName = user?.profile?.full_name || user?.email || "Student";
-  const firstName = rawName.includes("@")
-    ? rawName.split("@")[0]
-    : rawName.trim().split(" ")[0];
-  const displayName = `Hi, ${firstName}`;
+  const hour = new Date().getHours();
+  const timeGreeting =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
     <header className="header">
@@ -88,181 +41,23 @@ export default function Header({ toggleMenu, menuOpen }) {
 
       {isDashboard && (
         <div className="header__left">
-          <h3 className="header__title">Welcome Back</h3>
+          <h3 className="header__title">
+            {greetName ? `${timeGreeting}, ${greetName}` : "Welcome Back"}
+          </h3>
           <p className="header__subtitle">Let's learn something new today</p>
         </div>
       )}
 
-      <div className="header__courseWrap" ref={dropdownRef}>
-        <button
-          className="header__btn"
-          onClick={() => setOpen((prev) => !prev)}
-        >
-          {activeCourse?.title || "Select Course"}
-          <span className={`header__chevron ${open ? "header__chevron--up" : ""}`}>
-            <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-              <path
-                d="M1 1.5L6 6.5L11 1.5"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-        </button>
+      {/* Academy ⟷ Skill Dev switch */}
+      <TrackSwitcher />
 
-        {open && (
-          <div className="header__dropdown">
-            {courses.map((course) => (
-              <div
-                key={course.id}
-                className="header__dropdownItem"
-                onClick={() => {
-                  selectCourse(course.id);
-                  setOpen(false);
-                }}
-              >
-                {course.title}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="header__right" ref={profileRef}>
+      <div className="header__right" style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" }}>
         <NotificationBell />
-
-        <div
-          className="header__avatar"
-          onClick={() => setProfileOpen((prev) => !prev)}
-        >
-          {renderAvatar("small")}
-        </div>
-
-        {profileOpen && (
-          <div className="header__profileDropdown">
-            <div className="header__profileHeader">
-              <p className="header__profileName">{displayName}</p>
-              <div className="header__profileImgWrap">
-                {renderAvatar("large")}
-              </div>
-            </div>
-
-            <div className="header__profileDivider" />
-
-            <div className="header__profileMenu">
-              <div
-                className="header__profileItem"
-                onClick={() => {
-                  setProfileOpen(false);
-                  navigate("/profile");
-                }}
-              >
-                <span>Profile</span>
-                <span className="header__profileArrow">
-                  <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
-                    <path
-                      d="M1.5 1L6.5 6L1.5 11"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-              </div>
-
-              {courses && courses.length > 0 && (
-                <>
-                  <div
-                    className="header__profileItem"
-                    onClick={() => setMyCoursesOpen((v) => !v)}
-                  >
-                    <span>My Courses</span>
-                    <IoChevronDown
-                      className={`header__profileChev ${
-                        myCoursesOpen ? "header__profileChev--open" : ""
-                      }`}
-                    />
-                  </div>
-
-                  {myCoursesOpen && (
-                    <div className="header__profileSubMenu">
-                      {courses.map((c) => (
-                        <div
-                          key={c.id}
-                          className={`header__profileSubItem ${
-                            pathname === `/my-courses/${c.id}` ? "active" : ""
-                          }`}
-                          onClick={() => {
-                            setProfileOpen(false);
-                            setMyCoursesOpen(false);
-                            navigate(`/my-courses/${c.id}`);
-                          }}
-                        >
-                          <BsBook />
-                          <span>{c.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-
-              <div
-                className="header__profileItem"
-                onClick={() => {
-                  setProfileOpen(false);
-                  window.location.href =
-                    import.meta.env.VITE_HOME_URL || "https://shikshacom.com/";
-                }}
-              >
-                <span>Return to Homepage</span>
-                <span className="header__profileArrow">
-                  <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
-                    <path
-                      d="M1.5 1L6.5 6L1.5 11"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-              </div>
-
-              <div
-                className="header__profileItem"
-                onClick={() => {
-                  setProfileOpen(false);
-                  navigate("/change-password");
-                }}
-              >
-                <span>Change Password</span>
-                <span className="header__profileArrow">
-                  <svg width="8" height="12" viewBox="0 0 8 12" fill="none">
-                    <path
-                      d="M1.5 1L6.5 6L1.5 11"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-              </div>
-
-              <div
-                className="header__profileItem header__profileLogout"
-                onClick={handleLogout}
-              >
-                <span>Logout</span>
-                <span className="header__logoutIcon">⊳</span>
-              </div>
-            </div>
-          </div>
-        )}
+        <ProfileSwitcher
+          teacherSignupUrl={`${HOME_URL}/signup?role=teacher`}
+          learnUrl={window.location.origin}
+          teachUrl={TEACHER_URL}
+        />
       </div>
     </header>
   );

@@ -4,7 +4,15 @@ import {
 } from "@livekit/components-react";
 import { useState, useEffect, useRef } from "react";
 
-export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }) {
+export default function ControlBar({
+  onLeave,
+  role,
+  activePanel,
+  onTogglePanel,
+  session,
+  isHost = false,
+  onHostEndSession = null,
+}) {
   const isStudent = role !== "PRESENTER";
 
   const room = useRoomContext();
@@ -15,9 +23,26 @@ export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }
   const [screenOn, setScreenOn] = useState(false);
   const [canUnmute, setCanUnmute] = useState(false);
   const [canVideo, setCanVideo] = useState(false);
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const [elapsed, setElapsed] = useState(0);
   const startRef = useRef(Date.now());
+  const otherRef = useRef(null);
+
+  const roomCode = session?.shortCode || session?.short_code || session?.id || "";
+  const roomCodeText = roomCode ? String(roomCode) : "—";
+
+  /* ── close Other menu on outside click ── */
+  useEffect(() => {
+    const onClick = (e) => {
+      if (otherRef.current && !otherRef.current.contains(e.target)) {
+        setOtherOpen(false);
+      }
+    };
+    if (otherOpen) document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [otherOpen]);
 
   /* ── student joins with mic + camera off ── */
   useEffect(() => {
@@ -28,11 +53,7 @@ export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }
     setVideoOn(false);
   }, [isStudent, localParticipant]);
 
-  /* ── presenter / instant-meeting host: sync real state from LiveKit ──
-     Mirrors the teacher dashboard's ControlBar so when GroupSessionLive
-     bumps role → "PRESENTER" for instant meetings the UI doesn't sit on
-     a stale {micOn:false, videoOn:false} while LiveKit has already auto-
-     published both tracks (LiveKitRoom video={true} audio={true}). */
+  /* ── presenter / instant-meeting host sync ── */
   useEffect(() => {
     if (isStudent || !localParticipant) return;
     setMicOn(!!localParticipant.isMicrophoneEnabled);
@@ -57,6 +78,7 @@ export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }
 
   /* ── mic ── */
   const toggleMic = async () => {
+    if (!localParticipant) return;
     if (isStudent && !canUnmute && !micOn) return;
     const next = !micOn;
     await localParticipant.setMicrophoneEnabled(next);
@@ -65,6 +87,7 @@ export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }
 
   /* ── video ── */
   const toggleVideo = async () => {
+    if (!localParticipant) return;
     if (isStudent && !canVideo && !videoOn) return;
     const next = !videoOn;
     await localParticipant.setCameraEnabled(next);
@@ -73,6 +96,7 @@ export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }
 
   /* ── screen share ── */
   const toggleScreen = async () => {
+    if (!localParticipant) return;
     const next = !screenOn;
     try {
       await localParticipant.setScreenShareEnabled(next);
@@ -82,8 +106,10 @@ export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }
     }
   };
 
-  /* ── teacher commands ── */
+  /* ── teacher/host commands received ── */
   useEffect(() => {
+    if (!room || !localParticipant) return;
+
     const handleData = (payload) => {
       try {
         const text = new TextDecoder().decode(payload);
@@ -125,13 +151,41 @@ export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }
         }
       } catch {}
     };
+
     room.on("dataReceived", handleData);
     return () => room.off("dataReceived", handleData);
   }, [room, localParticipant]);
 
   const leaveRoom = async () => {
+    if (isHost && onHostEndSession) {
+      onHostEndSession();
+      return;
+    }
+
     await room.disconnect();
     if (onLeave) onLeave();
+  };
+
+  const copySessionId = async () => {
+    try {
+      await navigator.clipboard.writeText(roomCodeText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    } catch {
+      window.prompt("Copy this session ID:", roomCodeText);
+    }
+  };
+
+  const muteOthers = async () => {
+    if (!isHost || !localParticipant) return;
+
+    try {
+      const payload = new TextEncoder().encode(JSON.stringify({ type: "force-mute" }));
+      await localParticipant.publishData(payload, { reliable: true });
+      setOtherOpen(false);
+    } catch (e) {
+      console.error("Mute others failed", e);
+    }
   };
 
   return (
@@ -149,7 +203,7 @@ export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }
           onClick={toggleMic}
           title={micOn ? "Mute" : "Unmute"}
         >
-          <div className="cb-icon">
+          <div className={`cb-icon ${micOn ? "" : "cb-icon--off"}`}>
             {micOn ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -176,7 +230,7 @@ export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }
           onClick={toggleVideo}
           title={videoOn ? "Turn off camera" : "Turn on camera"}
         >
-          <div className="cb-icon">
+          <div className={`cb-icon ${videoOn ? "" : "cb-icon--off"}`}>
             {videoOn ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="23 7 16 12 23 17 23 7"/>
@@ -206,19 +260,57 @@ export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }
         </button>
 
         {/* Other */}
-<button className="cb-btn" title="More options">
-  <div className="cb-icon">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="5" r="1"/>
-      <circle cx="12" cy="12" r="1"/>
-      <circle cx="12" cy="19" r="1"/>
-    </svg>
-  </div>
-  <span className="cb-label">Other</span>
-</button>
+        <div className="cb-other-wrap" ref={otherRef}>
+          <button
+            className={`cb-btn ${otherOpen ? "cb-btn--active" : ""}`}
+            title="More options"
+            onClick={() => setOtherOpen((v) => !v)}
+          >
+            <div className="cb-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="5" r="1"/>
+                <circle cx="12" cy="12" r="1"/>
+                <circle cx="12" cy="19" r="1"/>
+              </svg>
+            </div>
+            <span className="cb-label">Other</span>
+          </button>
+
+          {otherOpen && (
+            <div className="cb-other-menu">
+              <div className="cb-other-session">
+                <span className="cb-other-label">Session ID</span>
+                <div className="cb-other-code-row">
+                  <strong>{roomCodeText}</strong>
+                  <button type="button" onClick={copySessionId} title="Copy session ID">
+                    {copied ? "✓" : (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <button type="button" className="cb-other-item" disabled={!isHost} onClick={muteOthers}>
+                <span>Mute Others</span>
+                <span className="cb-other-check" />
+              </button>
+
+              <button type="button" className="cb-other-item" onClick={() => setOtherOpen(false)}>
+                <span>Voice &amp; Video Settings</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.7 1.7 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.24.34.6.58 1 .6h.6a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.4z"/>
+                </svg>
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Leave */}
-        <button className="cb-btn" onClick={leaveRoom} title="Leave class">
+        <button className="cb-btn" onClick={leaveRoom} title={isHost ? "End session" : "Leave session"}>
           <div className="cb-icon cb-icon--leave">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" transform="rotate(135 12 12)"/>
@@ -226,7 +318,6 @@ export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }
           </div>
           <span className="cb-label">Leave</span>
         </button>
-
       </div>
 
       {/* RIGHT — Info / People / Chat */}
@@ -269,7 +360,6 @@ export default function ControlBar({ onLeave, role, activePanel, onTogglePanel }
           <span>Chat</span>
         </button>
       </div>
-
     </div>
   );
 }

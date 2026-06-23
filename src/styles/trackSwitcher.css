@@ -1,0 +1,35 @@
+/* TrackSwitcher — Academy/Skill (student) & Faculty/Expert (teacher) slider.
+   Matches the Auth Flow prototype's rd-switch:
+     · track:   #d9cfce pill
+     · active:  teal #015865 (student academy) — the default
+     · ctx-skill   → active turns orange #ff8f01 (student on the skill side)
+     · ctx-teacher → active is blue  #425f7f (teacher, either side) */
+.trackSwitcher {
+  display: inline-flex; background: #d9cfce; border-radius: 100px;
+  padding: 3px; gap: 2px; margin-right: 14px;
+}
+.trackSwitcher__seg {
+  cursor: pointer; padding: 7px 15px; border-radius: 100px;
+  font-size: 12px; font-weight: 700; color: #6b5e5d;
+  display: inline-flex; align-items: center; gap: 6px; line-height: 1;
+  border: none; background: transparent; font-family: inherit; white-space: nowrap;
+}
+.trackSwitcher__seg.is-active {
+  background: #015865; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.18);
+}
+.trackSwitcher.ctx-skill   .trackSwitcher__seg.is-active { background: #ff8f01; color: #fff; }
+.trackSwitcher.ctx-teacher .trackSwitcher__seg.is-active { background: #425f7f; color: #fff; }
+
+.trackSwitcher__seg.is-locked  { color: #9a8f8e; }
+.trackSwitcher__seg.is-pending { color: #9a7b18; cursor: default; }
+.trackSwitcher__lock { font-size: 13px; opacity: .8; }
+.trackSwitcher__badge {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+  background: rgba(154,123,24,.18); color: #9a7b18; padding: 2px 6px; border-radius: 100px;
+}
+
+@media (max-width: 600px) {
+  .trackSwitcher { margin-right: 8px; }
+  .trackSwitcher__seg { padding: 7px 11px; }
+  .trackSwitcher__badge { display: none; }
+}
