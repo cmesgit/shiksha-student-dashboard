@@ -8,6 +8,12 @@ import { courseTrack } from "../utils/trackFromCourses"; // ← new import
 
 const CourseContext = createContext();
 
+// Fallback track used ONLY when the learner has no active course yet.
+// Dev: "skill" so the Skill Dev side is visible without enrollment.
+// Production: set to "academy" (or keep, and rely on real enrollment +
+// the locked TrackSwitcher) so unassigned learners don't see it by default.
+const DEFAULT_TRACK = "skill";
+
 export function CourseProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
 
@@ -55,7 +61,7 @@ export function CourseProvider({ children }) {
   };
 
   // ── NEW: derived track — "academy" | "skill"
-  const activeTrack = activeCourse ? courseTrack(activeCourse) : "academy";
+  const activeTrack = activeCourse ? courseTrack(activeCourse) : DEFAULT_TRACK;
 
   return (
     <CourseContext.Provider
