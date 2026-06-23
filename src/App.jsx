@@ -3,9 +3,10 @@
  * ACTION:    Replace the entire file.
  *
  * Changes from previous version:
- *  - Added import for SkillMessages
- *  - Added <Route path="skill-messages" element={<SkillMessages />} />
- *    inside the RequireProfile / StudentLayout block (after skill-dev/explore)
+ *   - Added import for SkillMessages
+ *   - Added import for SkillSessionDetail
+ *   - Added <Route path="skill-messages" element={<SkillMessages />} />
+ *   - Added <Route path="skill-dev/sessions/:id" element={<SkillSessionDetail />} />
  */
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -21,6 +22,7 @@ import PrivateDetails from "./pages/PrivateDetails";
 import ChangePassword from "./pages/ChangePassword";
 import Chat from "./pages/Chat";
 import SkillMessages from "./pages/SkillMessages";
+import SkillSessionDetail from "./pages/SkillSessionDetail";
 
 import Subjects from "./pages/Subjects";
 import SubjectDetails from "./pages/SubjectDetails";
@@ -93,6 +95,7 @@ export default function App() {
               <Route path="change-password" element={<ChangePassword />} />
 
               <Route path="chat" element={<Chat />} />
+              <Route path="skill-messages" element={<SkillMessages />} />
 
               <Route path="subjects" element={<Subjects />} />
               <Route path="subjects/:subjectId" element={<SubjectDetails />} />
@@ -128,16 +131,15 @@ export default function App() {
 
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
 
-              {/* Skill Dev sub-pages */}
+              {/* ── Skill Dev ── */}
               <Route path="skill-dev/courses" element={<SkillCoursesPage />} />
               <Route path="skill-dev/sessions" element={<SkillSessionsPage />} />
+              <Route path="skill-dev/sessions/:id" element={<SkillSessionDetail />} />
               <Route path="skill-dev/book" element={<SkillBookPage />} />
               <Route path="skill-dev/explore" element={<SkillExplorePage />} />
-              {/* Skill Dev messaging — replaces the old polling SkillMessages */}
-              <Route path="skill-messages" element={<SkillMessages />} />
             </Route>
 
-            {/* Fullscreen live routes — no layout wrapper */}
+            {/* Fullscreen live routes */}
             <Route path="/private-session/live/:id" element={<PrivateSessionLive />} />
             <Route path="/group-session/live/:id" element={<GroupSessionLive />} />
           </Routes>

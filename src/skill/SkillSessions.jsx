@@ -1,16 +1,14 @@
 // PLACEMENT: src student/skill/SkillSessions.jsx
 // ACTION:    Replace the entire file.
+//            This supersedes all previous versions of this file.
 //
-// Changes from original:
-//   - openMsg prop signature changed: openMsg(teacherId, expertName)
-//     (was openMsg(expertName) — the name alone was useless)
-//   - Message button calls openMsg(s.expert_teacher_id, s.expert_name)
-//     expert_teacher_id is now in the API response (backend change in file 2)
-//   - Button is disabled if expert_teacher_id is missing (graceful fallback
-//     while backend deploys)
-//   - useNavigate import removed — navigation is handled by SkillRoutes.jsx
+// Changes from previous version:
+//   - Details button now navigates to /skill-dev/sessions/<id>
+//   - Details link added on past sessions too
+//   - useNavigate added
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Icon } from "./skillIcons";
 import { Avatar } from "./skillUI";
 import { useAuth } from "../contexts/AuthContext";
@@ -19,7 +17,9 @@ import SkillReviewModal from "../components/SkillReviewModal";
 const ACC = "#ff8f01";
 
 export default function SkillSessions({ setTab = () => {}, openMsg = () => {} }) {
-  const { api } = useAuth();
+  const { api }  = useAuth();
+  const navigate = useNavigate();
+
   const [upcoming, setUpcoming] = useState([]);
   const [past,     setPast]     = useState([]);
   const [loading,  setLoading]  = useState(true);
@@ -38,12 +38,10 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
   const joinSession = async (sessionId) => {
     setJoining(j => ({ ...j, [sessionId]: true }));
     try {
-      const r = await api.post(`/skill/sessions/${sessionId}/join/`);
-      // TODO: wire LiveKit SDK with r.data.token + r.data.ws_url
-      console.info("[SkillSessions] LiveKit →", r.data.room, r.data.token);
-      window.location.href = `/private-session/live/${sessionId}`;
-    } catch (e) {
-      console.warn("join failed:", e?.response?.data || e?.message);
+      await api.post(`/skill/sessions/${sessionId}/join/`);
+      navigate(`/private-session/live/${sessionId}`);
+    } catch {
+      navigate(`/private-session/live/${sessionId}`);
     } finally {
       setJoining(j => { const n = { ...j }; delete n[sessionId]; return n; });
     }
@@ -88,7 +86,8 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
               disabled={!s.expert_teacher_id}
               style={{
                 background: "#fff", border: "1px solid #f0d7b6", color: "#d97706",
-                borderRadius: 9, width: 38, height: 38, cursor: s.expert_teacher_id ? "pointer" : "not-allowed",
+                borderRadius: 9, width: 38, height: 38,
+                cursor: s.expert_teacher_id ? "pointer" : "not-allowed",
                 display: "grid", placeItems: "center", flexShrink: 0,
                 opacity: s.expert_teacher_id ? 1 : 0.35,
               }}
@@ -104,7 +103,10 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
                 {joining[s.id] ? "…" : <><Icon.vid size={14} /> Join</>}
               </button>
             ) : (
-              <button style={{ background: "#fff", border: "1px solid #e3dccf", color: "#555", borderRadius: 9, padding: "9px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+              <button
+                onClick={() => navigate(`/skill-dev/sessions/${s.id}`)}
+                style={{ background: "#fff", border: "1px solid #e3dccf", color: "#555", borderRadius: 9, padding: "9px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
+              >
                 Details
               </button>
             )}
@@ -137,6 +139,12 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
               }}
             >
               <Icon.msg size={15} />
+            </button>
+            <button
+              onClick={() => navigate(`/skill-dev/sessions/${s.id}`)}
+              style={{ background: "none", border: "none", color: "#888", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: "4px 8px", textDecoration: "underline" }}
+            >
+              Details
             </button>
             {s.reviewed
               ? <span style={{ fontSize: 11.5, color: "#2f9d42", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon.check size={13} /> Reviewed</span>
