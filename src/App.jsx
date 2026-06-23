@@ -48,6 +48,14 @@ import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
 
+// Skill Dev pages (wired to the Skill Dev sidebar links)
+import {
+  SkillCoursesPage,
+  SkillSessionsPage,
+  SkillBookPage,
+  SkillExplorePage,
+} from "./skill/SkillRoutes";
+
 
 /**
  * Wraps the whole student app.
@@ -128,6 +136,12 @@ export default function App() {
               <Route path="teachers/:id" element={<TeacherDetail />} />
 
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
+
+              {/* ── Skill Dev sub-pages (the overview lives on "/" via Dashboard) ── */}
+              <Route path="skill-dev/courses" element={<SkillCoursesPage />} />
+              <Route path="skill-dev/sessions" element={<SkillSessionsPage />} />
+              <Route path="skill-dev/book" element={<SkillBookPage />} />
+              <Route path="skill-dev/explore" element={<SkillExplorePage />} />
             </Route>
 
             {/* ── Fullscreen live routes — no layout wrapper ── */}
