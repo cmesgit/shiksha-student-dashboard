@@ -1,6 +1,14 @@
-// skill/SkillSessions.jsx — Live 1-on-1 sessions (skillTab === "sessions").
-// Wired to GET /skill/student/dashboard/ (sessions) + POST /skill/sessions/<id>/join/
-// Review submissions go through SkillReviewModal (already wired).
+// PLACEMENT: src student/skill/SkillSessions.jsx
+// ACTION:    Replace the entire file.
+//
+// Changes from original:
+//   - openMsg prop signature changed: openMsg(teacherId, expertName)
+//     (was openMsg(expertName) — the name alone was useless)
+//   - Message button calls openMsg(s.expert_teacher_id, s.expert_name)
+//     expert_teacher_id is now in the API response (backend change in file 2)
+//   - Button is disabled if expert_teacher_id is missing (graceful fallback
+//     while backend deploys)
+//   - useNavigate import removed — navigation is handled by SkillRoutes.jsx
 
 import { useState, useEffect } from "react";
 import { Icon } from "./skillIcons";
@@ -31,9 +39,8 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
     setJoining(j => ({ ...j, [sessionId]: true }));
     try {
       const r = await api.post(`/skill/sessions/${sessionId}/join/`);
-      // TODO: connect to LiveKit with r.data.token + r.data.ws_url
+      // TODO: wire LiveKit SDK with r.data.token + r.data.ws_url
       console.info("[SkillSessions] LiveKit →", r.data.room, r.data.token);
-      // For now navigate to sessions page; replace with LiveKit SDK connection
       window.location.href = `/private-session/live/${sessionId}`;
     } catch (e) {
       console.warn("join failed:", e?.response?.data || e?.message);
@@ -44,10 +51,9 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
 
   return (
     <div style={{ padding: "14px 18px 22px", overflow: "auto", flex: 1 }}>
-      {/* Review prompt — shown if completed sessions need review */}
       <SkillReviewModal />
 
-      {/* Upcoming */}
+      {/* Upcoming sessions */}
       <div className="rd-card" style={{ marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
           <h4 style={{ margin: 0 }}>Upcoming 1-on-1 sessions</h4>
@@ -60,7 +66,10 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
           <div style={{ fontSize: 12, color: "#888" }}>Loading…</div>
         ) : upcoming.length === 0 ? (
           <div style={{ fontSize: 12, color: "#888", padding: "8px 0" }}>
-            No upcoming sessions. <button onClick={() => setTab("book")} style={{ background: "none", border: "none", color: ACC, fontWeight: 700, cursor: "pointer", fontSize: 12 }}>Book one →</button>
+            No upcoming sessions.{" "}
+            <button onClick={() => setTab("book")} style={{ background: "none", border: "none", color: ACC, fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
+              Book one →
+            </button>
           </div>
         ) : upcoming.map((s) => (
           <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 13, padding: 13, border: "1px solid #efe2d6", borderRadius: 13, marginBottom: 10, background: "#fff" }}>
@@ -73,7 +82,17 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon.clock size={12} /> {s.dur}</span>
               </div>
             </div>
-            <button onClick={() => openMsg(s.expert_name)} title="Message" style={{ background: "#fff", border: "1px solid #f0d7b6", color: "#d97706", borderRadius: 9, width: 38, height: 38, cursor: "pointer", display: "grid", placeItems: "center", flexShrink: 0 }}>
+            <button
+              onClick={() => openMsg(s.expert_teacher_id, s.expert_name)}
+              title="Message"
+              disabled={!s.expert_teacher_id}
+              style={{
+                background: "#fff", border: "1px solid #f0d7b6", color: "#d97706",
+                borderRadius: 9, width: 38, height: 38, cursor: s.expert_teacher_id ? "pointer" : "not-allowed",
+                display: "grid", placeItems: "center", flexShrink: 0,
+                opacity: s.expert_teacher_id ? 1 : 0.35,
+              }}
+            >
               <Icon.msg size={15} />
             </button>
             {s.live ? (
@@ -107,12 +126,21 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
               <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>{s.topic}</div>
               <div style={{ fontSize: 11.5, color: "#888" }}>with {s.expert_name} · {s.when}</div>
             </div>
+            <button
+              onClick={() => openMsg(s.expert_teacher_id, s.expert_name)}
+              title="Message"
+              disabled={!s.expert_teacher_id}
+              style={{
+                background: "none", border: "none", color: "#d97706",
+                cursor: s.expert_teacher_id ? "pointer" : "default",
+                opacity: s.expert_teacher_id ? 1 : 0.35, padding: "4px 8px",
+              }}
+            >
+              <Icon.msg size={15} />
+            </button>
             {s.reviewed
               ? <span style={{ fontSize: 11.5, color: "#2f9d42", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon.check size={13} /> Reviewed</span>
-              : <button
-                  onClick={() => {/* SkillReviewModal handles this */}}
-                  style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}
-                >
+              : <button style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
                   <Icon.star size={12} /> Leave review
                 </button>
             }

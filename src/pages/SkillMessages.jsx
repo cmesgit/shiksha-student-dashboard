@@ -1,130 +1,42 @@
-/**
- * SkillMessages.jsx — learner's message inbox for skill experts.
- * Shows all conversations, lets the learner read + reply.
- * Polling every 15s for new messages (WebSocket can replace later).
- */
-import { useState, useEffect, useRef } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import "../styles/skillMessages.css";
+// PLACEMENT: src student/pages/SkillMessages.jsx
+// ACTION:    Replace the entire file.
+//
+// What changed:
+//   The old file was a custom polling-REST inbox (GET /skill/conversations/ every 15s,
+//   no WebSocket). This replaces it with the shared ChatPanel already used by Chat.jsx —
+//   same live WebSocket inbox (shared/chatClient.js → ws/chat/<id>/) but scoped to the
+//   Skill Dev section and navigable from Message buttons on sessions.
+//
+// Route (already exists, no App.jsx change needed IF /skill-messages is already registered.
+// If not — add this inside the RequireProfile / StudentLayout <Route> block in App.jsx,
+// after line 144 (the last skill-dev/* route):
+//
+//   import SkillMessages from "./pages/SkillMessages";
+//   <Route path="skill-messages" element={<SkillMessages />} />
+//
+// Then add a nav entry in Sidebar.jsx SD_NAV array (after the "explore" entry):
+//
+//   import { FiMessageCircle } from "react-icons/fi";
+//   { id: "messages", label: "Messages", Icon: FiMessageCircle, to: "/skill-messages" },
 
-const timeAgo = (d) => {
-  if (!d) return "";
-  const s = Math.floor((Date.now() - new Date(d)) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s/60)}m ago`;
-  if (s < 86400) return `${Math.floor(s/3600)}h ago`;
-  return new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:"short"});
-};
-
-function ConvItem({ conv, active, onClick }) {
-  return (
-    <div className={`skm-conv ${active?"skm-conv--active":""} ${conv.unread?"skm-conv--unread":""}`}
-      onClick={onClick} role="button" tabIndex={0}>
-      <div className="skm-conv__av">{(conv.expert.name||"E")[0]}</div>
-      <div className="skm-conv__body">
-        <div className="skm-conv__name">{conv.expert.name}</div>
-        <div className="skm-conv__preview">{conv.last_message?.body || "Start the conversation"}</div>
-      </div>
-      <div className="skm-conv__meta">
-        <div className="skm-conv__time">{timeAgo(conv.updated_at)}</div>
-        {conv.unread > 0 && <span className="skm-unread-dot">{conv.unread}</span>}
-      </div>
-    </div>
-  );
-}
-
-function MessageBubble({ msg }) {
-  return (
-    <div className={`skm-bubble ${msg.from_me?"skm-bubble--me":"skm-bubble--them"}`}>
-      <div className="skm-bubble__body">{msg.body}</div>
-      <div className="skm-bubble__time">{timeAgo(msg.created_at)}</div>
-    </div>
-  );
-}
-
-function Thread({ convId, expertName, api }) {
-  const [messages, setMessages] = useState([]);
-  const [text, setText]         = useState("");
-  const [sending, setSending]   = useState(false);
-  const endRef = useRef(null);
-
-  const load = async () => {
-    try {
-      const r = await api.get(`/skill/conversations/${convId}/`);
-      setMessages(r.data.messages || []);
-    } catch {}
-  };
-
-  useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t); }, [convId]);
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages.length]);
-
-  const send = async () => {
-    if (!text.trim()) return;
-    setSending(true);
-    try {
-      const r = await api.post(`/skill/conversations/${convId}/messages/`, { body: text.trim() });
-      setMessages(m => [...m, r.data]); setText("");
-    } catch {} finally { setSending(false); }
-  };
-
-  return (
-    <div className="skm-thread">
-      <div className="skm-thread__head">
-        <div className="skm-thread__av">{(expertName||"E")[0]}</div>
-        <div className="skm-thread__name">{expertName}</div>
-      </div>
-      <div className="skm-thread__msgs">
-        {messages.length===0 && <div className="skm-thread__empty">No messages yet. Say hello!</div>}
-        {messages.map(m => <MessageBubble key={m.id} msg={m}/>)}
-        <div ref={endRef}/>
-      </div>
-      <div className="skm-thread__compose">
-        <input className="skm-compose-input" value={text} onChange={e=>setText(e.target.value)}
-          placeholder="Write a message…"
-          onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); send(); }}}/>
-        <button className="skm-compose-btn" onClick={send} disabled={sending||!text.trim()}>
-          {sending ? "…" : "Send"}
-        </button>
-      </div>
-    </div>
-  );
-}
+import { useLocation } from "react-router-dom";
+import ChatPanel from "../shared/ChatPanel";
+import "../shared/ChatPanel.css";
 
 export default function SkillMessages() {
-  const { api } = useAuth();
-  const [convs, setConvs]       = useState([]);
-  const [active, setActive]     = useState(null);
-  const [loading, setLoading]   = useState(true);
+  const { state } = useLocation();
 
-  const load = async () => {
-    try {
-      const r = await api.get("/skill/conversations/");
-      setConvs(r.data || []);
-    } catch {} finally { setLoading(false); }
-  };
-
-  useEffect(() => { load(); }, []);
+  // When a Message button on a session is clicked, SkillRoutes.openMsg()
+  // navigates here with state: { teacherId, expertName }.
+  // ChatPanel.directTo tells it to immediately open/start that DM.
+  // teacherId = TeacherProfile UUID — what StartDirectView (kind=TEACHER) expects.
+  const directTo = state?.teacherId
+    ? { kind: "TEACHER", id: state.teacherId }
+    : undefined;
 
   return (
-    <div className="skm-page">
-      <div className="skm-sidebar">
-        <div className="skm-sidebar__head">Messages</div>
-        {loading && <div className="skm-sidebar__empty">Loading…</div>}
-        {!loading && convs.length===0 && (
-          <div className="skm-sidebar__empty">No conversations yet.<br/>Message a teacher from their profile.</div>
-        )}
-        {convs.map(c => (
-          <ConvItem key={c.id} conv={c} active={active?.id===c.id} onClick={() => setActive(c)}/>
-        ))}
-      </div>
-      <div className="skm-main">
-        {active
-          ? <Thread convId={active.id} expertName={active.expert.name} api={api}/>
-          : <div className="skm-main__placeholder">
-              <div style={{fontSize:48}}>💬</div>
-              <p>Select a conversation to read and reply</p>
-            </div>}
-      </div>
+    <div style={{ padding: "20px", height: "calc(100vh - 80px)", boxSizing: "border-box" }}>
+      <ChatPanel directTo={directTo} />
     </div>
   );
 }

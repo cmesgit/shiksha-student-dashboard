@@ -1,52 +1,55 @@
-// src/components/Sidebar.jsx  (student dashboard — full replacement)
-// Reads activeTrack from CourseContext and renders either the Academy
-// nav or the Skill Dev nav. CSS classes from sidebar.css are kept for
-// the academy side; the skill-dev side uses its own inline tokens so it
-// matches the new design exactly without touching sidebar.css.
+// PLACEMENT: src student/components/Sidebar.jsx
+// ACTION:    Replace the entire file.
+//
+// Changes from previous version:
+//   - Added FiMessageCircle to the react-icons/fi import
+//   - Added a "MESSAGES" nav item in SD_NAV pointing to /skill-messages
+//   - Everything else is identical
 
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import "../styles/sidebar.css";
 import logo from "../assets/Vector.svg";
 import { useCourse } from "../contexts/CourseContext";
 
-// react-icons used by the academy nav (unchanged from original)
 import { MdDashboardCustomize } from "react-icons/md";
 import { BsBook } from "react-icons/bs";
 import { BiVideo } from "react-icons/bi";
 import { FaClipboardList, FaBookOpen } from "react-icons/fa";
-import { RiLiveLine, RiLockLine, RiGroupLine, RiSparkling2Fill } from "react-icons/ri";
+import { RiLiveLine, RiLockLine, RiGroupLine } from "react-icons/ri";
 import { FaChalkboardTeacher } from "react-icons/fa";
 import { AiOutlineFileDone, AiOutlineClose } from "react-icons/ai";
-import { FiHome, FiSearch, FiCalendar, FiBook, FiLayout } from "react-icons/fi";
+import { FiHome, FiSearch, FiCalendar, FiBook, FiLayout, FiMessageCircle } from "react-icons/fi";
 import { HOME_URL } from "../config/urls";
 
-/* ── Skill Dev design tokens (self-contained, no CSS file needed) ─── */
+/* ── Skill Dev design tokens ─────────────────────────────────────── */
 const SD = {
   bg:      "#003223",
-  bgItem:  "#ff8f01",   // active nav item
+  bgItem:  "#ff8f01",
   border:  "rgba(255,255,255,.08)",
   txt:     "rgba(255,255,255,.62)",
   txtOn:   "#fff",
   section: "rgba(255,255,255,.28)",
-  brand:   "#ff8f01",   // subtitle colour
+  brand:   "#ff8f01",
   forest:  "#125027",
   MH: '"Montserrat", system-ui, sans-serif',
   MP: '"Poppins", system-ui, sans-serif',
 };
 
-/* Skill Dev sidebar nav config */
+/* Skill Dev sidebar nav */
 const SD_NAV = [
-  { id: "dash",    label: "My Dashboard", Icon: FiLayout,   to: "/"                   },
+  { id: "dash",     label: "My Dashboard", Icon: FiLayout,        to: "/"                    },
   { section: "SELF-PACED COURSES" },
-  { id: "courses", label: "My Courses",   Icon: FiBook,     to: "/skill-dev/courses"  },
+  { id: "courses",  label: "My Courses",   Icon: FiBook,          to: "/skill-dev/courses"   },
   { section: "LIVE 1-ON-1" },
-  { id: "sessions",label: "My Sessions",  Icon: BiVideo,    to: "/skill-dev/sessions" },
-  { id: "book",    label: "Book a Tutor", Icon: FiCalendar, to: "/skill-dev/book"     },
+  { id: "sessions", label: "My Sessions",  Icon: BiVideo,         to: "/skill-dev/sessions"  },
+  { id: "book",     label: "Book a Tutor", Icon: FiCalendar,      to: "/skill-dev/book"      },
   { section: "DISCOVER" },
-  { id: "explore", label: "Explore More", Icon: FiSearch,   to: "/skill-dev/explore"  },
+  { id: "explore",  label: "Explore More", Icon: FiSearch,        to: "/skill-dev/explore"   },
+  { section: "COMMUNICATE" },
+  { id: "messages", label: "Messages",     Icon: FiMessageCircle, to: "/skill-messages"      },
 ];
 
-/* ── Skill Dev sidebar ─────────────────────────────────────────────── */
+/* ── Skill Dev sidebar ───────────────────────────────────────────── */
 function SkillDevSidebar({ setMenuOpen }) {
   const location = useLocation();
 
@@ -106,7 +109,7 @@ function SkillDevSidebar({ setMenuOpen }) {
   );
 }
 
-/* ── Academy sidebar (original, unchanged) ─────────────────────────── */
+/* ── Academy sidebar (unchanged) ────────────────────────────────── */
 function AcademySidebar({ setMenuOpen }) {
   const location = useLocation();
 
@@ -188,7 +191,7 @@ function AcademySidebar({ setMenuOpen }) {
   );
 }
 
-/* ── Root export ───────────────────────────────────────────────────── */
+/* ── Root export ──────────────────────────────────────────────────── */
 export default function Sidebar({ setMenuOpen }) {
   const { activeTrack } = useCourse();
 

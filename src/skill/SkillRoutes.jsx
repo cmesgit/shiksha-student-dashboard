@@ -1,8 +1,10 @@
-// src/skill/SkillRoutes.jsx
-// Route-level wrappers that adapt the Skill Dev views (which use a
-// setTab/openMsg callback API) to this app's react-router navigation.
-// Pulls in skillDash.css so the .rd-card / .sp-card / .slot / .pack styles
-// are present on every Skill Dev page.
+// PLACEMENT: src student/skill/SkillRoutes.jsx
+// ACTION:    Replace the entire file.
+//
+// Changes from original:
+//   - openMsg now takes (teacherId, expertName) and navigates to
+//     /skill-messages with that state — opens the WS chat DM directly.
+//     Previously it just navigated to /chat with no state (blank inbox).
 
 import { useNavigate } from "react-router-dom";
 import SkillCourses from "./SkillCourses";
@@ -13,10 +15,19 @@ import "./skillDash.css";
 
 function useSkillNav() {
   const navigate = useNavigate();
-  // "dashboard" → the overview (Dashboard renders SkillDevStudentSection when
-  // the active track is skill); everything else → its /skill-dev/* route.
+
   const setTab = (tab) => navigate(tab === "dashboard" ? "/" : `/skill-dev/${tab}`);
-  const openMsg = () => navigate("/chat"); // point at your chat/messages route
+
+  // openMsg(teacherId, expertName)
+  // teacherId = TeacherProfile UUID (from expert_teacher_id in session objects)
+  // Navigates to SkillMessages which passes directTo={{ kind:"TEACHER", id:teacherId }}
+  // into the shared ChatPanel — opens that DM immediately.
+  const openMsg = (teacherId, expertName) => {
+    navigate("/skill-messages", {
+      state: teacherId ? { teacherId, expertName } : undefined,
+    });
+  };
+
   return { setTab, openMsg };
 }
 

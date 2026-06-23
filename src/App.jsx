@@ -1,12 +1,11 @@
 /**
- * src_student_dashboard/src/App.jsx  (FULL REPLACEMENT)
+ * PLACEMENT: src student/App.jsx
+ * ACTION:    Replace the entire file.
  *
- * Key changes from the original:
- *  1. RequireStudentAuth → RequireProfile: enforces LEARNER context not just auth.
- *     - Logged in but no profile selected → /pick-profile on marketplace
- *     - Not logged in → /login on marketplace
- *  2. Added <Route path="chat" element={<Chat />} />
- *  3. hooks/useAuth.jsx is now dead — delete it (it called "/me/" without /accounts)
+ * Changes from previous version:
+ *  - Added import for SkillMessages
+ *  - Added <Route path="skill-messages" element={<SkillMessages />} />
+ *    inside the RequireProfile / StudentLayout block (after skill-dev/explore)
  */
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -21,6 +20,7 @@ import Profile from "./pages/Profile";
 import PrivateDetails from "./pages/PrivateDetails";
 import ChangePassword from "./pages/ChangePassword";
 import Chat from "./pages/Chat";
+import SkillMessages from "./pages/SkillMessages";
 
 import Subjects from "./pages/Subjects";
 import SubjectDetails from "./pages/SubjectDetails";
@@ -48,7 +48,6 @@ import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
 
-// Skill Dev pages (wired to the Skill Dev sidebar links)
 import {
   SkillCoursesPage,
   SkillSessionsPage,
@@ -57,12 +56,6 @@ import {
 } from "./skill/SkillRoutes";
 
 
-/**
- * Wraps the whole student app.
- * - Not logged in          → HOME/login
- * - Logged in, no profile  → HOME/pick-profile  (profile picker on marketplace)
- * - Logged in + learner    → render children (the dashboard)
- */
 function RequireProfile({ children }) {
   const { isAuthenticated, isLearnerContext, loading } = useAuth();
 
@@ -86,7 +79,6 @@ export default function App() {
       <CourseProvider>
         <BrowserRouter>
           <Routes>
-            {/* ── All dashboard routes require a learner profile in context ── */}
             <Route
               path="/"
               element={
@@ -100,7 +92,6 @@ export default function App() {
               <Route path="private-details" element={<PrivateDetails />} />
               <Route path="change-password" element={<ChangePassword />} />
 
-              {/* ── NEW: dashboard chat ── */}
               <Route path="chat" element={<Chat />} />
 
               <Route path="subjects" element={<Subjects />} />
@@ -137,14 +128,16 @@ export default function App() {
 
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
 
-              {/* ── Skill Dev sub-pages (the overview lives on "/" via Dashboard) ── */}
+              {/* Skill Dev sub-pages */}
               <Route path="skill-dev/courses" element={<SkillCoursesPage />} />
               <Route path="skill-dev/sessions" element={<SkillSessionsPage />} />
               <Route path="skill-dev/book" element={<SkillBookPage />} />
               <Route path="skill-dev/explore" element={<SkillExplorePage />} />
+              {/* Skill Dev messaging — replaces the old polling SkillMessages */}
+              <Route path="skill-messages" element={<SkillMessages />} />
             </Route>
 
-            {/* ── Fullscreen live routes — no layout wrapper ── */}
+            {/* Fullscreen live routes — no layout wrapper */}
             <Route path="/private-session/live/:id" element={<PrivateSessionLive />} />
             <Route path="/group-session/live/:id" element={<GroupSessionLive />} />
           </Routes>
