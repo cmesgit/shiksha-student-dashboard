@@ -9,6 +9,7 @@
  * Always rendered, even with zero enrolled courses.
  */
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { RiGraduationCapFill, RiSparkling2Fill } from "react-icons/ri";
 import { useCourse } from "../contexts/CourseContext";
 import { courseTrack, enrolledTracks } from "../utils/trackFromCourses";
@@ -21,6 +22,7 @@ const TRACKS = [
 
 export default function TrackSwitcher() {
   const { courses = [], activeTrack, selectCourse, setTrack } = useCourse();
+  const navigate = useNavigate();
 
   const enrolled = useMemo(() => enrolledTracks(courses), [courses]);
   const firstCourseOf = (track) => courses.find((c) => courseTrack(c) === track);
@@ -30,6 +32,11 @@ export default function TrackSwitcher() {
     const c = firstCourseOf(key);
     if (c) selectCourse(c.id);   // real course → course-driven (clears override)
     else if (setTrack) setTrack(key); // no course → manual override (dev)
+    // Switching track only changes context state; the *view* is route-driven.
+    // Without navigating, a deep page (e.g. /my-courses/:id) wouldn't follow
+    // the switch until a sidebar link was clicked. Go to the dashboard home so
+    // the index page re-renders for the newly active track.
+    navigate("/");
   };
 
   const ctx = activeTrack === "skill" ? "ctx-skill" : "";

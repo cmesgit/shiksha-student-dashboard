@@ -1,8 +1,8 @@
 // skill/SkillBookTutor.jsx — Book a Tutor (skillTab === "book").
 // Wired to:
-//   GET  /skill/student/experts/             → expert list with availability
-//   GET  /skill/teacher/availability/        → teacher's open/booked slots
-//   POST /skill/payments/create-order/       → create booking
+//   GET  /skill/student/experts/                  → expert list with availability
+//   GET  /skill/teachers/<id>/availability/        → that expert's open/booked slots
+//   POST /skill/payments/create-order/             → create booking (reserves slot)
 
 import { useState, useEffect } from "react";
 import { Icon } from "./skillIcons";
@@ -43,9 +43,9 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
   useEffect(() => {
     if (!t) return;
     // Try backend first, fall back to localStorage
-    api.get("/skill/teacher/availability/", { params: { expert: t.id } })
+    api.get(`/skill/teachers/${t.id}/availability/`)
       .then(r => setAvail({ open: r.data.open || [], booked: r.data.booked || [] }))
-      .catch(() => setAvail(AV.get(t.id)));  // localStorage fallback
+      .catch(() => setAvail({ open: [], booked: [] }));  // no slots / not set
   }, [t?.id, tick]);
 
   const pks = t ? packs(t.rate || 480) : packs(480);
@@ -67,8 +67,8 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
         method: "free",
         amount: 0,
       });
-      // Also mark slot locally so the grid updates immediately
-      AV.book(t.id, slot);
+      // Slot is now reserved server-side; refetch availability so the grid
+      // reflects the real booked state (tick bump re-runs the load effect).
       setConfirmed(AV.label(slot));
       setSlot(null);
       setTick(n => n + 1);
