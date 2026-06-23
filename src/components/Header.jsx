@@ -10,6 +10,7 @@ import { useLocation } from "react-router-dom";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import { useAuth } from "../contexts/AuthContext";
 import ProfileSwitcher from "../shared/ProfileSwitcher";
+import TrackSwitcher from "./TrackSwitcher";
 import "../styles/header.css";
 import "../shared/ProfileSwitcher.css";
 import NotificationBell from "./NotificationBell";
@@ -46,6 +47,9 @@ export default function Header({ toggleMenu, menuOpen }) {
           <p className="header__subtitle">Let's learn something new today</p>
         </div>
       )}
+
+      {/* Academy ⟷ Skill Dev switch */}
+      <TrackSwitcher />
 
       <div className="header__right" style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" }}>
         <NotificationBell />

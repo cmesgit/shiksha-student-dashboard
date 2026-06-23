@@ -21,6 +21,10 @@ export function CourseProvider({ children }) {
   const [activeCourse, setActiveCourse] = useState(null);
   const [subjects,     setSubjects]     = useState([]);
   const [loading,      setLoading]      = useState(true);
+  // Manual track chosen via the header switch. Used when there's no course to
+  // derive the track from (e.g. dev, no enrollment yet). Cleared once a real
+  // course of that track is selected, so enrolled users are course-driven.
+  const [trackOverride, setTrackOverride] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -57,11 +61,16 @@ export function CourseProvider({ children }) {
 
   const selectCourse = (courseId) => {
     const selected = courses.find((c) => c.id === courseId);
-    if (selected) setActiveCourse(selected);
+    if (selected) { setActiveCourse(selected); setTrackOverride(null); }
   };
 
-  // ── NEW: derived track — "academy" | "skill"
-  const activeTrack = activeCourse ? courseTrack(activeCourse) : DEFAULT_TRACK;
+  // Header switch: choose a track directly (dev / no enrollment).
+  const setTrack = (track) => setTrackOverride(track);
+
+  // ── Derived track — "academy" | "skill"
+  // Priority: manual switch → active course → DEFAULT_TRACK fallback.
+  const activeTrack =
+    trackOverride || (activeCourse ? courseTrack(activeCourse) : DEFAULT_TRACK);
 
   return (
     <CourseContext.Provider
@@ -72,6 +81,7 @@ export function CourseProvider({ children }) {
         selectCourse,
         loading,
         activeTrack, // ← new
+        setTrack,    // ← new
       }}
     >
       {children}
