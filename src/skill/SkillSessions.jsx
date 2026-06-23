@@ -1,69 +1,121 @@
 // skill/SkillSessions.jsx — Live 1-on-1 sessions (skillTab === "sessions").
-// Active package tracker, upcoming sessions, past sessions with review state.
+// Wired to GET /skill/student/dashboard/ (sessions) + POST /skill/sessions/<id>/join/
+// Review submissions go through SkillReviewModal (already wired).
 
+import { useState, useEffect } from "react";
 import { Icon } from "./skillIcons";
 import { Avatar } from "./skillUI";
-import { LIVE_PACKAGE, LIVE_UPCOMING, LIVE_PAST } from "./skillData";
+import { useAuth } from "../contexts/AuthContext";
+import SkillReviewModal from "../components/SkillReviewModal";
 
 const ACC = "#ff8f01";
 
 export default function SkillSessions({ setTab = () => {}, openMsg = () => {} }) {
-  const used = LIVE_PACKAGE.total - LIVE_PACKAGE.remaining;
+  const { api } = useAuth();
+  const [upcoming, setUpcoming] = useState([]);
+  const [past,     setPast]     = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [joining,  setJoining]  = useState({});
+
+  useEffect(() => {
+    api.get("/skill/student/dashboard/")
+      .then(r => {
+        setUpcoming(r.data.upcoming_sessions || []);
+        setPast(r.data.past_sessions || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const joinSession = async (sessionId) => {
+    setJoining(j => ({ ...j, [sessionId]: true }));
+    try {
+      const r = await api.post(`/skill/sessions/${sessionId}/join/`);
+      // TODO: connect to LiveKit with r.data.token + r.data.ws_url
+      console.info("[SkillSessions] LiveKit →", r.data.room, r.data.token);
+      // For now navigate to sessions page; replace with LiveKit SDK connection
+      window.location.href = `/private-session/live/${sessionId}`;
+    } catch (e) {
+      console.warn("join failed:", e?.response?.data || e?.message);
+    } finally {
+      setJoining(j => { const n = { ...j }; delete n[sessionId]; return n; });
+    }
+  };
+
   return (
     <div style={{ padding: "14px 18px 22px", overflow: "auto", flex: 1 }}>
-      {/* active package */}
-      <div className="rd-card" style={{ marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-          <span style={{ width: 44, height: 44, borderRadius: 11, background: "#ff8f0118", color: "#d97706", display: "grid", placeItems: "center", flexShrink: 0 }}><Icon.spark size={20} /></span>
-          <div style={{ flex: 1, minWidth: 190 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: "#1a1a1a" }}>{LIVE_PACKAGE.label} · {LIVE_PACKAGE.tutor}</div>
-            <div style={{ fontSize: 11.5, color: "#888", marginTop: 2 }}>{LIVE_PACKAGE.remaining} of {LIVE_PACKAGE.total} sessions remaining</div>
-            <div style={{ display: "flex", gap: 5, marginTop: 8 }}>
-              {Array.from({ length: LIVE_PACKAGE.total }).map((_, i) => <span key={i} style={{ width: 24, height: 6, borderRadius: 100, background: i < used ? "#e3dccf" : ACC }} />)}
-            </div>
-          </div>
-          <button onClick={() => setTab("book")} style={{ background: ACC, color: "#fff", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Book next session</button>
-        </div>
-      </div>
+      {/* Review prompt — shown if completed sessions need review */}
+      <SkillReviewModal />
 
-      {/* upcoming */}
+      {/* Upcoming */}
       <div className="rd-card" style={{ marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
           <h4 style={{ margin: 0 }}>Upcoming 1-on-1 sessions</h4>
-          <button onClick={() => setTab("book")} style={{ background: "none", border: "none", color: "#d97706", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Book a tutor →</button>
+          <button onClick={() => setTab("book")} style={{ background: "none", border: "none", color: "#d97706", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            Book a tutor →
+          </button>
         </div>
-        {LIVE_UPCOMING.map((s) => (
-          <div key={s.topic} style={{ display: "flex", alignItems: "center", gap: 13, padding: 13, border: "1px solid #efe2d6", borderRadius: 13, marginBottom: 10, background: "#fff" }}>
-            <Avatar name={s.tutor} img={s.img} size={48} radius={11} />
+
+        {loading ? (
+          <div style={{ fontSize: 12, color: "#888" }}>Loading…</div>
+        ) : upcoming.length === 0 ? (
+          <div style={{ fontSize: 12, color: "#888", padding: "8px 0" }}>
+            No upcoming sessions. <button onClick={() => setTab("book")} style={{ background: "none", border: "none", color: ACC, fontWeight: 700, cursor: "pointer", fontSize: 12 }}>Book one →</button>
+          </div>
+        ) : upcoming.map((s) => (
+          <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 13, padding: 13, border: "1px solid #efe2d6", borderRadius: 13, marginBottom: 10, background: "#fff" }}>
+            <Avatar name={s.expert_name} img={s.expert_img} size={48} radius={11} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 800, color: "#1a2c33" }}>{s.topic}</div>
-              <div style={{ fontSize: 11.5, color: "#888" }}>with {s.tutor} · {s.role}</div>
+              <div style={{ fontSize: 11.5, color: "#888" }}>with {s.expert_name}</div>
               <div style={{ display: "flex", gap: 12, marginTop: 6, fontSize: 11.5, color: "#6b7c83" }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon.cal size={12} /> {s.when}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon.cal size={12} /> {s.when || "TBC"}</span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon.clock size={12} /> {s.dur}</span>
               </div>
             </div>
-            <button onClick={() => openMsg(s.tutor)} title="Message" style={{ background: "#fff", border: "1px solid #f0d7b6", color: "#d97706", borderRadius: 9, width: 38, height: 38, cursor: "pointer", display: "grid", placeItems: "center", flexShrink: 0 }}><Icon.msg size={15} /></button>
-            {s.live
-              ? <button style={{ background: ACC, color: "#fff", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}><Icon.vid size={14} /> Join</button>
-              : <button style={{ background: "#fff", border: "1px solid #e3dccf", color: "#555", borderRadius: 9, padding: "9px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>Reschedule</button>}
+            <button onClick={() => openMsg(s.expert_name)} title="Message" style={{ background: "#fff", border: "1px solid #f0d7b6", color: "#d97706", borderRadius: 9, width: 38, height: 38, cursor: "pointer", display: "grid", placeItems: "center", flexShrink: 0 }}>
+              <Icon.msg size={15} />
+            </button>
+            {s.live ? (
+              <button
+                onClick={() => joinSession(s.id)}
+                disabled={joining[s.id]}
+                style={{ background: ACC, color: "#fff", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}
+              >
+                {joining[s.id] ? "…" : <><Icon.vid size={14} /> Join</>}
+              </button>
+            ) : (
+              <button style={{ background: "#fff", border: "1px solid #e3dccf", color: "#555", borderRadius: 9, padding: "9px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                Details
+              </button>
+            )}
           </div>
         ))}
       </div>
 
-      {/* past */}
+      {/* Past sessions */}
       <div className="rd-card">
         <h4>Past sessions</h4>
-        {LIVE_PAST.map((s) => (
-          <div key={s.topic} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: "1px solid #eee" }}>
-            <Avatar name={s.tutor} img={s.img} size={42} radius={10} />
+        {loading ? (
+          <div style={{ fontSize: 12, color: "#888" }}>Loading…</div>
+        ) : past.length === 0 ? (
+          <div style={{ fontSize: 12, color: "#888" }}>No completed sessions yet.</div>
+        ) : past.map((s) => (
+          <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: "1px solid #eee" }}>
+            <Avatar name={s.expert_name} img={s.expert_img} size={42} radius={10} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>{s.topic}</div>
-              <div style={{ fontSize: 11.5, color: "#888" }}>with {s.tutor} · {s.when}</div>
+              <div style={{ fontSize: 11.5, color: "#888" }}>with {s.expert_name} · {s.when}</div>
             </div>
             {s.reviewed
               ? <span style={{ fontSize: 11.5, color: "#2f9d42", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon.check size={13} /> Reviewed</span>
-              : <button style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon.star size={12} /> Leave review</button>}
+              : <button
+                  onClick={() => {/* SkillReviewModal handles this */}}
+                  style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}
+                >
+                  <Icon.star size={12} /> Leave review
+                </button>
+            }
           </div>
         ))}
       </div>
