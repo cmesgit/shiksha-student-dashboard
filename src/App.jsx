@@ -51,7 +51,7 @@ import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
 
 import {
-  SkillCoursesPage,
+  
   SkillSessionsPage,
   SkillBookPage,
   SkillExplorePage,
@@ -132,7 +132,7 @@ export default function App() {
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
 
               {/* ── Skill Dev ── */}
-              <Route path="skill-dev/courses" element={<SkillCoursesPage />} />
+              
               <Route path="skill-dev/sessions" element={<SkillSessionsPage />} />
               <Route path="skill-dev/sessions/:id" element={<SkillSessionDetail />} />
               <Route path="skill-dev/book" element={<SkillBookPage />} />
