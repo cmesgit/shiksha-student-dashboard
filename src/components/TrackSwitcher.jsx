@@ -1,60 +1,82 @@
-/**
- * TrackSwitcher.jsx — Academy ⟷ Skill-dev slider for the student header.
- * Active side is teal on Academy, orange on Skill Dev (rd-switch styling).
- *
- * Clicking a side flips the dashboard's active track via CourseContext:
- *   • If the student has a course in that track → select it (course-driven).
- *   • If not (dev / no enrollment) → set a manual track override so the
- *     switch still works and you can preview both sides.
- * Always rendered, even with zero enrolled courses.
- */
-import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { RiGraduationCapFill, RiSparkling2Fill } from "react-icons/ri";
-import { useCourse } from "../contexts/CourseContext";
-import { courseTrack, enrolledTracks } from "../utils/trackFromCourses";
+// src/components/TrackSwitcher.jsx  (teacher dashboard — full implementation)
+// ──────────────────────────────────────────────────────────────────────────
+// Academy ⟷ Skill Dev toggle for the teacher header.
+//
+// Behaviour (matches the asymmetric Faculty/Guest rule):
+//  • Pure FACULTY → ONE dashboard. The switcher does NOT render at all —
+//    faculty accounts cannot add the Skill Dev track, so there is nothing
+//    to switch to. (This is the key fix: previously faculty saw a locked
+//    "Skill Dev" pill that invited them to apply, which the rule forbids.)
+//  • Pure GUEST   → on Skill Dev; the Academy pill shows as an "add Faculty"
+//    affordance (guest experts MAY become faculty). Clicking it deep-links
+//    to the add-track signup.
+//  • TYPE_BOTH    → can switch freely between the two routes.
+//
+// Active route decides the highlighted pill:
+//   /teacher/expert* → Skill Dev active
+//   anything else    → Academy active
+// ──────────────────────────────────────────────────────────────────────────
+
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { RiGraduationCapFill, RiSparkling2Fill, RiAddLine } from "react-icons/ri";
+import { signupAddTrackUrl } from "../config/urls";
 import "../styles/trackSwitcher.css";
 
 const TRACKS = [
-  { key: "academy", label: "Academy",   Icon: RiGraduationCapFill },
-  { key: "skill",   label: "Skill Dev", Icon: RiSparkling2Fill },
+  { key: "academy", label: "Academy",   Icon: RiGraduationCapFill, route: "/teacher/dashboard" },
+  { key: "skill",   label: "Skill Dev", Icon: RiSparkling2Fill,    route: "/teacher/expert"    },
 ];
 
 export default function TrackSwitcher() {
-  const { courses = [], activeTrack, selectCourse, setTrack } = useCourse();
-  const navigate = useNavigate();
+  const navigate     = useNavigate();
+  const { pathname } = useLocation();
+  const { teacherInfo } = useAuth();
 
-  const enrolled = useMemo(() => enrolledTracks(courses), [courses]);
-  const firstCourseOf = (track) => courses.find((c) => courseTrack(c) === track);
+  const isGuest   = teacherInfo?.type === "GUEST";
+  const isBoth    = teacherInfo?.type === "BOTH";
+  const isFaculty = !isGuest && !isBoth;
 
-  const onClick = (key) => {
-    if (key === activeTrack) return;
-    const c = firstCourseOf(key);
-    if (c) selectCourse(c.id);   // real course → course-driven (clears override)
-    else if (setTrack) setTrack(key); // no course → manual override (dev)
-    // Switching track only changes context state; the *view* is route-driven.
-    // Without navigating, a deep page (e.g. /my-courses/:id) wouldn't follow
-    // the switch until a sidebar link was clicked. Go to the dashboard home so
-    // the index page re-renders for the newly active track.
-    navigate("/");
+  // Pure faculty → single dashboard, no switcher. Render nothing.
+  if (isFaculty) return null;
+
+  const current = pathname.startsWith("/teacher/expert") ? "skill" : "academy";
+
+  // BOTH can enter either dashboard. GUEST can enter Skill; Academy is an
+  // "apply" affordance (allowed — guest may become faculty).
+  const canAccess = (key) => (isBoth ? true : key === "skill");
+
+  const handleClick = (track) => {
+    if (!canAccess(track.key)) {
+      // GUEST clicking Academy → start the add-Faculty application.
+      window.location.href = signupAddTrackUrl("academy");
+      return;
+    }
+    if (track.key === current) return;
+    navigate(track.route);
   };
 
-  const ctx = activeTrack === "skill" ? "ctx-skill" : "";
-
   return (
-    <div className={`trackSwitcher ${ctx}`} role="tablist" aria-label="Learning track" title="Switch dashboard">
-      {TRACKS.map(({ key, label, Icon }) => {
-        const active = key === activeTrack;
-        const isEnrolled = enrolled.has(key);
+    <div className="trackSwitcher ctx-teacher" role="tablist" aria-label="Teaching track">
+      {TRACKS.map(({ key, label, Icon, route }) => {
+        const accessible = canAccess(key);
+        const active     = key === current;
         return (
           <button
-            key={key} type="button" role="tab" aria-selected={active}
-            className={["trackSwitcher__seg", active ? "is-active" : ""].join(" ").trim()}
-            title={isEnrolled ? label : `${label} (no course enrolled yet)`}
-            onClick={() => onClick(key)}
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            className={[
+              "trackSwitcher__seg",
+              active      ? "is-active" : "",
+              !accessible ? "is-apply"  : "",
+            ].join(" ").trim()}
+            title={accessible ? label : "Apply to also teach as Faculty"}
+            onClick={() => handleClick({ key, route })}
           >
-            <Icon size={13} />
-            <span>{label}</span>
+            {!accessible ? <RiAddLine className="trackSwitcher__add" /> : <Icon size={13} />}
+            <span>{accessible ? label : "Add Faculty"}</span>
           </button>
         );
       })}

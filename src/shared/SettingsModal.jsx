@@ -98,16 +98,25 @@ function TeacherSection({ teacherInfo }) {
       <div className="sm-track-list">
         {TRACK_DEFS.map(({ key, label, sub, icon }) => {
           const st = tracks[key] || "locked";
+          // Asymmetric Faculty/Guest rule: you may add Faculty (academy) any
+          // time it's not held, but you may add Skill ONLY if you've never
+          // held Faculty. So a faculty account never gets a Skill "Apply".
+          const academyHeld = ["pending", "approved"].includes(tracks.academy);
+          const canApply =
+            st === "locked" && (key === "academy" || !academyHeld);
+          const skillBlocked = key === "skill" && st === "locked" && academyHeld;
           return (
             <div key={key} className={`sm-track-card sm-track-card--${st}`}>
               <span className="sm-track-icon">{icon}</span>
               <div className="sm-track-info">
                 <div className="sm-track-name">{label}</div>
-                <div className="sm-track-sub">{sub}</div>
+                <div className="sm-track-sub">
+                  {skillBlocked ? "Not available on faculty accounts" : sub}
+                </div>
               </div>
               <div className="sm-track-right">
                 <TrackBadge status={st} />
-                {st === "locked" && (
+                {canApply && (
                   <a className="sm-mini sm-track-apply" href={addTrackUrl(key)}>
                     Apply
                   </a>
