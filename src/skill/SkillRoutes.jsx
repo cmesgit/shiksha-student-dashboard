@@ -1,10 +1,9 @@
-// PLACEMENT: src student/skill/SkillRoutes.jsx
-// ACTION:    Replace the entire file.
+// PLACEMENT: student_dashboard/src/skill/SkillRoutes.jsx  (replace whole file)
+// DEPLOY:    /app/student_dashboard/src/skill/SkillRoutes.jsx
 //
-// Changes from original:
-//   - openMsg now takes (teacherId, expertName) and navigates to
-//     /skill-messages with that state — opens the WS chat DM directly.
-//     Previously it just navigated to /chat with no state (blank inbox).
+// WHAT CHANGED: SkillExplorePage now also receives openMsg, so the new
+// "Message" button on each expert card can open a DM with that expert
+// (before booking). Everything else is unchanged.
 
 import { useNavigate } from "react-router-dom";
 import SkillCourses from "./SkillCourses";
@@ -22,7 +21,7 @@ function useSkillNav() {
     navigate(tab === "dashboard" ? "/" : `/skill-dev/${tab}`, state ? { state } : undefined);
 
   // openMsg(teacherId, expertName)
-  // teacherId = TeacherProfile UUID (from expert_teacher_id in session objects)
+  // teacherId = TeacherProfile UUID (expert_teacher_id / teacher_profile_id).
   // Navigates to SkillMessages which passes directTo={{ kind:"TEACHER", id:teacherId }}
   // into the shared ChatPanel — opens that DM immediately.
   const openMsg = (teacherId, expertName) => {
@@ -37,4 +36,4 @@ function useSkillNav() {
 export function SkillCoursesPage()  { return <SkillCourses />; }
 export function SkillSessionsPage() { const n = useSkillNav(); return <SkillSessions setTab={n.setTab} openMsg={n.openMsg} />; }
 export function SkillBookPage()     { const n = useSkillNav(); return <SkillBookTutor openMsg={n.openMsg} />; }
-export function SkillExplorePage()  { const n = useSkillNav(); return <SkillExplore setTab={n.setTab} />; }
+export function SkillExplorePage()  { const n = useSkillNav(); return <SkillExplore setTab={n.setTab} openMsg={n.openMsg} />; }

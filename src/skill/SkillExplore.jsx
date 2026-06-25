@@ -1,7 +1,13 @@
 // PLACEMENT: student_dashboard/src/skill/SkillExplore.jsx  (replace whole file)
+// DEPLOY:    /app/student_dashboard/src/skill/SkillExplore.jsx
 // skill/SkillExplore.jsx — Discover (skillTab === "explore").
-// Wired to GET /skill/student/experts/?cat=&search= and GET /skill/categories/
-// (category chips now come from the backend — no hardcoded SKILL_CATEGORIES).
+// Wired to GET /skill/student/experts/?cat=&search= and GET /skill/categories/.
+//
+// WHAT CHANGED: each expert card now has a "Message" button next to "View",
+// so a learner can message a guest expert BEFORE booking. It calls
+// openMsg(teacher_profile_id, name) — provided by SkillRoutes' useSkillNav —
+// which opens the live DM in SkillMessages → ChatPanel. (View still opens the
+// Book-a-tutor flow.) teacher_profile_id comes from ExpertCardSerializer.
 
 import { useState, useEffect, useCallback } from "react";
 import { Icon } from "./skillIcons";
@@ -10,7 +16,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 const ACC = "#125027";
 
-export default function SkillExplore({ setTab = () => {} }) {
+export default function SkillExplore({ setTab = () => {}, openMsg = () => {} }) {
   const { api }      = useAuth();
   const [experts,    setExperts]    = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -142,9 +148,19 @@ export default function SkillExplore({ setTab = () => {} }) {
                     </div>
                   )}
                 </div>
-                <button onClick={() => setTab("book", { expertId: t.id })} style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
-                  View
-                </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+                  <button onClick={() => setTab("book", { expertId: t.id })} style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>
+                    View
+                  </button>
+                  <button
+                    onClick={() => openMsg(t.teacher_profile_id, t.name)}
+                    disabled={!t.teacher_profile_id}
+                    title={t.teacher_profile_id ? "Message this expert" : "Messaging unavailable"}
+                    style={{ background: "#fff", color: ACC, border: `1.5px solid ${ACC}`, borderRadius: 8, padding: "7px 12px", fontSize: 11.5, fontWeight: 700, cursor: t.teacher_profile_id ? "pointer" : "not-allowed", opacity: t.teacher_profile_id ? 1 : 0.5, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5 }}
+                  >
+                    <Icon.msg size={12} /> Message
+                  </button>
+                </div>
               </div>
             ))}
           </div>
