@@ -1,42 +1,37 @@
-// PLACEMENT: src student/pages/SkillMessages.jsx
-// ACTION:    Replace the entire file.
+// PLACEMENT: student_dashboard/src/pages/SkillMessages.jsx   (REPLACE WHOLE FILE)
+// DEPLOY:    /app/student_dashboard/src/pages/SkillMessages.jsx
 //
 // What changed:
-//   The old file was a custom polling-REST inbox (GET /skill/conversations/ every 15s,
-//   no WebSocket). This replaces it with the shared ChatPanel already used by Chat.jsx —
-//   same live WebSocket inbox (shared/chatClient.js → ws/chat/<id>/) but scoped to the
-//   Skill Dev section and navigable from Message buttons on sessions.
+//   Now reads BOTH sources for "open this DM on arrival":
+//     1. router state { teacherId, expertName }  — in-app navigation
+//        (Message buttons on sessions / session detail).
+//     2. URL query ?teacherProfileId=&expertName=&draft=  — cross-app handoff
+//        from the public landing page (ExpertProfilePage MessageComposer does a
+//        full-page redirect, which DROPS router state, so it must use the query
+//        string). The `draft` is pre-filled into the composer; the learner taps
+//        Send to deliver it over the live WS.
 //
-// Route (already exists, no App.jsx change needed IF /skill-messages is already registered.
-// If not — add this inside the RequireProfile / StudentLayout <Route> block in App.jsx,
-// after line 144 (the last skill-dev/* route):
-//
-//   import SkillMessages from "./pages/SkillMessages";
-//   <Route path="skill-messages" element={<SkillMessages />} />
-//
-// Then add a nav entry in Sidebar.jsx SD_NAV array (after the "explore" entry):
-//
-//   import { FiMessageCircle } from "react-icons/fi";
-//   { id: "messages", label: "Messages", Icon: FiMessageCircle, to: "/skill-messages" },
+//   teacherId / teacherProfileId = TeacherProfile UUID — exactly what
+//   StartDirectView (target_kind=TEACHER) expects.
 
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import ChatPanel from "../shared/ChatPanel";
 import "../shared/ChatPanel.css";
 
 export default function SkillMessages() {
   const { state } = useLocation();
+  const [sp] = useSearchParams();
 
-  // When a Message button on a session is clicked, SkillRoutes.openMsg()
-  // navigates here with state: { teacherId, expertName }.
-  // ChatPanel.directTo tells it to immediately open/start that DM.
-  // teacherId = TeacherProfile UUID — what StartDirectView (kind=TEACHER) expects.
-  const directTo = state?.teacherId
-    ? { kind: "TEACHER", id: state.teacherId }
-    : undefined;
+  // In-app navigation wins; otherwise fall back to the landing-page query.
+  const teacherId =
+    state?.teacherId || sp.get("teacherProfileId") || undefined;
+  const draft = sp.get("draft") || "";
+
+  const directTo = teacherId ? { kind: "TEACHER", id: teacherId } : undefined;
 
   return (
     <div style={{ padding: "20px", height: "calc(100vh - 80px)", boxSizing: "border-box" }}>
-      <ChatPanel directTo={directTo} />
+      <ChatPanel directTo={directTo} initialDraft={draft} />
     </div>
   );
 }
