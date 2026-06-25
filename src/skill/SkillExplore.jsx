@@ -1,10 +1,11 @@
+// PLACEMENT: student_dashboard/src/skill/SkillExplore.jsx  (replace whole file)
 // skill/SkillExplore.jsx — Discover (skillTab === "explore").
-// Wired to GET /skill/student/experts/?cat=&search=
+// Wired to GET /skill/student/experts/?cat=&search= and GET /skill/categories/
+// (category chips now come from the backend — no hardcoded SKILL_CATEGORIES).
 
 import { useState, useEffect, useCallback } from "react";
 import { Icon } from "./skillIcons";
 import { Avatar } from "./skillUI";
-import { SKILL_CATEGORIES } from "./skillData";
 import { useAuth } from "../contexts/AuthContext";
 
 const ACC = "#125027";
@@ -15,7 +16,7 @@ export default function SkillExplore({ setTab = () => {} }) {
   const [loading,    setLoading]    = useState(true);
   const [activeCat,  setActiveCat]  = useState("all");
   const [search,     setSearch]     = useState("");
-  const [categories, setCategories] = useState(SKILL_CATEGORIES);
+  const [categories, setCategories] = useState([]);
 
   const load = useCallback((cat, q) => {
     setLoading(true);

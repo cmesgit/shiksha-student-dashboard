@@ -1,3 +1,4 @@
+// PLACEMENT: student_dashboard/src/skill/SkillDashboard.jsx  (replace whole file)
 // skill/SkillDashboard.jsx — Skill Dev overview (skillTab === "dashboard").
 // Wired to GET /skill/student/dashboard/
 // Falls back gracefully to empty state if data isn't ready.
@@ -97,7 +98,7 @@ export default function SkillDashboard({ setTab = () => {}, openMsg = () => {} }
                 <span style={{ display: "inline-flex", gap: 5, alignItems: "center" }}><Icon.cal size={12} /> {s.when || "TBC"}</span>
               </div>
             </div>
-            <button onClick={() => openMsg(s.expert_name)} title="Message" style={{ background: "#fff", border: "1px solid #f0d7b6", color: "#d97706", borderRadius: 9, width: 36, height: 36, cursor: "pointer", display: "grid", placeItems: "center", flexShrink: 0 }}>
+            <button onClick={() => openMsg(s.expert_teacher_id, s.expert_name)} disabled={!s.expert_teacher_id} title="Message" style={{ background: "#fff", border: "1px solid #f0d7b6", color: "#d97706", borderRadius: 9, width: 36, height: 36, cursor: s.expert_teacher_id ? "pointer" : "not-allowed", opacity: s.expert_teacher_id ? 1 : 0.45, display: "grid", placeItems: "center", flexShrink: 0 }}>
               <Icon.msg size={15} />
             </button>
             {s.live

@@ -1,3 +1,5 @@
+// PLACEMENT: student_dashboard/src/skill/SkillBookTutor.jsx  (replace whole file)
+// (openMsg(t.teacher_id, t.name)) instead of the expert's name, so the WS DM opens.
 // skill/SkillBookTutor.jsx — Book a Tutor (skillTab === "book").
 // Wired to:
 //   GET  /skill/student/experts/                  → expert list with availability
@@ -42,10 +44,10 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
   // Load availability whenever expert changes
   useEffect(() => {
     if (!t) return;
-    // Try backend first, fall back to localStorage
+    // Real open/booked slots come from the expert's saved availability.
     api.get(`/skill/teachers/${t.id}/availability/`)
       .then(r => setAvail({ open: r.data.open || [], booked: r.data.booked || [] }))
-      .catch(() => setAvail({ open: [], booked: [] }));  // no slots / not set
+      .catch(() => setAvail({ open: [], booked: [] }));  // expert hasn't set any slots yet
   }, [t?.id, tick]);
 
   const pks = t ? packs(t.rate || 480) : packs(480);
@@ -139,7 +141,7 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
                   <span>Replies {t.reply}</span>
                 </div>
               </div>
-              <button onClick={() => openMsg(t.name)} style={{ background: "#fff", border: "1px solid #f0d7b6", color: "#d97706", borderRadius: 9, padding: "9px 13px", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+              <button onClick={() => openMsg(t.teacher_id, t.name)} disabled={!t.teacher_id} style={{ background: "#fff", border: "1px solid #f0d7b6", color: "#d97706", borderRadius: 9, padding: "9px 13px", fontSize: 12, fontWeight: 700, cursor: t.teacher_id ? "pointer" : "not-allowed", opacity: t.teacher_id ? 1 : 0.45, display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 <Icon.msg size={14} /> Message
               </button>
             </div>
