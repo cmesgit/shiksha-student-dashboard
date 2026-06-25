@@ -1,12 +1,20 @@
 /**
- * PLACEMENT: src student/pages/SkillSessionDetail.jsx
- * ACTION:    Create this as a new file.
+ * PLACEMENT: student_dashboard/src/pages/SkillSessionDetail.jsx  (REPLACE WHOLE FILE)
+ * DEPLOY:    /app/student_dashboard/src/pages/SkillSessionDetail.jsx
  *
  * Wired to: GET /skill/sessions/<id>/
- * Route:    /skill-dev/sessions/:id  (already added in App.jsx file 4)
+ * Route:    /skill-dev/sessions/:id  (already in App.jsx)
  *
- * Shows full booking detail: topic, when, duration, mode, expert card,
- * payment status, and contextual action buttons (Join / Message / Review / Cancel).
+ * Change from previous version (ONLY handleJoin):
+ *   "Join session now" now navigates to /skill-session/live/<id> (the new
+ *   skill LiveKit room) instead of /private-session/live/<id> (the ACADEMY
+ *   live page, which 404s on a skill-session id). The live page performs the
+ *   POST /skill/sessions/<id>/join/ handshake.
+ *
+ * NOTE: the "Cancel this request" button posts to /skill/sessions/<id>/cancel/,
+ * which has no backend route yet (there is no student-side cancel endpoint —
+ * only the teacher-side decline). It fails gracefully with an alert. Add a
+ * StudentCancelSessionView + url if you want learner-initiated cancellation.
  */
 
 import { useState, useEffect } from "react";
@@ -150,16 +158,13 @@ export default function SkillSessionDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleJoin = async () => {
+  // The skill LiveKit room page (/skill-session/live/<id>) owns the
+  // POST /skill/sessions/<id>/join/ handshake and mounts the room.
+  // (Previously this navigated to /private-session/live/<id> — the ACADEMY
+  //  live page — which 404s on a skill-session id and never connected.)
+  const handleJoin = () => {
     setJoining(true);
-    try {
-      await api.post(`/skill/sessions/${id}/join/`);
-      navigate(`/private-session/live/${id}`);
-    } catch {
-      navigate(`/private-session/live/${id}`);
-    } finally {
-      setJoining(false);
-    }
+    navigate(`/skill-session/live/${id}`);
   };
 
   const handleCancel = async () => {

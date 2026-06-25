@@ -1,11 +1,13 @@
-// PLACEMENT: src student/skill/SkillSessions.jsx
-// ACTION:    Replace the entire file.
-//            This supersedes all previous versions of this file.
+// PLACEMENT: student_dashboard/src/skill/SkillSessions.jsx   (REPLACE WHOLE FILE)
+// DEPLOY:    /app/student_dashboard/src/skill/SkillSessions.jsx
 //
-// Changes from previous version:
-//   - Details button now navigates to /skill-dev/sessions/<id>
-//   - Details link added on past sessions too
-//   - useNavigate added
+// Change from previous version (ONLY the join handler):
+//   - "Join" no longer pre-joins then navigates to /private-session/live/<id>
+//     (the ACADEMY live page, which 404s on a skill-session id).
+//   - It now navigates straight to /skill-session/live/<id> (the new skill
+//     LiveKit room page). That page performs POST /skill/sessions/<id>/join/
+//     and mounts the LiveKit room. No throwaway pre-join here.
+// Everything else is identical to the previous version.
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -23,7 +25,6 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
   const [upcoming, setUpcoming] = useState([]);
   const [past,     setPast]     = useState([]);
   const [loading,  setLoading]  = useState(true);
-  const [joining,  setJoining]  = useState({});
 
   useEffect(() => {
     api.get("/skill/student/dashboard/")
@@ -35,17 +36,8 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
       .finally(() => setLoading(false));
   }, []);
 
-  const joinSession = async (sessionId) => {
-    setJoining(j => ({ ...j, [sessionId]: true }));
-    try {
-      await api.post(`/skill/sessions/${sessionId}/join/`);
-      navigate(`/private-session/live/${sessionId}`);
-    } catch {
-      navigate(`/private-session/live/${sessionId}`);
-    } finally {
-      setJoining(j => { const n = { ...j }; delete n[sessionId]; return n; });
-    }
-  };
+  // The live room page (SkillSessionLive) owns the join handshake.
+  const joinSession = (sessionId) => navigate(`/skill-session/live/${sessionId}`);
 
   return (
     <div style={{ padding: "14px 18px 22px", overflow: "auto", flex: 1 }}>
@@ -97,10 +89,9 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
             {s.live ? (
               <button
                 onClick={() => joinSession(s.id)}
-                disabled={joining[s.id]}
                 style={{ background: ACC, color: "#fff", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}
               >
-                {joining[s.id] ? "…" : <><Icon.vid size={14} /> Join</>}
+                <Icon.vid size={14} /> Join
               </button>
             ) : (
               <button
