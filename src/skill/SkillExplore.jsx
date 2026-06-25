@@ -142,7 +142,7 @@ export default function SkillExplore({ setTab = () => {} }) {
                     </div>
                   )}
                 </div>
-                <button onClick={() => setTab("book")} style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                <button onClick={() => setTab("book", { expertId: t.id })} style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
                   View
                 </button>
               </div>

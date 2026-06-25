@@ -16,7 +16,10 @@ import "./skillDash.css";
 function useSkillNav() {
   const navigate = useNavigate();
 
-  const setTab = (tab) => navigate(tab === "dashboard" ? "/" : `/skill-dev/${tab}`);
+  // setTab(tab, state?) — optional state is forwarded as react-router nav state
+  // so e.g. Explore can tell the Book tab WHICH expert was selected.
+  const setTab = (tab, state) =>
+    navigate(tab === "dashboard" ? "/" : `/skill-dev/${tab}`, state ? { state } : undefined);
 
   // openMsg(teacherId, expertName)
   // teacherId = TeacherProfile UUID (from expert_teacher_id in session objects)

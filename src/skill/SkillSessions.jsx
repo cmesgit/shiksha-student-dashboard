@@ -94,12 +94,19 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
                 <Icon.vid size={14} /> Join
               </button>
             ) : (
-              <button
-                onClick={() => navigate(`/skill-dev/sessions/${s.id}`)}
-                style={{ background: "#fff", border: "1px solid #e3dccf", color: "#555", borderRadius: 9, padding: "9px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
-              >
-                Details
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                {s.status === "requested" && (
+                  <span title="Waiting for the tutor to accept" style={{ fontSize: 10.5, fontWeight: 800, color: "#b46a00", background: "#ff8f0122", padding: "4px 9px", borderRadius: 100, whiteSpace: "nowrap" }}>
+                    Pending
+                  </span>
+                )}
+                <button
+                  onClick={() => navigate(`/skill-dev/sessions/${s.id}`)}
+                  style={{ background: "#fff", border: "1px solid #e3dccf", color: "#555", borderRadius: 9, padding: "9px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                >
+                  Details
+                </button>
+              </div>
             )}
           </div>
         ))}

@@ -7,6 +7,7 @@
 //   POST /skill/payments/create-order/             → create booking (reserves slot)
 
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Icon } from "./skillIcons";
 import { Avatar, StarRow, inr } from "./skillUI";
 import { packs } from "./skillData";
@@ -17,6 +18,10 @@ const ACC = "#ff8f01";
 
 export default function SkillBookTutor({ openMsg = () => {} }) {
   const { api }  = useAuth();
+  const location = useLocation();
+  // Explore passes the chosen expert via nav state so the grid opens on the
+  // RIGHT tutor (was always defaulting to the first expert → wrong slots).
+  const wantedExpertId = location.state?.expertId || null;
   const [experts,    setExperts]    = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [ti,         setTi]         = useState(0);
@@ -34,6 +39,11 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
       .then(r => {
         const list = Array.isArray(r.data) ? r.data : [];
         setExperts(list);
+        // If we arrived from Explore with a chosen expert, open on them.
+        if (wantedExpertId) {
+          const idx = list.findIndex(e => e.id === wantedExpertId);
+          if (idx >= 0) setTi(idx);
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
