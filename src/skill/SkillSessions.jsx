@@ -9,7 +9,7 @@
 //     and mounts the LiveKit room. No throwaway pre-join here.
 // Everything else is identical to the previous version.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "./skillIcons";
 import { Avatar } from "./skillUI";
@@ -26,7 +26,8 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
   const [past,     setPast]     = useState([]);
   const [loading,  setLoading]  = useState(true);
 
-  useEffect(() => {
+  const load = useCallback((quiet = false) => {
+    if (!quiet) setLoading(true);
     api.get("/skill/student/dashboard/")
       .then(r => {
         setUpcoming(r.data.upcoming_sessions || []);
@@ -34,7 +35,15 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [api]);
+
+  useEffect(() => {
+    load();
+    // Poll so a "Join now" appears shortly after the tutor starts the class,
+    // without the student having to refresh.
+    const id = setInterval(() => load(true), 15000);
+    return () => clearInterval(id);
+  }, [load]);
 
   // The live room page (SkillSessionLive) owns the join handshake.
   const joinSession = (sessionId) => navigate(`/skill-session/live/${sessionId}`);
@@ -87,6 +96,14 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
               <Icon.msg size={15} />
             </button>
             {s.live ? (
+              <button
+                onClick={() => joinSession(s.id)}
+                style={{ background: "#dc2626", color: "#fff", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}
+              >
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff", boxShadow: "0 0 0 0 rgba(255,255,255,.7)", animation: "none" }} />
+                <Icon.vid size={14} /> Join · Live now
+              </button>
+            ) : s.joinable ? (
               <button
                 onClick={() => joinSession(s.id)}
                 style={{ background: ACC, color: "#fff", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}
