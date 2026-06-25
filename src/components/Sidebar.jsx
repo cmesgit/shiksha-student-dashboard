@@ -39,7 +39,7 @@ const SD = {
 const SD_NAV = [
   { id: "dash",     label: "My Dashboard", Icon: FiLayout,        to: "/"                    },
   { section: "SELF-PACED COURSES" },
-  { id: "courses",  label: "My Courses",   Icon: FiBook,          to: "/skill-dev/courses"   },
+  
   { section: "LIVE 1-ON-1" },
   { id: "sessions", label: "My Sessions",  Icon: BiVideo,         to: "/skill-dev/sessions"  },
   { id: "book",     label: "Book a Tutor", Icon: FiCalendar,      to: "/skill-dev/book"      },
