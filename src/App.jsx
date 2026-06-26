@@ -5,8 +5,10 @@
  * Changes from previous version:
  *   - Added import for SkillMessages
  *   - Added import for SkillSessionDetail
+ *   - Added import for SkillSessionLive  (NEW)
  *   - Added <Route path="skill-messages" element={<SkillMessages />} />
  *   - Added <Route path="skill-dev/sessions/:id" element={<SkillSessionDetail />} />
+ *   - Added fullscreen <Route path="/skill-session/live/:id" element={<SkillSessionLive />} />  (NEW)
  */
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -23,6 +25,7 @@ import ChangePassword from "./pages/ChangePassword";
 import Chat from "./pages/Chat";
 import SkillMessages from "./pages/SkillMessages";
 import SkillSessionDetail from "./pages/SkillSessionDetail";
+import SkillSessionLive from "./pages/SkillSessionLive";
 
 import Subjects from "./pages/Subjects";
 import SubjectDetails from "./pages/SubjectDetails";
@@ -49,9 +52,10 @@ import Quiz from "./pages/Quiz";
 import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
+import MyCourses from "./pages/MyCourses";
 
 import {
-  SkillCoursesPage,
+  
   SkillSessionsPage,
   SkillBookPage,
   SkillExplorePage,
@@ -129,10 +133,11 @@ export default function App() {
               <Route path="teachers" element={<Teachers />} />
               <Route path="teachers/:id" element={<TeacherDetail />} />
 
+              <Route path="my-courses" element={<MyCourses />} />
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
 
               {/* ── Skill Dev ── */}
-              <Route path="skill-dev/courses" element={<SkillCoursesPage />} />
+              
               <Route path="skill-dev/sessions" element={<SkillSessionsPage />} />
               <Route path="skill-dev/sessions/:id" element={<SkillSessionDetail />} />
               <Route path="skill-dev/book" element={<SkillBookPage />} />
@@ -142,6 +147,8 @@ export default function App() {
             {/* Fullscreen live routes */}
             <Route path="/private-session/live/:id" element={<PrivateSessionLive />} />
             <Route path="/group-session/live/:id" element={<GroupSessionLive />} />
+            {/* Skill-dev 1-on-1 LiveKit room (separate from Academy private sessions) */}
+            <Route path="/skill-session/live/:id" element={<SkillSessionLive />} />
           </Routes>
         </BrowserRouter>
       </CourseProvider>

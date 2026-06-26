@@ -1,3 +1,11 @@
+// PLACEMENT: student_dashboard/src/pages/Teachers.jsx  (replace whole file)
+// DEPLOY:    /app/student_dashboard/src/pages/Teachers.jsx
+//
+// WHAT CHANGED: each teacher row gets a "Message" button that opens a 1:1 chat
+// with that teacher. The teachers API returns the teacher's user id as `id`;
+// StartDirectView accepts a User id for TEACHER targets (resolves to the
+// TeacherProfile server-side), so we pass t.id straight through as teacherId.
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
@@ -27,6 +35,11 @@ export default function Teachers() {
           (t.qualification || "").toLowerCase().includes(q)
       )
     : teachers;
+
+  const messageTeacher = (e, t) => {
+    e.stopPropagation(); // don't trigger the row's navigate-to-profile
+    navigate("/chat", { state: { teacherId: t.id } });
+  };
 
   if (loading) return <div className="teachers-loading">Loading teachers...</div>;
   if (error) return <div className="teachers-error">{error}</div>;
@@ -79,6 +92,15 @@ export default function Teachers() {
                 {t.rating != null && (
                   <div className="teacher-row__rating">★ {t.rating.toFixed(1)}</div>
                 )}
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => messageTeacher(e, t)}
+                  onKeyDown={(e) => { if (e.key === "Enter") messageTeacher(e, t); }}
+                  style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5, background: "#125027", color: "#fff", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+                >
+                  💬 Message
+                </span>
                 <span className="teacher-row__chevron">›</span>
               </button>
             ))}

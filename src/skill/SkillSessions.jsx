@@ -1,13 +1,15 @@
-// PLACEMENT: src student/skill/SkillSessions.jsx
-// ACTION:    Replace the entire file.
-//            This supersedes all previous versions of this file.
+// PLACEMENT: student_dashboard/src/skill/SkillSessions.jsx   (REPLACE WHOLE FILE)
+// DEPLOY:    /app/student_dashboard/src/skill/SkillSessions.jsx
 //
-// Changes from previous version:
-//   - Details button now navigates to /skill-dev/sessions/<id>
-//   - Details link added on past sessions too
-//   - useNavigate added
+// Change from previous version (ONLY the join handler):
+//   - "Join" no longer pre-joins then navigates to /private-session/live/<id>
+//     (the ACADEMY live page, which 404s on a skill-session id).
+//   - It now navigates straight to /skill-session/live/<id> (the new skill
+//     LiveKit room page). That page performs POST /skill/sessions/<id>/join/
+//     and mounts the LiveKit room. No throwaway pre-join here.
+// Everything else is identical to the previous version.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "./skillIcons";
 import { Avatar } from "./skillUI";
@@ -23,9 +25,9 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
   const [upcoming, setUpcoming] = useState([]);
   const [past,     setPast]     = useState([]);
   const [loading,  setLoading]  = useState(true);
-  const [joining,  setJoining]  = useState({});
 
-  useEffect(() => {
+  const load = useCallback((quiet = false) => {
+    if (!quiet) setLoading(true);
     api.get("/skill/student/dashboard/")
       .then(r => {
         setUpcoming(r.data.upcoming_sessions || []);
@@ -33,19 +35,18 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [api]);
 
-  const joinSession = async (sessionId) => {
-    setJoining(j => ({ ...j, [sessionId]: true }));
-    try {
-      await api.post(`/skill/sessions/${sessionId}/join/`);
-      navigate(`/private-session/live/${sessionId}`);
-    } catch {
-      navigate(`/private-session/live/${sessionId}`);
-    } finally {
-      setJoining(j => { const n = { ...j }; delete n[sessionId]; return n; });
-    }
-  };
+  useEffect(() => {
+    load();
+    // Poll so a "Join now" appears shortly after the tutor starts the class,
+    // without the student having to refresh.
+    const id = setInterval(() => load(true), 15000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  // The live room page (SkillSessionLive) owns the join handshake.
+  const joinSession = (sessionId) => navigate(`/skill-session/live/${sessionId}`);
 
   return (
     <div style={{ padding: "14px 18px 22px", overflow: "auto", flex: 1 }}>
@@ -97,18 +98,32 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
             {s.live ? (
               <button
                 onClick={() => joinSession(s.id)}
-                disabled={joining[s.id]}
+                style={{ background: "#dc2626", color: "#fff", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}
+              >
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff", boxShadow: "0 0 0 0 rgba(255,255,255,.7)", animation: "none" }} />
+                <Icon.vid size={14} /> Join · Live now
+              </button>
+            ) : s.joinable ? (
+              <button
+                onClick={() => joinSession(s.id)}
                 style={{ background: ACC, color: "#fff", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}
               >
-                {joining[s.id] ? "…" : <><Icon.vid size={14} /> Join</>}
+                <Icon.vid size={14} /> Join
               </button>
             ) : (
-              <button
-                onClick={() => navigate(`/skill-dev/sessions/${s.id}`)}
-                style={{ background: "#fff", border: "1px solid #e3dccf", color: "#555", borderRadius: 9, padding: "9px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
-              >
-                Details
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                {s.status === "requested" && (
+                  <span title="Waiting for the tutor to accept" style={{ fontSize: 10.5, fontWeight: 800, color: "#b46a00", background: "#ff8f0122", padding: "4px 9px", borderRadius: 100, whiteSpace: "nowrap" }}>
+                    Pending
+                  </span>
+                )}
+                <button
+                  onClick={() => navigate(`/skill-dev/sessions/${s.id}`)}
+                  style={{ background: "#fff", border: "1px solid #e3dccf", color: "#555", borderRadius: 9, padding: "9px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                >
+                  Details
+                </button>
+              </div>
             )}
           </div>
         ))}

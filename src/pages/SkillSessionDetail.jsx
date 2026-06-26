@@ -1,12 +1,20 @@
 /**
- * PLACEMENT: src student/pages/SkillSessionDetail.jsx
- * ACTION:    Create this as a new file.
+ * PLACEMENT: student_dashboard/src/pages/SkillSessionDetail.jsx  (REPLACE WHOLE FILE)
+ * DEPLOY:    /app/student_dashboard/src/pages/SkillSessionDetail.jsx
  *
  * Wired to: GET /skill/sessions/<id>/
- * Route:    /skill-dev/sessions/:id  (already added in App.jsx file 4)
+ * Route:    /skill-dev/sessions/:id  (already in App.jsx)
  *
- * Shows full booking detail: topic, when, duration, mode, expert card,
- * payment status, and contextual action buttons (Join / Message / Review / Cancel).
+ * Change from previous version (ONLY handleJoin):
+ *   "Join session now" now navigates to /skill-session/live/<id> (the new
+ *   skill LiveKit room) instead of /private-session/live/<id> (the ACADEMY
+ *   live page, which 404s on a skill-session id). The live page performs the
+ *   POST /skill/sessions/<id>/join/ handshake.
+ *
+ * NOTE: the "Cancel this request" button posts to /skill/sessions/<id>/cancel/,
+ * which has no backend route yet (there is no student-side cancel endpoint —
+ * only the teacher-side decline). It fails gracefully with an alert. Add a
+ * StudentCancelSessionView + url if you want learner-initiated cancellation.
  */
 
 import { useState, useEffect } from "react";
@@ -150,16 +158,13 @@ export default function SkillSessionDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleJoin = async () => {
+  // The skill LiveKit room page (/skill-session/live/<id>) owns the
+  // POST /skill/sessions/<id>/join/ handshake and mounts the room.
+  // (Previously this navigated to /private-session/live/<id> — the ACADEMY
+  //  live page — which 404s on a skill-session id and never connected.)
+  const handleJoin = () => {
     setJoining(true);
-    try {
-      await api.post(`/skill/sessions/${id}/join/`);
-      navigate(`/private-session/live/${id}`);
-    } catch {
-      navigate(`/private-session/live/${id}`);
-    } finally {
-      setJoining(false);
-    }
+    navigate(`/skill-session/live/${id}`);
   };
 
   const handleCancel = async () => {
@@ -244,12 +249,45 @@ export default function SkillSessionDetail() {
             <a href={s.meeting_url} target="_blank" rel="noreferrer" style={{ color: T.teal, fontWeight: 700 }}>Join meeting room ↗</a>
           } />
         )}
-        <Row icon="💳" label="Payment" value={amountRs === 0 ? "Free" : `₹${amountRs} · ${s.payment_status}`} />
+        <Row icon="💳" label="Payment" value={
+          s.settlement === "direct"
+            ? (amountRs === 0 ? "Arrange directly with expert" : `₹${s.amount_rupees ?? amountRs} · pay the expert directly`)
+            : (amountRs === 0 ? "Free" : `₹${amountRs} · ${s.payment_status}`)
+        } />
         <div style={{ padding: "11px 0" }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: T.soft, textTransform: "uppercase", letterSpacing: ".4px", marginBottom: 2 }}>Booking ID</div>
           <div style={{ fontSize: 12, fontFamily: "monospace", color: T.soft }}>{s.booking_ref}</div>
         </div>
       </div>
+
+      {/* Pay the expert directly (P2P) — shown when the expert has set a payee */}
+      {s.settlement === "direct" && s.pay_to && (s.pay_to.upi || s.pay_to.name) && (
+        <div style={{ background: T.tealBg, borderRadius: 16, border: `1px solid ${T.teal}33`, padding: "16px 18px", marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: T.teal, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>
+            Pay the expert directly
+          </div>
+          <div style={{ fontSize: 12.5, color: T.soft, lineHeight: 1.5, marginBottom: 12 }}>
+            ShikshaCom doesn't handle this payment — send {s.amount_rupees ? `₹${s.amount_rupees}` : "the agreed amount"} straight to the expert and confirm over chat.
+          </div>
+          {s.pay_to.upi && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "#fff", border: `1px solid ${T.border}`, borderRadius: 10, padding: "11px 14px" }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: T.ink }}>{s.pay_to.upi}</div>
+                <div style={{ fontSize: 11.5, color: T.soft }}>{s.pay_to.name}</div>
+              </div>
+              <button
+                onClick={() => { try { navigator.clipboard.writeText(s.pay_to.upi); } catch {} }}
+                style={{ all: "unset", cursor: "pointer", flexShrink: 0, background: T.tealBg, color: T.teal, border: `1px solid ${T.teal}33`, borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700 }}
+              >
+                Copy
+              </button>
+            </div>
+          )}
+          {s.pay_to.note && (
+            <div style={{ fontSize: 11.5, color: T.soft, marginTop: 8 }}>Note: {s.pay_to.note}</div>
+          )}
+        </div>
+      )}
 
       {/* Expert */}
       <div style={{ marginBottom: 14 }}>
