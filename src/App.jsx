@@ -52,6 +52,7 @@ import Quiz from "./pages/Quiz";
 import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
+import MyCourses from "./pages/MyCourses";
 
 import {
   
@@ -132,6 +133,7 @@ export default function App() {
               <Route path="teachers" element={<Teachers />} />
               <Route path="teachers/:id" element={<TeacherDetail />} />
 
+              <Route path="my-courses" element={<MyCourses />} />
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
 
               {/* ── Skill Dev ── */}

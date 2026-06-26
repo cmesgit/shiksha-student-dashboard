@@ -14,6 +14,31 @@ const CourseContext = createContext();
 // the locked TrackSwitcher) so unassigned learners don't see it by default.
 const DEFAULT_TRACK = "skill";
 
+// Persist the learner's explicit Academy⟷Skill choice so it survives reloads.
+// Cleared once they select a specific course (track becomes course-driven again).
+const TRACK_OVERRIDE_KEY = "shiksha.learner.trackOverride";
+
+function readTrackOverride() {
+  try {
+    const v = localStorage.getItem(TRACK_OVERRIDE_KEY);
+    return v === "academy" || v === "skill" ? v : null;
+  } catch {
+    return null; // storage unavailable (SSR / private mode)
+  }
+}
+
+function writeTrackOverride(track) {
+  try {
+    if (track === "academy" || track === "skill") {
+      localStorage.setItem(TRACK_OVERRIDE_KEY, track);
+    } else {
+      localStorage.removeItem(TRACK_OVERRIDE_KEY);
+    }
+  } catch {
+    /* storage unavailable — fall back to in-memory state only */
+  }
+}
+
 export function CourseProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
 
@@ -24,7 +49,7 @@ export function CourseProvider({ children }) {
   // Manual track chosen via the header switch. Used when there's no course to
   // derive the track from (e.g. dev, no enrollment yet). Cleared once a real
   // course of that track is selected, so enrolled users are course-driven.
-  const [trackOverride, setTrackOverride] = useState(null);
+  const [trackOverride, setTrackOverride] = useState(readTrackOverride);
 
   useEffect(() => {
     if (authLoading) return;
@@ -61,11 +86,18 @@ export function CourseProvider({ children }) {
 
   const selectCourse = (courseId) => {
     const selected = courses.find((c) => c.id === courseId);
-    if (selected) { setActiveCourse(selected); setTrackOverride(null); }
+    if (selected) {
+      setActiveCourse(selected);
+      setTrackOverride(null);
+      writeTrackOverride(null); // course now drives the track
+    }
   };
 
-  // Header switch: choose a track directly (dev / no enrollment).
-  const setTrack = (track) => setTrackOverride(track);
+  // Header switch: choose a track directly (and remember it across reloads).
+  const setTrack = (track) => {
+    setTrackOverride(track);
+    writeTrackOverride(track);
+  };
 
   // ── Derived track — "academy" | "skill"
   // Priority: manual switch → active course → DEFAULT_TRACK fallback.

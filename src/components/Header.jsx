@@ -1,16 +1,16 @@
 /**
  * student_dashboard/src/components/Header.jsx
  *
- * Header: greeting + notifications + ProfileSwitcher.
- * The Academy⟷Skill-dev switch and the "Select Course" dropdown have been
- * removed — the active track/course now comes from CourseContext (enrollment
- * + DEFAULT_TRACK fallback), not from header controls.
+ * Header: greeting + Academy⟷Skill toggle + notifications + ProfileSwitcher.
+ * The track toggle is the learner-facing LearnerTrackSwitcher, which flips
+ * activeTrack in CourseContext. (The old "Select Course" dropdown stays
+ * removed — the active course comes from enrollment.)
  */
 import { useLocation } from "react-router-dom";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import { useAuth } from "../contexts/AuthContext";
 import ProfileSwitcher from "../shared/ProfileSwitcher";
-import TrackSwitcher from "./TrackSwitcher";
+import LearnerTrackSwitcher from "./LearnerTrackSwitcher";
 import "../styles/header.css";
 import "../shared/ProfileSwitcher.css";
 import NotificationBell from "./NotificationBell";
@@ -48,8 +48,8 @@ export default function Header({ toggleMenu, menuOpen }) {
         </div>
       )}
 
-      {/* Academy ⟷ Skill Dev switch */}
-      <TrackSwitcher />
+      {/* Academy ⟷ Skill Dev switch (learner) */}
+      <LearnerTrackSwitcher />
 
       <div className="header__right" style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" }}>
         <NotificationBell />
