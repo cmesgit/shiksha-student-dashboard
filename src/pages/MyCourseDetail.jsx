@@ -1,3 +1,14 @@
+// PLACEMENT: student_dashboard/src/pages/MyCourseDetail.jsx  (replace whole file)
+// DEPLOY:    /app/student_dashboard/src/pages/MyCourseDetail.jsx
+//
+// WHAT CHANGED: added two actions in the course header —
+//   • "Class chat"        → opens the per-course group room (all enrolled
+//                           students + the course's teachers) via Chat.jsx,
+//                           which already accepts { courseId, courseTitle }.
+//   • "Message a teacher" → the teachers directory, where each teacher now has
+//                           a Message button (1:1).
+// Buttons are inline-styled so no CSS file change is needed.
+
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCourse } from "../contexts/CourseContext";
@@ -55,6 +66,23 @@ export default function MyCourseDetail() {
           {course.description && (
             <p className="myCourseDetail__desc">{course.description}</p>
           )}
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+            <button
+              type="button"
+              onClick={() => navigate("/chat", { state: { courseId, courseTitle: course.title } })}
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "linear-gradient(135deg,#1b9c85,#1dcaab)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+            >
+              💬 Class chat
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/teachers")}
+              style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "#fff", color: "#125027", border: "1.5px solid #125027", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+            >
+              Message a teacher
+            </button>
+          </div>
         </div>
 
         <div className="myCourseDetail__subscription">

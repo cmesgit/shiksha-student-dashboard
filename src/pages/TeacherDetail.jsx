@@ -1,3 +1,10 @@
+// PLACEMENT: student_dashboard/src/pages/TeacherDetail.jsx  (replace whole file)
+// DEPLOY:    /app/student_dashboard/src/pages/TeacherDetail.jsx
+//
+// WHAT CHANGED: added a "Message" button to the teacher's profile card. The
+// route param `id` is the teacher's user id; StartDirectView accepts a User id
+// for TEACHER targets, so we pass it straight through as teacherId.
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/apiClient";
@@ -65,6 +72,14 @@ export default function TeacherDetail() {
         {teacher.rating != null && (
           <p className="teacher-detail__rating">★ {teacher.rating.toFixed(1)}</p>
         )}
+
+        <button
+          type="button"
+          onClick={() => navigate("/chat", { state: { teacherId: id } })}
+          style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 7, background: "linear-gradient(135deg,#1b9c85,#1dcaab)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+        >
+          💬 Message
+        </button>
       </div>
 
       {teacher.bio && (
