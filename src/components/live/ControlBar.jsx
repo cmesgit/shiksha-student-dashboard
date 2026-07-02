@@ -12,8 +12,10 @@ export default function ControlBar({
   session,
   isHost = false,
   onHostEndSession = null,
+  unrestricted = false,   // 1-on-1 skill call: no teacher-permission gating
 }) {
   const isStudent = role !== "PRESENTER";
+  const gated = isStudent && !unrestricted;   // only group-class students are gated
 
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
@@ -44,22 +46,22 @@ export default function ControlBar({
     return () => document.removeEventListener("mousedown", onClick);
   }, [otherOpen]);
 
-  /* ── student joins with mic + camera off ── */
+  /* ── gated group-class students join with mic + camera off ── */
   useEffect(() => {
-    if (!isStudent || !localParticipant) return;
+    if (!gated || !localParticipant) return;
     localParticipant.setMicrophoneEnabled(false);
     localParticipant.setCameraEnabled(false);
     setMicOn(false);
     setVideoOn(false);
-  }, [isStudent, localParticipant]);
+  }, [gated, localParticipant]);
 
-  /* ── presenter / instant-meeting host sync ── */
+  /* ── presenter / 1-on-1: reflect the participant's real track state ── */
   useEffect(() => {
-    if (isStudent || !localParticipant) return;
+    if (gated || !localParticipant) return;
     setMicOn(!!localParticipant.isMicrophoneEnabled);
     setVideoOn(!!localParticipant.isCameraEnabled);
     setScreenOn(!!localParticipant.isScreenShareEnabled);
-  }, [isStudent, localParticipant]);
+  }, [gated, localParticipant]);
 
   /* ── timer ── */
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function ControlBar({
   /* ── mic ── */
   const toggleMic = async () => {
     if (!localParticipant) return;
-    if (isStudent && !canUnmute && !micOn) return;
+    if (gated && !canUnmute && !micOn) return;
     const next = !micOn;
     await localParticipant.setMicrophoneEnabled(next);
     setMicOn(next);
@@ -88,7 +90,7 @@ export default function ControlBar({
   /* ── video ── */
   const toggleVideo = async () => {
     if (!localParticipant) return;
-    if (isStudent && !canVideo && !videoOn) return;
+    if (gated && !canVideo && !videoOn) return;
     const next = !videoOn;
     await localParticipant.setCameraEnabled(next);
     setVideoOn(next);

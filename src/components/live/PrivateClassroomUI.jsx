@@ -12,6 +12,7 @@ export default function PrivateClassroomUI({
   role = "STUDENT",
   sessionId: sessionIdProp,
   onLeave,
+  unrestricted = false,   // 1-on-1 skill call → both sides publish freely
 }) {
   const [raisedHands, setRaisedHands] = useState({});
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -94,25 +95,34 @@ export default function PrivateClassroomUI({
     return () => room.off("dataReceived", handleData);
   }, [room]);
 
-  /* ───── TRACKS ───── */
+  /* ───── TRACKS (proper 1-on-1: remote = main, local = self-view) ───── */
   const tracks = useTracks([
     { source: Track.Source.Camera, withPlaceholder: false },
     { source: Track.Source.ScreenShare, withPlaceholder: false },
   ]);
 
-  const screenTrack = tracks.find((t) => t.source === Track.Source.ScreenShare);
-  const cameraTrack = tracks.find((t) => t.source === Track.Source.Camera);
-  const mainTrack = screenTrack || cameraTrack;
-  const pipTrack = screenTrack ? cameraTrack : null;
+  const localId = room.localParticipant?.identity;
+  const isLocal = (t) => t?.participant?.identity === localId;
 
-  /* ───── WAITING ───── */
-  if (!mainTrack) {
+  const screenTrack  = tracks.find((t) => t.source === Track.Source.ScreenShare);
+  const remoteCamera = tracks.find((t) => t.source === Track.Source.Camera && !isLocal(t));
+  const localCamera  = tracks.find((t) => t.source === Track.Source.Camera && isLocal(t));
+
+  // Main stage shows a screen share (from either side) if present, otherwise the
+  // OTHER person's camera. Your own camera is always the small self-view.
+  const mainTrack = screenTrack || remoteCamera;
+  const selfTrack = localCamera;
+
+  const hasRemote = !!(room.remoteParticipants && room.remoteParticipants.size > 0);
+
+  /* ───── WAITING (only until the other person joins) ───── */
+  if (!hasRemote) {
     return (
       <div className="waiting-screen">
         <div className="waiting-card">
           <div className="waiting-pulse" />
-          <h2>Waiting for teacher to start...</h2>
-          <p>You will be connected as soon as the session begins</p>
+          <h2>Waiting for {role === "PRESENTER" ? "your student" : "your teacher"} to join…</h2>
+          <p>The call will connect as soon as they arrive.</p>
         </div>
       </div>
     );
@@ -130,7 +140,6 @@ export default function PrivateClassroomUI({
       }))
     : [];
 
-  const localId = room.localParticipant?.identity;
   const localName = room.localParticipant?.name || localId || "You";
 
   const peopleList = [
@@ -157,12 +166,21 @@ export default function PrivateClassroomUI({
     >
       <div className="classroom-main">
         <div className="main-stage">
-          <VideoTrack trackRef={mainTrack} />
-          {pipTrack && (
-            <div className="pip-camera">
-              <VideoTrack trackRef={pipTrack} />
+          {mainTrack ? (
+            <VideoTrack trackRef={mainTrack} />
+          ) : (
+            <div className="camera-off-tile" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", color: "#cbd5e1", fontSize: 16 }}>
+              {role === "PRESENTER" ? "Your student's" : "Your teacher's"} camera is off
             </div>
           )}
+
+          {/* Self-view: your own camera, always small */}
+          {selfTrack && (
+            <div className="pip-camera">
+              <VideoTrack trackRef={selfTrack} />
+            </div>
+          )}
+
           <button
             className="video-fs-btn"
             onClick={toggleFullscreen}
@@ -175,6 +193,7 @@ export default function PrivateClassroomUI({
         <ControlBar
           onLeave={onLeave}
           role={role}
+          unrestricted={unrestricted}
           activePanel={activePanel}
           onTogglePanel={togglePanel}
         />
