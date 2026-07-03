@@ -15,6 +15,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import "../styles/skillDevDashboard.css";
 
 /* ── Icons ─────────────────────────────────────────────────────────── */
 const Ic = {
@@ -104,10 +105,10 @@ export default function SkillDevStudentSection() {
     navigate("/skill-dev/book", { state: expertId ? { expertId } : undefined });
 
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 0, height: "100%", overflowY: "auto", alignContent: "flex-start" }}>
+    <div className="sd-shell">
 
       {/* ── Main column ── */}
-      <div style={{ flex: "1 1 420px", minWidth: 0, padding: "24px 22px" }}>
+      <div className="sd-main">
 
         {/* Greeting */}
         <div style={{ marginBottom: 20 }}>
@@ -130,7 +131,7 @@ export default function SkillDevStudentSection() {
         {/* Overview */}
         <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 16, padding: "18px 20px", marginBottom: 22, boxShadow: "0 3px 14px rgba(18,80,39,.05)" }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: C.soft, letterSpacing: ".5px", textTransform: "uppercase", marginBottom: 14, fontFamily: MP }}>Overview</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", rowGap: 14 }}>
+          <div className="sd-stat-grid">
             {stat.map((s, i) => (
               <div key={i} style={{ textAlign: "center", padding: "4px 0", borderRight: i < 3 ? `1px solid ${C.border}` : "none" }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: C.cream2, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px", color: C.forest }}>
@@ -191,7 +192,7 @@ export default function SkillDevStudentSection() {
       </div>
 
       {/* ── Right panel: Your tutors ── */}
-      <div style={{ flex: "1 1 250px", maxWidth: 320, padding: "24px 18px" }}>
+      <div className="sd-aside">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 style={{ fontFamily: MH, fontWeight: 800, fontSize: 14, color: C.ink, letterSpacing: "-.3px", margin: 0 }}>Your tutors</h3>
           <button onClick={() => navigate("/skill-dev/explore")} style={{ all: "unset", cursor: "pointer", fontSize: 12, color: C.forestMid, fontWeight: 600, fontFamily: MP }}>Find more →</button>
