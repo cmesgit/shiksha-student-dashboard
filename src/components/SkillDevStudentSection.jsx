@@ -74,17 +74,20 @@ export default function SkillDevStudentSection() {
 
   const [data,    setData]    = useState({ stats: {}, upcoming_sessions: [], experts: [] });
   const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(false);
 
-  useEffect(() => {
+  const load = () => {
+    setError(false);
     api.get("/skill/student/dashboard/")
       .then(r => setData({
         stats:             r.data.stats || {},
         upcoming_sessions: r.data.upcoming_sessions || [],
         experts:           r.data.experts || [],
       }))
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, [api]);
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
   const { stats, upcoming_sessions: sessions, experts } = data;
 
@@ -101,10 +104,10 @@ export default function SkillDevStudentSection() {
     navigate("/skill-dev/book", { state: expertId ? { expertId } : undefined });
 
   return (
-    <div style={{ display: "flex", gap: 0, height: "100%" }}>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 0, height: "100%", overflowY: "auto", alignContent: "flex-start" }}>
 
       {/* ── Main column ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "24px 22px" }}>
+      <div style={{ flex: "1 1 420px", minWidth: 0, padding: "24px 22px" }}>
 
         {/* Greeting */}
         <div style={{ marginBottom: 20 }}>
@@ -114,10 +117,20 @@ export default function SkillDevStudentSection() {
           <p style={{ fontSize: 13, color: C.soft, margin: "4px 0 0", fontFamily: MP }}>Your 1-on-1 learning dashboard</p>
         </div>
 
+        {error && !loading && (
+          <div style={{ ...emptyBox, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, textAlign: "left", padding: "14px 16px", marginBottom: 16 }}>
+            <span>Couldn&apos;t load your dashboard.</span>
+            <button onClick={() => { setLoading(true); load(); }}
+              style={{ all: "unset", cursor: "pointer", padding: "7px 14px", borderRadius: 9, background: C.orange, color: "#fff", fontSize: 12, fontWeight: 700, fontFamily: MP }}>
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Overview */}
         <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 16, padding: "18px 20px", marginBottom: 22, boxShadow: "0 3px 14px rgba(18,80,39,.05)" }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: C.soft, letterSpacing: ".5px", textTransform: "uppercase", marginBottom: 14, fontFamily: MP }}>Overview</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", rowGap: 14 }}>
             {stat.map((s, i) => (
               <div key={i} style={{ textAlign: "center", padding: "4px 0", borderRight: i < 3 ? `1px solid ${C.border}` : "none" }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: C.cream2, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px", color: C.forest }}>
@@ -178,7 +191,7 @@ export default function SkillDevStudentSection() {
       </div>
 
       {/* ── Right panel: Your tutors ── */}
-      <div style={{ width: 272, minWidth: 272, overflowY: "auto", padding: "24px 18px 24px 0" }}>
+      <div style={{ flex: "1 1 250px", maxWidth: 320, padding: "24px 18px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 style={{ fontFamily: MH, fontWeight: 800, fontSize: 14, color: C.ink, letterSpacing: "-.3px", margin: 0 }}>Your tutors</h3>
           <button onClick={() => navigate("/skill-dev/explore")} style={{ all: "unset", cursor: "pointer", fontSize: 12, color: C.forestMid, fontWeight: 600, fontFamily: MP }}>Find more →</button>

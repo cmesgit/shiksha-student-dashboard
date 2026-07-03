@@ -59,6 +59,7 @@ import {
   SkillSessionsPage,
   SkillBookPage,
   SkillExplorePage,
+  SkillReviewsPage,
 } from "./skill/SkillRoutes";
 
 
@@ -142,6 +143,7 @@ export default function App() {
               <Route path="skill-dev/sessions/:id" element={<SkillSessionDetail />} />
               <Route path="skill-dev/book" element={<SkillBookPage />} />
               <Route path="skill-dev/explore" element={<SkillExplorePage />} />
+              <Route path="skill-dev/reviews" element={<SkillReviewsPage />} />
             </Route>
 
             {/* Fullscreen live routes */}

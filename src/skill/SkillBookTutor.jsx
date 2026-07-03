@@ -189,7 +189,7 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
 
             <div style={{ display: "grid", gridTemplateColumns: `64px repeat(${AV.DAYS.length}, 1fr)`, gap: 6, alignItems: "center" }}>
               <div></div>
-              {AV.DAYS.map((d) => <div key={d} style={{ fontSize: 10.5, fontWeight: 700, color: "#6b7c83", textAlign: "center" }}>{d}</div>)}
+              {AV.dateLabels().map((d) => <div key={d} style={{ fontSize: 10.5, fontWeight: 700, color: "#6b7c83", textAlign: "center" }}>{d}</div>)}
               {AV.SLOTS.map((sl, si) => (
                 <div key={sl} style={{ display: "contents" }}>
                   <div style={{ fontSize: 10.5, fontWeight: 700, color: "#9aa9af", textAlign: "right", paddingRight: 4 }}>{sl}</div>
@@ -198,6 +198,7 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
                     const st = avail.booked.includes(k) ? "booked" : avail.open.includes(k) ? "open" : "closed";
                     if (st === "booked") return <button key={di} disabled className="slot booked" title="Already booked"><Icon.check size={11} /></button>;
                     if (st === "closed") return <button key={di} disabled className="slot off">—</button>;
+                    if (AV.isPastToday(di, si)) return <button key={di} disabled className="slot off" title="Time has passed today">—</button>;
                     return <button key={di} onClick={() => setSlot(k)} className={`slot ${slot === k ? "on" : ""}`} />;
                   })}
                 </div>
