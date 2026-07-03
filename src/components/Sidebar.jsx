@@ -18,7 +18,7 @@ import { FaClipboardList, FaBookOpen, FaGraduationCap } from "react-icons/fa";
 import { RiLiveLine, RiLockLine, RiGroupLine } from "react-icons/ri";
 import { FaChalkboardTeacher } from "react-icons/fa";
 import { AiOutlineFileDone, AiOutlineClose } from "react-icons/ai";
-import { FiHome, FiSearch, FiCalendar, FiBook, FiLayout, FiMessageCircle, FiShoppingBag } from "react-icons/fi";
+import { FiHome, FiSearch, FiCalendar, FiBook, FiLayout, FiMessageCircle, FiShoppingBag, FiStar } from "react-icons/fi";
 import { HOME_URL, ACADEMY_BROWSE_URL } from "../config/urls";
 
 /* ── Skill Dev design tokens ─────────────────────────────────────── */
@@ -37,15 +37,19 @@ const SD = {
 
 /* Skill Dev sidebar nav */
 const SD_NAV = [
-  { id: "dash",     label: "My Dashboard", Icon: FiLayout,        to: "/"                    },
-  
+  { id: "dash",     label: "Skill Dashboard", Icon: FiLayout,        to: "/"                    },
+
   { section: "LIVE 1-ON-1" },
-  { id: "sessions", label: "My Sessions",  Icon: BiVideo,         to: "/skill-dev/sessions"  },
-  { id: "book",     label: "Book a Tutor", Icon: FiCalendar,      to: "/skill-dev/book"      },
+  { id: "sessions", label: "My Sessions",     Icon: BiVideo,         to: "/skill-dev/sessions"  },
+
   { section: "DISCOVER" },
-  { id: "explore",  label: "Explore More", Icon: FiSearch,        to: "/skill-dev/explore"   },
+  // Booking now happens inside Explore (pick a tutor → book), so there is no
+  // separate "Book a Tutor" nav item.
+  { id: "explore",  label: "Explore",         Icon: FiSearch,        to: "/skill-dev/explore"   },
+  { id: "reviews",  label: "My Reviews",      Icon: FiStar,          to: "/skill-dev/reviews"   },
+
   { section: "COMMUNICATE" },
-  { id: "messages", label: "Messages",     Icon: FiMessageCircle, to: "/skill-messages"      },
+  { id: "messages", label: "Messages",        Icon: FiMessageCircle, to: "/skill-messages"      },
 ];
 
 /* ── Skill Dev sidebar ───────────────────────────────────────────── */

@@ -1,15 +1,16 @@
 // PLACEMENT: student_dashboard/src/skill/SkillRoutes.jsx  (replace whole file)
-// DEPLOY:    /app/student_dashboard/src/skill/SkillRoutes.jsx
 //
-// WHAT CHANGED: SkillExplorePage now also receives openMsg, so the new
-// "Message" button on each expert card can open a DM with that expert
-// (before booking). Everything else is unchanged.
+// Skill Dev is 1-on-1 only — the self-paced "SkillCourses" page has been
+// removed. The learner nav is: Skill Dashboard, My Sessions, Explore,
+// My Reviews, Messages. Booking happens inside Explore, so there is no
+// standalone Book page in the nav (the /skill-dev/book route still exists and
+// is reached from Explore + the dashboard "Book" buttons).
 
 import { useNavigate } from "react-router-dom";
-import SkillCourses from "./SkillCourses";
 import SkillSessions from "./SkillSessions";
 import SkillBookTutor from "./SkillBookTutor";
 import SkillExplore from "./SkillExplore";
+import SkillReviews from "./SkillReviews";
 import "./skillDash.css";
 
 function useSkillNav() {
@@ -33,7 +34,7 @@ function useSkillNav() {
   return { setTab, openMsg };
 }
 
-export function SkillCoursesPage()  { return <SkillCourses />; }
 export function SkillSessionsPage() { const n = useSkillNav(); return <SkillSessions setTab={n.setTab} openMsg={n.openMsg} />; }
 export function SkillBookPage()     { const n = useSkillNav(); return <SkillBookTutor openMsg={n.openMsg} />; }
 export function SkillExplorePage()  { const n = useSkillNav(); return <SkillExplore setTab={n.setTab} openMsg={n.openMsg} />; }
+export function SkillReviewsPage()  { return <SkillReviews />; }
