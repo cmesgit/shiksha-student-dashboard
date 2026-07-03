@@ -29,14 +29,14 @@ const Ic = {
 
 /* ── Tokens ────────────────────────────────────────────────────────── */
 const C = {
-  forestDk:  "#003223",
-  forest:    "#125027",
-  forestMid: "#1b9c85",
+  forestDk:  "#431407",
+  forest:    "#6b2410",
+  forestMid: "#b3402e",
   orange:    "#ff8f01",
-  cream2:    "#f7f1de",
-  border:    "rgba(9,62,5,.13)",
-  ink:       "#0e1c0f",
-  soft:      "rgba(14,28,15,.52)",
+  cream2:    "#f3e2da",
+  border:    "rgba(67,20,7,.13)",
+  ink:       "#26130b",
+  soft:      "rgba(38,19,11,.52)",
 };
 const MH = '"Montserrat", system-ui, sans-serif';
 const MP = '"Poppins", system-ui, sans-serif';

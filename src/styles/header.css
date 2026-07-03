@@ -412,3 +412,12 @@ text-align: center;
   color: #9ca3af;
   margin: 0;
 }
+
+
+/* ── Skill Dev track: blush identity from the design ── */
+.header--skill {
+  background: #f3e2da;
+  border-bottom: 1px solid rgba(67, 20, 7, 0.12);
+}
+.header--skill .header__title,
+.header--skill .header__subtitle { color: #431407; }

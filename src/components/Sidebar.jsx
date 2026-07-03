@@ -23,14 +23,14 @@ import { HOME_URL, ACADEMY_BROWSE_URL } from "../config/urls";
 
 /* ── Skill Dev design tokens ─────────────────────────────────────── */
 const SD = {
-  bg:      "#003223",
+  bg:      "#431407",
   bgItem:  "#ff8f01",
   border:  "rgba(255,255,255,.08)",
   txt:     "rgba(255,255,255,.62)",
   txtOn:   "#fff",
   section: "rgba(255,255,255,.28)",
   brand:   "#ff8f01",
-  forest:  "#125027",
+  forest:  "#6b2410",
   MH: '"Montserrat", system-ui, sans-serif',
   MP: '"Poppins", system-ui, sans-serif',
 };

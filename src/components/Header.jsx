@@ -7,6 +7,7 @@
  * removed — the active course comes from enrollment.)
  */
 import { useLocation } from "react-router-dom";
+import { useCourse } from "../contexts/CourseContext";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import { useAuth } from "../contexts/AuthContext";
 import ProfileSwitcher from "../shared/ProfileSwitcher";
@@ -17,6 +18,7 @@ import NotificationBell from "./NotificationBell";
 import { HOME_URL, TEACHER_DASHBOARD_URL as TEACHER_URL } from "../config/urls";
 
 export default function Header({ toggleMenu, menuOpen }) {
+  const { activeTrack } = useCourse();
   const { pathname } = useLocation();
   const isDashboard = pathname === "/";
 
@@ -34,7 +36,7 @@ export default function Header({ toggleMenu, menuOpen }) {
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
-    <header className="header">
+    <header className={"header" + (activeTrack === "skill" ? " header--skill" : "")}>
       <div className="header__hamburger" onClick={toggleMenu}>
         {menuOpen ? <HiOutlineX size={26} /> : <HiOutlineMenu size={26} />}
       </div>

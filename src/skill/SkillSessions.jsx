@@ -25,6 +25,7 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
   const [upcoming, setUpcoming] = useState([]);
   const [past,     setPast]     = useState([]);
   const [loading,  setLoading]  = useState(true);
+  const [reviewFor, setReviewFor] = useState(null);   // session being reviewed inline
 
   const load = useCallback((quiet = false) => {
     if (!quiet) setLoading(true);
@@ -50,7 +51,7 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
 
   return (
     <div style={{ padding: "14px 18px 22px", overflow: "auto", flex: 1 }}>
-      <SkillReviewModal />
+      <SkillReviewModal onDone={() => load(true)} />
 
       {/* Upcoming sessions */}
       <div className="rd-card" style={{ marginBottom: 14 }}>
@@ -163,12 +164,76 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
             </button>
             {s.reviewed
               ? <span style={{ fontSize: 11.5, color: "#2f9d42", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon.check size={13} /> Reviewed</span>
-              : <button style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
+              : <button onClick={() => setReviewFor(s)} style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
                   <Icon.star size={12} /> Leave review
                 </button>
             }
           </div>
         ))}
+      </div>
+      {reviewFor && (
+        <ReviewOverlay
+          session={reviewFor}
+          api={api}
+          onClose={() => setReviewFor(null)}
+          onSaved={() => {
+            setPast(list => list.map(x => x.id === reviewFor.id ? { ...x, reviewed: true } : x));
+            setReviewFor(null);
+            load(true);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* Small modal for reviewing a specific past session from the list.
+   One review per session — the server rejects duplicates, and success/duplicate
+   both flip the row to "Reviewed" so the button can't be spammed. */
+function ReviewOverlay({ session, api, onClose, onSaved }) {
+  const [rating, setRating] = useState(0);
+  const [body, setBody]     = useState("");
+  const [busy, setBusy]     = useState(false);
+  const [err, setErr]       = useState("");
+
+  const submit = async () => {
+    if (!rating || busy) return;
+    setBusy(true); setErr("");
+    try {
+      await api.post(`/skill/sessions/${session.session_id || session.id}/review/`, { rating, body });
+      onSaved();
+    } catch (e) {
+      const flat = JSON.stringify(e?.response?.data || "");
+      if (flat.toLowerCase().includes("already reviewed")) onSaved();
+      else setErr("Couldn't submit your review. Please try again.");
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(20,10,5,.45)", zIndex: 300, display: "grid", placeItems: "center", padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, padding: "22px 20px", width: "100%", maxWidth: 400, boxShadow: "0 18px 50px rgba(0,0,0,.25)" }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "#1a2c33" }}>Review your session</div>
+        <div style={{ fontSize: 12.5, color: "#888", marginTop: 3 }}>with {session.expert_name}</div>
+        <div style={{ display: "flex", gap: 4, margin: "14px 0 4px" }}>
+          {[1,2,3,4,5].map(n => (
+            <button key={n} type="button" onClick={() => setRating(n)}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 30, padding: 2, color: n <= rating ? ACC : "#d1d5db" }}>★</button>
+          ))}
+        </div>
+        <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3}
+          placeholder="What was the session like?"
+          style={{ width: "100%", boxSizing: "border-box", marginTop: 8, border: "1.5px solid #e3dccf", borderRadius: 10, padding: "9px 12px", fontSize: 13, fontFamily: "inherit", resize: "vertical" }} />
+        {err && <div style={{ marginTop: 8, fontSize: 12.5, color: "#c0492f", fontWeight: 600 }}>{err}</div>}
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <button onClick={submit} disabled={!rating || busy}
+            style={{ flex: 1, background: ACC, color: "#fff", border: "none", borderRadius: 10, padding: "11px 0", fontSize: 13, fontWeight: 800, cursor: !rating||busy?"default":"pointer", opacity: !rating||busy?0.6:1 }}>
+            {busy ? "Submitting…" : "Submit review"}
+          </button>
+          <button onClick={onClose} disabled={busy}
+            style={{ background: "#fff", border: "1px solid #e3dccf", color: "#555", borderRadius: 10, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );

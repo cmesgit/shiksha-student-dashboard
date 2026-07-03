@@ -75,7 +75,7 @@ function PinModal({ profile, onConfirm, onCancel, loading, error }) {
 }
 
 /* ── Account-password confirm (enter teacher mode) ── */
-function PasswordModal({ onConfirm, onCancel, loading, error }) {
+function PasswordModal({ title, onConfirm, onCancel, loading, error }) {
   const [pw, setPw] = useState("");
   const [show, setShow] = useState(false);
   const ref = useRef(null);
@@ -84,7 +84,10 @@ function PasswordModal({ onConfirm, onCancel, loading, error }) {
     <div className="ps-modal-overlay" onClick={onCancel}>
       <div className="ps-modal" onClick={(e) => e.stopPropagation()}>
         <span className="ps-av ps-av--emoji" style={{ width: 56, height: 56, fontSize: 28 }}>🎓</span>
-        <h3 className="ps-modal__title">Enter teacher mode</h3>
+        <h3 className="ps-modal__title">{title || "Enter teacher mode"}</h3>
+        <p style={{ fontSize: 12, color: "#8a8a8a", margin: "4px 0 10px", lineHeight: 1.5 }}>
+          For security, enter your <b>account login password</b> (the one you use to sign in to ShikshaCom).
+        </p>
         <p className="ps-modal__sub">Confirm your account password</p>
         <div className="ps-pw-wrap">
           <input ref={ref} type={show ? "text" : "password"} value={pw}
@@ -144,14 +147,29 @@ export default function ProfileSwitcher({ teacherSignupUrl, learnUrl, teachUrl }
     finally { setModalLoading(false); }
   };
 
-  const handleTeacherClick = () => { setOpen(false); setModalError(""); setShowPwModal(true); };
+  const [pendingTrack, setPendingTrack] = useState(null);
+  const [pendingDest,  setPendingDest]  = useState("");
+
+  const handleTeacherClick = (track = null, dest = "") => {
+    setOpen(false); setModalError("");
+    setPendingTrack(track); setPendingDest(dest);
+    setShowPwModal(true);
+  };
   const doEnterTeacher = async (password) => {
     setModalLoading(true); setModalError("");
     try {
-      const result = await enterTeacherMode(password);
-      if (result.ok) { closeAll(); if (teachUrl) window.location.href = teachUrl; return; }
+      const result = await enterTeacherMode(password, pendingTrack || undefined);
+      if (result.ok) {
+        closeAll();
+        const base = teachUrl || "";
+        const origin = base ? new URL(base, window.location.href).origin : "";
+        window.location.href = pendingDest ? origin + pendingDest : base;
+        return;
+      }
       if (result.needsSignup) { closeAll(); if (teacherSignupUrl) window.location.href = teacherSignupUrl; return; }
-      if (result.notApproved) { setModalError("Your teacher account is awaiting admin approval."); return; }
+      if (result.notApproved)  { setModalError("Your teacher account is awaiting admin approval."); return; }
+      if (result.trackPending) { setModalError("This track is awaiting approval — you'll get access once it's reviewed."); return; }
+      if (result.trackLocked)  { setModalError("This track isn't enabled on your account yet. Apply from Settings → Teacher identity."); return; }
     } catch (err) { setModalError(err.message || "Incorrect password."); }
     finally { setModalLoading(false); }
   };
@@ -216,6 +234,17 @@ export default function ProfileSwitcher({ teacherSignupUrl, learnUrl, teachUrl }
                   </div>
                   {isTeacherContext && <span className="ps-prof-item__tick"><RiCheckLine /></span>}
                 </button>
+                {!isTeacherContext && (teacherInfo?.tracks?.skill === "approved" || teacherInfo?.type === "GUEST") && (
+                  <button className="ps-prof-item" role="menuitem"
+                    onClick={() => handleTeacherClick("skill", "/teacher/expert/profile")}>
+                    <span className="ps-prof-item__av ps-prof-item__av--teacher">⚡</span>
+                    <div className="ps-prof-item__txt">
+                      <div className="ps-prof-item__nm">Skill Dev profile</div>
+                      <div className="ps-prof-item__sub">Manage your expert profile</div>
+                    </div>
+                    <RiLockLine className="ps-prof-item__lock" />
+                  </button>
+                )}
               </>
             )}
 
@@ -241,13 +270,16 @@ export default function ProfileSwitcher({ teacherSignupUrl, learnUrl, teachUrl }
           loading={modalLoading} error={modalError} />
       )}
       {showPwModal && (
-        <PasswordModal onConfirm={doEnterTeacher}
+        <PasswordModal
+          title={pendingTrack === "skill" ? "Unlock Skill Dev profile" : "Enter teacher mode"}
+          onConfirm={doEnterTeacher}
           onCancel={() => { setShowPwModal(false); setModalError(""); }}
           loading={modalLoading} error={modalError} />
       )}
 
       <SettingsModal open={settingsOpen} tab={settingsTab} onClose={() => setSettingsOpen(false)}
-        teacherSignupUrl={teacherSignupUrl} teachUrl={teachUrl} />
+        teacherSignupUrl={teacherSignupUrl} teachUrl={teachUrl}
+        onManageTrack={(track, dest) => { setSettingsOpen(false); handleTeacherClick(track, dest); }} />
     </>
   );
 }

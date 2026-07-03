@@ -2,6 +2,10 @@
  * SkillReviewModal.jsx — optional post-session review prompt.
  * Shown in the student skill dashboard after a session is completed.
  * Fetches sessions needing a review from /skill/my-reviewable-sessions/
+ *
+ * Anti-spam: the card is removed the moment a review is accepted, an
+ * "already reviewed" rejection ALSO removes it (server enforces one review
+ * per session), and any other failure is shown instead of being swallowed.
  */
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
@@ -18,34 +22,48 @@ function Stars({ value, onChange }) {
   );
 }
 
-export default function SkillReviewModal() {
+export default function SkillReviewModal({ onDone }) {
   const { api } = useAuth();
-  const [sessions, setSessions]   = useState([]);
-  const [current, setCurrent]     = useState(0);
-  const [rating, setRating]       = useState(0);
-  const [body, setBody]           = useState("");
+  const [sessions, setSessions]     = useState([]);
+  const [current]                   = useState(0);
+  const [rating, setRating]         = useState(0);
+  const [body, setBody]             = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone]           = useState([]);
+  const [done, setDone]             = useState([]);
+  const [error, setError]           = useState("");
 
   useEffect(() => {
     api.get("/skill/my-reviewable-sessions/")
-      .then(r => { const d = r.data||[]; setSessions(d); })
+      .then(r => setSessions(r.data || []))
       .catch(() => {});
-  }, []);
+  }, [api]);
 
   const pending = sessions.filter(s => !done.includes(s.session_id));
   if (pending.length === 0) return null;
   const sess = pending[current % pending.length];
 
-  const skip = () => { setDone(d => [...d, sess.session_id]); setRating(0); setBody(""); };
+  const finish = (id) => {
+    setDone(d => [...d, id]); setRating(0); setBody(""); setError("");
+    if (onDone) onDone();
+  };
+  const skip = () => finish(sess.session_id);
 
   const submit = async () => {
-    if (rating === 0) return;
-    setSubmitting(true);
+    if (rating === 0 || submitting) return;
+    setSubmitting(true); setError("");
     try {
       await api.post(`/skill/sessions/${sess.session_id}/review/`, { rating, body });
-      setDone(d => [...d, sess.session_id]); setRating(0); setBody("");
-    } catch {} finally { setSubmitting(false); }
+      finish(sess.session_id);
+    } catch (e) {
+      const msg = e?.response?.data;
+      const flat = typeof msg === "string" ? msg : JSON.stringify(msg || "");
+      if (flat.toLowerCase().includes("already reviewed")) {
+        // Server has one — nothing more to do here.
+        finish(sess.session_id);
+      } else {
+        setError("Couldn't submit your review. Please try again.");
+      }
+    } finally { setSubmitting(false); }
   };
 
   return (
@@ -63,12 +81,13 @@ export default function SkillReviewModal() {
           placeholder="Share what you learnt or how the session felt…"
           style={{width:"100%",boxSizing:"border-box",marginTop:10,border:"1.5px solid #d1d5db",borderRadius:10,padding:"8px 12px",fontSize:13.5,fontFamily:"inherit",outline:"none",resize:"vertical"}} />
       )}
+      {error && <div style={{marginTop:10,fontSize:12.5,color:"#c0492f",fontWeight:600}}>{error}</div>}
       <div style={{display:"flex",gap:8,marginTop:12}}>
         <button onClick={submit} disabled={rating===0||submitting}
-          style={{background:"#0a7d8c",color:"#fff",border:"none",borderRadius:10,padding:"9px 18px",fontSize:13.5,fontWeight:700,cursor:"pointer"}}>
+          style={{background:"#0a7d8c",color:"#fff",border:"none",borderRadius:10,padding:"9px 18px",fontSize:13.5,fontWeight:700,cursor:rating===0||submitting?"default":"pointer",opacity:rating===0||submitting?0.6:1}}>
           {submitting?"Submitting…":"Submit review"}
         </button>
-        <button onClick={skip}
+        <button onClick={skip} disabled={submitting}
           style={{background:"none",border:"none",color:"#9ca3af",fontSize:13,cursor:"pointer",padding:"9px 8px"}}>
           Skip
         </button>

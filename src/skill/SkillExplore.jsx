@@ -14,7 +14,7 @@ import { Icon } from "./skillIcons";
 import { Avatar } from "./skillUI";
 import { useAuth } from "../contexts/AuthContext";
 
-const ACC = "#125027";
+const ACC = "#6b2410";
 
 export default function SkillExplore({ setTab = () => {}, openMsg = () => {} }) {
   const { api }      = useAuth();
@@ -81,7 +81,7 @@ export default function SkillExplore({ setTab = () => {}, openMsg = () => {} }) 
           })}
         </div>
         {/* Search */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f7f1de", padding: "8px 12px", borderRadius: 10, border: "1px solid #e8dfc8" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f3e2da", padding: "8px 12px", borderRadius: 10, border: "1px solid #e8dfc8" }}>
           <Icon.search size={14} />
           <input
             value={search} onChange={handleSearch}
@@ -143,7 +143,7 @@ export default function SkillExplore({ setTab = () => {}, openMsg = () => {} }) 
                     <Icon.star size={11} /> {t.rating ?? "—"} · ₹{t.rate}
                   </div>
                   {t.offline && (
-                    <div style={{ fontSize: 10.5, color: "#125027", marginTop: 3 }}>
+                    <div style={{ fontSize: 10.5, color: "#6b2410", marginTop: 3 }}>
                       📍 Offline{t.location?.city ? ` · ${t.location.city}` : t.location?.district ? ` · ${t.location.district}` : ""}
                     </div>
                   )}
