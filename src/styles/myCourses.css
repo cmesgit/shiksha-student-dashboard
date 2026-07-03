@@ -1,176 +1,88 @@
-/* myCourses.css — Academy "My Courses" list. Matches myCourseDetail.css cards
-   and the academy teal (#015865). */
+/* myCourses.css — Academy "My Courses" cards, on the shared Claude tokens
+   (slate #425f7f, Montserrat / Poppins). Grid + page scaffold come from
+   academyCommon.css; this file styles the enrolled-course card. */
 
-.myCourses {
-  padding: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.myCourses__state {
-  padding: 40px 24px;
-  text-align: center;
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.myCourses__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-}
-
-.myCourses__card {
+.mc-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  background: #fff;
-  border: 1px solid #eef0f2;
-  border-radius: 12px;
-  padding: 20px;
+  gap: 10px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: 16px;
+  padding: 18px;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(26, 44, 51, 0.06));
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
-
-.myCourses__card:hover {
+.mc-card:hover {
   transform: translateY(-2px);
-  border-color: #015865;
-  box-shadow: 0 6px 18px rgba(1, 88, 101, 0.12);
+  border-color: #cfdbe6;
+  box-shadow: 0 8px 22px rgba(66, 95, 127, 0.12);
+}
+.mc-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring, 0 0 0 3px rgba(66, 95, 127, 0.35));
 }
 
-.myCourses__card:focus-visible {
-  outline: 2px solid #015865;
-  outline-offset: 2px;
-}
-
-.myCourses__cardTop {
+.mc-card__top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
 }
-
-.myCourses__cardTitle {
-  margin: 0;
-  font-size: 17px;
+.mc-card__pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.mc-card__pill {
+  font-size: 10px;
   font-weight: 700;
-  color: #111827;
-  line-height: 1.3;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--academy, #425f7f);
+  background: var(--academy-soft, #e6edee);
+  padding: 4px 9px;
+  border-radius: 999px;
 }
 
-.myCourses__badge {
+.mc-card__badge {
   flex-shrink: 0;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
+.mc-card__badge--active  { background: var(--success-soft, #ecf8ee); color: var(--success, #2f9d42); }
+.mc-card__badge--expired { background: var(--danger-soft, #fef2f2); color: var(--danger, #dc2626); }
+.mc-card__badge--free    { background: var(--academy-soft, #e6edee); color: var(--academy, #425f7f); }
 
-.myCourses__badge--active  { background: #d1fae5; color: #065f46; }
-.myCourses__badge--expired { background: #fee2e2; color: #991b1b; }
-.myCourses__badge--free    { background: #e6f4f1; color: #015865; }
-
-.myCourses__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.myCourses__chip {
-  display: inline-block;
-  padding: 3px 10px;
-  background: #eef2ff;
-  color: #4338ca;
-  border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 500;
-}
-
-.myCourses__sub {
-  margin-top: auto;
-}
-
-.myCourses__subLine {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin: 0 0 2px;
-}
-
-.myCourses__days {
-  font-size: 22px;
-  font-weight: 700;
-  color: #111827;
-  line-height: 1;
-}
-
-.myCourses__daysLabel {
-  font-size: 12.5px;
-  color: #6b7280;
-}
-
-.myCourses__dates {
+.mc-card__title {
+  font-family: var(--font-display, "Montserrat", system-ui, sans-serif);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--ink, #1a2c33);
   margin: 0;
+}
+
+.mc-card__sub { margin-top: 2px; }
+.mc-card__days { display: flex; align-items: baseline; gap: 6px; margin: 0 0 4px; }
+.mc-card__daysNum {
+  font-family: var(--font-display, "Montserrat", system-ui, sans-serif);
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--academy, #425f7f);
+  letter-spacing: -0.5px;
+}
+.mc-card__daysLabel { font-size: 12px; color: var(--ink-3, #6b7c83); }
+.mc-card__dates { font-size: 12px; color: var(--ink-3, #6b7c83); margin: 0; }
+.mc-card__dates--free { color: var(--academy, #425f7f); font-weight: 600; }
+
+.mc-card__cta {
+  margin-top: auto;
+  padding-top: 6px;
   font-size: 12.5px;
-  color: #6b7280;
-}
-
-.myCourses__dates--free {
-  color: #015865;
-  font-weight: 500;
-}
-
-.myCourses__cta {
-  font-size: 13px;
-  font-weight: 600;
-  color: #015865;
-}
-
-/* ── Empty state ─────────────────────────────────────────────────── */
-.myCourses__empty {
-  text-align: center;
-  background: #fff;
-  border: 1px dashed #d1d5db;
-  border-radius: 12px;
-  padding: 48px 24px;
-  max-width: 520px;
-  margin: 8px auto 0;
-}
-
-.myCourses__emptyTitle {
-  margin: 0 0 8px;
-  font-size: 18px;
   font-weight: 700;
-  color: #111827;
-}
-
-.myCourses__emptyText {
-  margin: 0 auto 20px;
-  max-width: 360px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #6b7280;
-}
-
-.myCourses__browseBtn {
-  display: inline-block;
-  padding: 10px 22px;
-  background: #015865;
-  color: #fff;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background 0.15s ease;
-}
-
-.myCourses__browseBtn:hover { background: #01414b; }
-
-@media (max-width: 768px) {
-  .myCourses { padding: 16px; }
+  color: var(--academy, #425f7f);
 }

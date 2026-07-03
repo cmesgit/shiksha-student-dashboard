@@ -53,6 +53,7 @@ import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
 import MyCourses from "./pages/MyCourses";
+import BrowseCourses from "./pages/BrowseCourses";
 
 import {
   
@@ -136,6 +137,10 @@ export default function App() {
 
               <Route path="my-courses" element={<MyCourses />} />
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
+
+              {/* In-dashboard course shop (Academy) — DB-driven, replaces the
+                  old external redirect to the marketing catalog. */}
+              <Route path="browse-courses" element={<BrowseCourses />} />
 
               {/* ── Skill Dev ── */}
               

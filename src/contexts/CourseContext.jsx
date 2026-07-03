@@ -66,13 +66,19 @@ export function CourseProvider({ children }) {
     try {
       const res = await api.get("/courses/my/");
       setCourses(res.data);
-      if (res.data.length > 0) setActiveCourse(res.data[0]);
+      if (res.data.length > 0) setActiveCourse((prev) => prev ?? res.data[0]);
+      return res.data;
     } catch (err) {
       console.error("Failed to fetch courses", err);
+      return [];
     } finally {
       setLoading(false);
     }
   };
+
+  // Re-pull enrollments on demand (e.g. right after a one-tap enrol in the
+  // Browse Courses shop) so the new course shows up without a full reload.
+  const refreshCourses = () => fetchCourses();
 
   const fetchSubjects = async (courseId) => {
     try {
@@ -114,6 +120,7 @@ export function CourseProvider({ children }) {
         loading,
         activeTrack, // ← new
         setTrack,    // ← new
+        refreshCourses, // ← new: re-pull enrollments after enrolling
       }}
     >
       {children}

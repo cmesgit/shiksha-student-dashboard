@@ -1,0 +1,157 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   academyCommon.css — shared placeholders, skeletons, and card primitives
+   for the Academy surfaces (Browse Courses, My Courses, empty states).
+   Everything derives from shared/tokens.css so it matches the approved
+   Learner_Academy_Dashboard.html design (slate #425f7f, gold #ffd166,
+   Montserrat / Poppins).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Skeleton shimmer ─────────────────────────────────────────────────── */
+.ac-skel {
+  position: relative;
+  overflow: hidden;
+  background: #e7edf1;
+  border-radius: 8px;
+}
+.ac-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: ac-shimmer 1.3s infinite;
+}
+@keyframes ac-shimmer {
+  100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ac-skel::after { animation: none; }
+}
+
+.ac-skel--line   { height: 12px; }
+.ac-skel--title  { height: 18px; width: 60%; }
+.ac-skel--pill   { height: 20px; width: 72px; border-radius: 999px; }
+.ac-skel--btn    { height: 36px; width: 120px; border-radius: 10px; }
+.ac-skel--chip   { height: 22px; width: 64px; border-radius: 999px; }
+
+/* ── Page scaffold shared by Academy pages ───────────────────────────── */
+.ac-page {
+  flex: 1;
+  min-height: 100%;
+  background: var(--page-bg, #eef1f2);
+  margin: 0 -20px -20px;   /* bleed to the edges of studentLayout__page padding */
+  padding: 24px 26px 48px;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  color: var(--ink, #1a2c33);
+}
+@media (max-width: 768px) {
+  .ac-page { margin: -14px -16px -16px; padding: 18px 16px 40px; }
+}
+
+.ac-page__head { margin-bottom: 20px; }
+.ac-page__title {
+  font-family: var(--font-display, "Montserrat", system-ui, sans-serif);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  color: var(--ink, #1a2c33);
+  margin: 0;
+}
+.ac-page__sub {
+  font-size: 13px;
+  color: var(--ink-3, #6b7c83);
+  margin: 4px 0 0;
+}
+
+/* ── Course card grid (shop + my courses share the shell) ────────────── */
+.ac-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 16px;
+}
+
+.ac-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(26, 44, 51, 0.06));
+  padding: 18px;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ── Empty / onboarding state ────────────────────────────────────────── */
+.ac-empty {
+  max-width: 560px;
+  margin: 12px auto 0;
+  text-align: center;
+  padding: 40px 24px;
+}
+.ac-empty__icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  margin: 0 auto 20px;
+  display: grid;
+  place-items: center;
+  background: var(--academy-soft, #e6edee);
+  color: var(--academy, #425f7f);
+}
+.ac-empty__icon svg { width: 34px; height: 34px; }
+.ac-empty__title {
+  font-family: var(--font-display, "Montserrat", system-ui, sans-serif);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink, #1a2c33);
+  margin: 0 0 8px;
+}
+.ac-empty__text {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-3, #6b7c83);
+  margin: 0 0 22px;
+}
+.ac-empty__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--academy, #425f7f);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.ac-empty__cta:hover { background: #344d68; transform: translateY(-1px); }
+.ac-empty__cta:focus-visible { outline: none; box-shadow: var(--focus-ring, 0 0 0 3px rgba(66,95,127,.35)); }
+.ac-empty__cta svg { width: 15px; height: 15px; }
+
+/* ── Inline banner (info / error) ────────────────────────────────────── */
+.ac-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+.ac-banner--error {
+  background: var(--danger-soft, #fef2f2);
+  border: 1px solid var(--danger-border, #fca5a5);
+  color: #991b1b;
+}
+.ac-banner svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }

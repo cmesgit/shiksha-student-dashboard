@@ -1,6 +1,6 @@
 .sidebar {
   width: 250px;
-  background: #015865;
+  background: var(--nav-bg, #425f7f);
   color: white;
   padding: 18px 16px;
   display: flex;
@@ -8,6 +8,13 @@
   height: 100vh;
   position: sticky;
   top: 0;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+}
+
+.sidebar__sep {
+  height: 1px;
+  background: var(--nav-sep, rgba(255, 255, 255, 0.12));
+  margin: 10px 4px 8px;
 }
 
 .sidebar__brand {
@@ -67,6 +74,8 @@
 .sidebar__link.active {
   background: rgba(255, 255, 255, 0.18);
   opacity: 1;
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 #ffd166;
 }
 
 .sidebar__subMenu {

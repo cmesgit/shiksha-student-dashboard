@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
+import { useCourse } from "../contexts/CourseContext";
 import useSwipeBack from "../utils/useSwipeBack";
 import "../styles/studentLayout.css";
 
 export default function StudentLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const { activeTrack } = useCourse();
 
   // Hide sidebar + header in live session view
   const isLiveSession = location.pathname.startsWith("/live/");
@@ -35,7 +37,7 @@ export default function StudentLayout() {
 
   // ───── NORMAL LAYOUT ─────
   return (
-    <div className="studentLayout" {...swipeHandlers}>
+    <div className="studentLayout" data-track={activeTrack} {...swipeHandlers}>
       {menuOpen && (
         <div
           className="mobileOverlay"

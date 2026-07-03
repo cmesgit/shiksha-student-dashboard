@@ -19,7 +19,7 @@ import { RiLiveLine, RiLockLine, RiGroupLine } from "react-icons/ri";
 import { FaChalkboardTeacher } from "react-icons/fa";
 import { AiOutlineFileDone, AiOutlineClose } from "react-icons/ai";
 import { FiHome, FiSearch, FiCalendar, FiBook, FiLayout, FiMessageCircle, FiShoppingBag, FiStar } from "react-icons/fi";
-import { HOME_URL, ACADEMY_BROWSE_URL } from "../config/urls";
+import { HOME_URL } from "../config/urls";
 
 /* ── Skill Dev design tokens ─────────────────────────────────────── */
 const SD = {
@@ -189,18 +189,19 @@ function AcademySidebar({ setMenuOpen }) {
           Teachers
         </NavLink>
 
-        {/* Purchasable course catalog lives on the marketing site; open it in
-            a new tab so the learner keeps their dashboard session. */}
-        <a
-          className="sidebar__link"
-          href={ACADEMY_BROWSE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => setMenuOpen(false)}
-        >
+        {/* In-dashboard shop — pulls the catalog from the database, so the
+            learner never leaves their session for the marketing site. */}
+        <NavLink className="sidebar__link" to="/browse-courses" onClick={() => setMenuOpen(false)}>
           <span className="sidebar__icon"><FiShoppingBag /></span>
           Browse Courses
-        </a>
+        </NavLink>
+
+        <div className="sidebar__sep" />
+
+        <NavLink className="sidebar__link" to="/chat" onClick={() => setMenuOpen(false)}>
+          <span className="sidebar__icon"><FiMessageCircle /></span>
+          Messages
+        </NavLink>
       </nav>
 
       <div className="sidebar__bottom">

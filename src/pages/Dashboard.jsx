@@ -7,6 +7,7 @@ import NotificationCard from "../components/NotificationCard";
 import DropdownMenu from "../components/DropdownMenu";
 import TopSliderTabs from "../components/TopSliderTabs";
 import SkillDevStudentSection from "../components/SkillDevStudentSection";
+import AcademyEmptyState from "../components/AcademyEmptyState";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
 import useNotificationSocket from "../hooks/useNotificationSocket";
@@ -617,11 +618,9 @@ export default function Dashboard() {
   }
 
   if (!activeCourse) {
-    return (
-      <div style={{ padding: 20 }}>
-        <p>No course selected. Please select a course to view your dashboard.</p>
-      </div>
-    );
+    // No Academy enrolment yet — show the in-dashboard onboarding placeholder
+    // (hero + Browse Courses + live shop preview) instead of raw text.
+    return <AcademyEmptyState variant="dashboard" />;
   }
 
   return (
