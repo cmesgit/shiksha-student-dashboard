@@ -2,25 +2,24 @@
 // ACTION:    Replace the entire file.
 //
 // Changes from previous version:
-//   - Added FiCheckCircle to the react-icons/fi import
-//   - Added a "Course Progress" nav item (Academy sidebar) linking to /progress
+//   - Added FiMessageCircle to the react-icons/fi import
+//   - Added a "MESSAGES" nav item in SD_NAV pointing to /skill-messages
 //   - Everything else is identical
 
 import { NavLink, useLocation } from "react-router-dom";
 import "../styles/sidebar.css";
 import logo from "../assets/Vector.svg";
 import { useCourse } from "../contexts/CourseContext";
-import CourseSwitcher from "./CourseSwitcher";
 
 import { MdDashboardCustomize } from "react-icons/md";
 import { BsBook } from "react-icons/bs";
 import { BiVideo } from "react-icons/bi";
 import { FaClipboardList, FaBookOpen, FaGraduationCap } from "react-icons/fa";
-import { RiLiveLine, RiLockLine, RiGroupLine } from "react-icons/ri";
+import { RiLiveLine, RiLockLine, RiGroupLine, RiCompass3Line } from "react-icons/ri";
 import { FaChalkboardTeacher } from "react-icons/fa";
 import { AiOutlineFileDone, AiOutlineClose } from "react-icons/ai";
-import { FiHome, FiSearch, FiCalendar, FiBook, FiLayout, FiMessageCircle, FiShoppingBag, FiStar, FiCheckCircle } from "react-icons/fi";
-import { HOME_URL } from "../config/urls";
+import { FiHome, FiSearch, FiCalendar, FiBook, FiLayout, FiMessageCircle, FiShoppingBag, FiStar } from "react-icons/fi";
+import { HOME_URL, ACADEMY_BROWSE_URL } from "../config/urls";
 
 /* ── Skill Dev design tokens ─────────────────────────────────────── */
 const SD = {
@@ -113,7 +112,7 @@ function SkillDevSidebar({ setMenuOpen }) {
   );
 }
 
-/* ── Academy sidebar (unchanged except for the Course Progress link) ── */
+/* ── Academy sidebar (unchanged) ────────────────────────────────── */
 function AcademySidebar({ setMenuOpen }) {
   const location = useLocation();
 
@@ -136,10 +135,6 @@ function AcademySidebar({ setMenuOpen }) {
           <AiOutlineClose />
         </button>
       </div>
-
-      {/* Switch class — matches the Academy design's course switcher */}
-      <CourseSwitcher setMenuOpen={setMenuOpen} />
-      <div className="sidebar__sep" />
 
       <nav className="sidebar__nav">
         <NavLink className="sidebar__link" to="/" end onClick={() => setMenuOpen(false)}>
@@ -174,11 +169,6 @@ function AcademySidebar({ setMenuOpen }) {
           </div>
         )}
 
-        <NavLink className="sidebar__link" to="/progress" onClick={() => setMenuOpen(false)}>
-          <span className="sidebar__icon"><FiCheckCircle /></span>
-          Course Progress
-        </NavLink>
-
         <NavLink className="sidebar__link" to="/live-sessions" onClick={() => setMenuOpen(false)}>
           <span className="sidebar__icon"><RiLiveLine /></span>
           Live Sessions
@@ -199,19 +189,23 @@ function AcademySidebar({ setMenuOpen }) {
           Teachers
         </NavLink>
 
-        {/* In-dashboard shop — pulls the catalog from the database, so the
-            learner never leaves their session for the marketing site. */}
-        <NavLink className="sidebar__link" to="/browse-courses" onClick={() => setMenuOpen(false)}>
+        <NavLink className="sidebar__link" to="/counseling" onClick={() => setMenuOpen(false)}>
+          <span className="sidebar__icon"><RiCompass3Line /></span>
+          Counselling
+        </NavLink>
+
+        {/* Purchasable course catalog lives on the marketing site; open it in
+            a new tab so the learner keeps their dashboard session. */}
+        <a
+          className="sidebar__link"
+          href={ACADEMY_BROWSE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => setMenuOpen(false)}
+        >
           <span className="sidebar__icon"><FiShoppingBag /></span>
           Browse Courses
-        </NavLink>
-
-        <div className="sidebar__sep" />
-
-        <NavLink className="sidebar__link" to="/chat" onClick={() => setMenuOpen(false)}>
-          <span className="sidebar__icon"><FiMessageCircle /></span>
-          Messages
-        </NavLink>
+        </a>
       </nav>
 
       <div className="sidebar__bottom">

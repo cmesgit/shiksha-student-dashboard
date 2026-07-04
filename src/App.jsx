@@ -9,10 +9,9 @@
  *   - Added <Route path="skill-messages" element={<SkillMessages />} />
  *   - Added <Route path="skill-dev/sessions/:id" element={<SkillSessionDetail />} />
  *   - Added fullscreen <Route path="/skill-session/live/:id" element={<SkillSessionLive />} />  (NEW)
- *   - Added Course Progress: import Progress + <Route path="progress" element={<Progress />} />
  */
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CourseProvider } from "./contexts/CourseContext";
 import { HOME_URL } from "./config/urls";
@@ -54,8 +53,8 @@ import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
 import MyCourses from "./pages/MyCourses";
-import BrowseCourses from "./pages/BrowseCourses";
-import Progress from "./pages/Progress";
+import MyCounselling from "./pages/counselling/MyCounselling";
+import CounsellingAssessment from "./pages/counselling/CounsellingAssessment";
 
 import {
   
@@ -108,9 +107,6 @@ export default function App() {
               <Route path="subjects" element={<Subjects />} />
               <Route path="subjects/:subjectId" element={<SubjectDetails />} />
 
-              {/* Course progress — read-only per-batch chapter coverage */}
-              <Route path="progress" element={<Progress />} />
-
               <Route path="assignments" element={<Subjects mode="assignments" />} />
               <Route path="subjects/:subjectId/assignments" element={<SubjectsAssignments />} />
               <Route path="subjects/:subjectId/assignments/:assignmentId" element={<AssignmentDetail />} />
@@ -143,9 +139,16 @@ export default function App() {
               <Route path="my-courses" element={<MyCourses />} />
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
 
-              {/* In-dashboard course shop (Academy) — DB-driven, replaces the
-                  old external redirect to the marketing catalog. */}
-              <Route path="browse-courses" element={<BrowseCourses />} />
+              {/* ── Counselling ──
+                  /counseling/* (US spelling) matches the backend's
+                  notification link_urls exactly, so bell clicks
+                  deep-link to the right appointment/report. */}
+              <Route path="counseling" element={<MyCounselling />} />
+              <Route path="counseling/appointments" element={<MyCounselling />} />
+              <Route path="counseling/appointments/:id" element={<MyCounselling />} />
+              <Route path="counseling/appointments/:id/assessment" element={<CounsellingAssessment />} />
+              <Route path="counseling/reports" element={<MyCounselling initialTab="reports" />} />
+              <Route path="counselling/*" element={<Navigate to="/counseling" replace />} />
 
               {/* ── Skill Dev ── */}
               
