@@ -10,6 +10,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import "../styles/sidebar.css";
 import logo from "../assets/Vector.svg";
 import { useCourse } from "../contexts/CourseContext";
+import CourseSwitcher from "./CourseSwitcher";
 
 import { MdDashboardCustomize } from "react-icons/md";
 import { BsBook } from "react-icons/bs";
@@ -135,6 +136,10 @@ function AcademySidebar({ setMenuOpen }) {
           <AiOutlineClose />
         </button>
       </div>
+
+      {/* Switch class — matches the Academy design's course switcher */}
+      <CourseSwitcher setMenuOpen={setMenuOpen} />
+      <div className="sidebar__sep" />
 
       <nav className="sidebar__nav">
         <NavLink className="sidebar__link" to="/" end onClick={() => setMenuOpen(false)}>
