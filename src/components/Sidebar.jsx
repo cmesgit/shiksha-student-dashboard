@@ -2,8 +2,8 @@
 // ACTION:    Replace the entire file.
 //
 // Changes from previous version:
-//   - Added FiMessageCircle to the react-icons/fi import
-//   - Added a "MESSAGES" nav item in SD_NAV pointing to /skill-messages
+//   - Added FiCheckCircle to the react-icons/fi import
+//   - Added a "Course Progress" nav item (Academy sidebar) linking to /progress
 //   - Everything else is identical
 
 import { NavLink, useLocation } from "react-router-dom";
@@ -19,7 +19,7 @@ import { FaClipboardList, FaBookOpen, FaGraduationCap } from "react-icons/fa";
 import { RiLiveLine, RiLockLine, RiGroupLine } from "react-icons/ri";
 import { FaChalkboardTeacher } from "react-icons/fa";
 import { AiOutlineFileDone, AiOutlineClose } from "react-icons/ai";
-import { FiHome, FiSearch, FiCalendar, FiBook, FiLayout, FiMessageCircle, FiShoppingBag, FiStar } from "react-icons/fi";
+import { FiHome, FiSearch, FiCalendar, FiBook, FiLayout, FiMessageCircle, FiShoppingBag, FiStar, FiCheckCircle } from "react-icons/fi";
 import { HOME_URL } from "../config/urls";
 
 /* ── Skill Dev design tokens ─────────────────────────────────────── */
@@ -113,7 +113,7 @@ function SkillDevSidebar({ setMenuOpen }) {
   );
 }
 
-/* ── Academy sidebar (unchanged) ────────────────────────────────── */
+/* ── Academy sidebar (unchanged except for the Course Progress link) ── */
 function AcademySidebar({ setMenuOpen }) {
   const location = useLocation();
 
@@ -173,6 +173,11 @@ function AcademySidebar({ setMenuOpen }) {
             </NavLink>
           </div>
         )}
+
+        <NavLink className="sidebar__link" to="/progress" onClick={() => setMenuOpen(false)}>
+          <span className="sidebar__icon"><FiCheckCircle /></span>
+          Course Progress
+        </NavLink>
 
         <NavLink className="sidebar__link" to="/live-sessions" onClick={() => setMenuOpen(false)}>
           <span className="sidebar__icon"><RiLiveLine /></span>

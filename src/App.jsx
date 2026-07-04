@@ -9,6 +9,7 @@
  *   - Added <Route path="skill-messages" element={<SkillMessages />} />
  *   - Added <Route path="skill-dev/sessions/:id" element={<SkillSessionDetail />} />
  *   - Added fullscreen <Route path="/skill-session/live/:id" element={<SkillSessionLive />} />  (NEW)
+ *   - Added Course Progress: import Progress + <Route path="progress" element={<Progress />} />
  */
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -54,6 +55,7 @@ import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
 import MyCourses from "./pages/MyCourses";
 import BrowseCourses from "./pages/BrowseCourses";
+import Progress from "./pages/Progress";
 
 import {
   
@@ -105,6 +107,9 @@ export default function App() {
 
               <Route path="subjects" element={<Subjects />} />
               <Route path="subjects/:subjectId" element={<SubjectDetails />} />
+
+              {/* Course progress — read-only per-batch chapter coverage */}
+              <Route path="progress" element={<Progress />} />
 
               <Route path="assignments" element={<Subjects mode="assignments" />} />
               <Route path="subjects/:subjectId/assignments" element={<SubjectsAssignments />} />
