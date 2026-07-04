@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../api/apiClient";
 import QuizCard from "../components/QuizCard";
+import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import "../styles/quiz.css";
 
 export default function QuizList() {
@@ -107,8 +108,8 @@ export default function QuizList() {
     setInProgressIds(ids);
   }, [activeTab]);
 
-  if (loading) return <div>Loading quizzes...</div>;
-  if (error) return <div>{error}</div>;
+  if (loading) return <LoadingState label="Loading quizzes" />;
+  if (error) return <ErrorState message={error} />;
 
   return (
     <div className="quizListPage">
@@ -141,11 +142,16 @@ export default function QuizList() {
         <div className="quizGrid">
           {(() => {
             return quizzes.length === 0 ? (
-              <div className="quizEmpty">
-                {activeTab === "pending"
-                  ? "No pending quizzes — check the Completed tab to re-attempt."
-                  : "No completed quizzes yet."}
-              </div>
+              <EmptyState
+                plain
+                icon="quiz"
+                title={activeTab === "pending" ? "No pending quizzes" : "No completed quizzes yet"}
+                message={
+                  activeTab === "pending"
+                    ? "New quizzes will appear here. Finished ones move to the Completed tab, where you can re-attempt them."
+                    : "Quizzes you finish will be listed here so you can review or re-attempt them."
+                }
+              />
             ) : (
               quizzes.map((quiz) => (
                 <QuizCard

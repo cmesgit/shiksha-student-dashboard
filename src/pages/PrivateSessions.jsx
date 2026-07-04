@@ -8,6 +8,7 @@ import { useAuth } from "../contexts/AuthContext";
 import privateSession from "../api/privateSessionService";
 import PrivateSessionCard from "../components/PrivateSessionCard";
 import PageHeader from "../components/PageHeader";
+import { LoadingState } from "../components/StateViews";
 import "../styles/privateSessions.css";
 
 /* ═══════════════════════════════════════════════════════════
@@ -410,7 +411,7 @@ function ScheduledTab({ onEnterRoom, searchTerm = "", registerRefresh }) {
     setSessions((prev) => prev.map((s) => s.id === id ? { ...s, status: "cancelled" } : s));
   };
 
-  if (loading) return <div style={{ padding: 20 }}>Loading sessions...</div>;
+  if (loading) return <LoadingState plain label="Loading sessions" />;
 
   const searchFilter = (items) => {
     if (!searchTerm.trim()) return items;
@@ -551,7 +552,7 @@ function RequestsTab({ onUnreadChange, searchTerm = "", registerRefresh }) {
     }
   };
 
-  if (loading) return <div style={{ padding: 20 }}>Loading requests...</div>;
+  if (loading) return <LoadingState plain label="Loading requests" />;
   if (showForm) return <RequestForm onBack={() => setShowForm(false)} onSubmit={handleFormSubmit} />;
   if (selected) {
     return (
@@ -1150,7 +1151,7 @@ function HistoryTab({ searchTerm = "", registerRefresh }) {
 
   const filtered = searchFilter(filter === "all" ? history : history.filter((h) => h.status === filter));
 
-  if (loading) return <div style={{ padding: 20 }}>Loading history...</div>;
+  if (loading) return <LoadingState plain label="Loading history" />;
   if (selected) return <HistoryDetail session={selected} onBack={() => setSelected(null)} />;
 
   return (

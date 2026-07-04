@@ -14,8 +14,13 @@ function Pill({ children }) {
 
 export default function CourseShopCard({ course, busy, collectsMoney, onEnrol }) {
   const navigate = useNavigate();
-  const price = formatPrice(course.price);
-  const isFree = !course.price || course.price <= 0;
+
+  // The action matches useEnroll: a free one-tap enrol unless the live payment
+  // mode collects money. Keep the price label and button in step with it, so a
+  // course never shows a rupee price next to an "Enrol — free" button.
+  const willFreeEnrol = !collectsMoney;
+  const priceLabel = willFreeEnrol ? "Free" : formatPrice(course.price);
+  const priceIsFree = priceLabel === "Free";
 
   return (
     <article className={`shop-card${course.is_enrolled ? " shop-card--owned" : ""}`}>
@@ -42,8 +47,8 @@ export default function CourseShopCard({ course, busy, collectsMoney, onEnrol })
       )}
 
       <div className="shop-card__foot">
-        <span className={`shop-card__price${isFree ? " shop-card__price--free" : ""}`}>
-          {price}
+        <span className={`shop-card__price${priceIsFree ? " shop-card__price--free" : ""}`}>
+          {priceLabel}
         </span>
 
         {course.is_enrolled ? (
@@ -61,11 +66,7 @@ export default function CourseShopCard({ course, busy, collectsMoney, onEnrol })
             disabled={busy}
             onClick={() => onEnrol?.(course)}
           >
-            {busy
-              ? "Enrolling…"
-              : collectsMoney && !isFree
-                ? "Enrol"
-                : "Enrol — free"}
+            {busy ? "Enrolling…" : willFreeEnrol ? "Enrol — free" : "Enrol"}
           </button>
         )}
       </div>

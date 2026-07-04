@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
 import CompletedAssignment from "../components/CompletedAssignment";
+import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import "../styles/assignmentDetail.css";
 
 export default function AssignmentDetail() {
@@ -117,9 +118,17 @@ export default function AssignmentDetail() {
     });
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
-  if (!assignment) return <div>Assignment not found.</div>;
+  if (loading) return <LoadingState label="Loading assignment" />;
+  if (error) return <ErrorState message={error} />;
+  if (!assignment)
+    return (
+      <EmptyState
+        icon="file"
+        title="Assignment not found"
+        message="This assignment may have been removed, or the link is out of date."
+        action={{ label: "Back", onClick: () => navigate(-1) }}
+      />
+    );
 
   return (
     <div className="assignmentDetailPage">

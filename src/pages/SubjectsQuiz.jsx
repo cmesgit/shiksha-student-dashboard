@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import api from "../api/apiClient";
 import SubjectCard from "../components/SubjectCard";
 import PageHeader from "../components/PageHeader";
+import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import "../styles/subjects.css";
 
 export default function SubjectsQuiz() {
@@ -150,8 +151,8 @@ function getSubjectImage(subjectName) {
     fetchQuizCounts();
   }, [subjectData]);
 
-  if (loading) return <div>Loading quiz subjects...</div>;
-  if (error) return <div>{error}</div>;
+  if (loading) return <LoadingState label="Loading quizzes" />;
+  if (error) return <ErrorState message={error} />;
 
   return (
     <div className="subjectsPage">
@@ -162,7 +163,12 @@ function getSubjectImage(subjectName) {
       <div className="subjectsBodyBox">
         <div className="subjectsGrid">
           {subjectData.length === 0 ? (
-            <div>No quiz subjects available.</div>
+            <EmptyState
+              plain
+              icon="quiz"
+              title="No quizzes yet"
+              message="When your teachers add quizzes, the subjects will show up here."
+            />
           ) : (
             subjectData.map((item) => (
               <SubjectCard

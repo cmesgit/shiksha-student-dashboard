@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import RecordingCard from "../components/RecordingCard";
 import PageHeader from "../components/PageHeader";
 import api from "../api/apiClient";
+import { LoadingState, EmptyState } from "../components/StateViews";
 import "../styles/recordings.css";
 
 export default function RecordingsList() {
@@ -63,10 +64,15 @@ export default function RecordingsList() {
 
       <div className="recordingsBodyBox">
 
-        {loading && <p style={{ padding: "20px", opacity: 0.6 }}>Loading recordings...</p>}
+        {loading && <LoadingState plain label="Loading recordings" />}
 
         {!loading && recordingsData.length === 0 && (
-          <p style={{ padding: "20px", opacity: 0.6 }}>No recordings found.</p>
+          <EmptyState
+            plain
+            icon="video"
+            title="No recordings yet"
+            message="Once your teacher uploads a recorded class for this subject, it'll appear here."
+          />
         )}
 
         <div className="recordingsGrid">

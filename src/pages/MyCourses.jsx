@@ -76,8 +76,18 @@ export default function MyCourses() {
   return (
     <div className="ac-page">
       <div className="ac-page__head">
-        <h1 className="ac-page__title">My courses</h1>
-        <p className="ac-page__sub">Everything you're enrolled in, in one place.</p>
+        <div className="ac-page__headRow">
+          <div>
+            <h1 className="ac-page__title">My courses</h1>
+            <p className="ac-page__sub">Everything you're enrolled in, in one place.</p>
+          </div>
+          <Link to="/browse-courses" className="ac-linkbtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            Browse courses
+          </Link>
+        </div>
       </div>
 
       <div className="shop-toolbar">

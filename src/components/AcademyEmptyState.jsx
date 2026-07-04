@@ -90,14 +90,14 @@ export default function AcademyEmptyState({ variant = "dashboard" }) {
     <div className="ac-page">
       <div className="ac-empty">
         <div className="ac-empty__icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" />
           </svg>
         </div>
         <h2 className="ac-empty__title">{copy.title}</h2>
         <p className="ac-empty__text">{copy.text}</p>
         <button type="button" className="ac-empty__cta" onClick={() => navigate("/browse-courses")}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           Browse courses

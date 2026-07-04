@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useCourse } from "../contexts/CourseContext";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
+import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import "../styles/liveSessions.css";
 import useNotificationSocket from "../hooks/useNotificationSocket";
 
@@ -282,8 +283,8 @@ const filtered = (
   );
 });
 
-  if (loading) return <div className="liveSessionsPage"><div style={{padding:20,color:"#6b7280"}}>Loading sessions...</div></div>;
-  if (error)   return <div className="liveSessionsPage"><div style={{padding:20,color:"red"}}>{error}</div></div>;
+  if (loading) return <div className="liveSessionsPage"><LoadingState label="Loading live sessions" /></div>;
+  if (error)   return <div className="liveSessionsPage"><ErrorState message={error} /></div>;
 
   return (
     <div className="liveSessionsPage">
@@ -296,9 +297,20 @@ const filtered = (
       </div>
       <div className="liveSessionsBodyBox">
         {!activeCourse ? (
-          <p style={{color:"#9ca3af",textAlign:"center",padding:"40px 0"}}>Please select a course.</p>
+          <EmptyState
+            plain
+            icon="video"
+            title="No course selected"
+            message="Enrol in a course to see its live sessions."
+            action={{ label: "Browse courses", to: "/browse-courses", icon: "search" }}
+          />
         ) : filtered.length === 0 ? (
-          <p style={{color:"#9ca3af",textAlign:"center",padding:"40px 0"}}>No live sessions available.</p>
+          <EmptyState
+            plain
+            icon="video"
+            title={selectedSubject ? "No live sessions for this subject" : "No live sessions scheduled"}
+            message="When your teacher schedules a class, it'll show up here with a join button."
+          />
         ) : (
           <div className="liveGrid">
             {filtered.map((s) => (

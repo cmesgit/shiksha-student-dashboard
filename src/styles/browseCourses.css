@@ -9,9 +9,36 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 10px 16px;
   margin-bottom: 18px;
 }
+
+/* Labelled, horizontally-scrollable facet — scales to any number of boards or
+   streams without wrapping into a tall block. */
+.shop-facet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+.shop-facet__label {
+  flex-shrink: 0;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--ink-4, #9ca3af);
+}
+.shop-facet__row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.shop-facet__row::-webkit-scrollbar { display: none; }
 .shop-search {
   position: relative;
   flex: 1;

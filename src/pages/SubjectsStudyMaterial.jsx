@@ -4,6 +4,7 @@ import { useCourse } from "../contexts/CourseContext";
 import SubjectCard from "../components/SubjectCard";
 import PageHeader from "../components/PageHeader";
 import api from "../api/apiClient";
+import { LoadingState, EmptyState } from "../components/StateViews";
 import "../styles/subjects.css";
 
 export default function SubjectsStudyMaterial() {
@@ -12,6 +13,7 @@ export default function SubjectsStudyMaterial() {
   const { activeCourse } = useCourse();
 
   const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [resourceCounts, setResourceCounts] = useState({});
   const [resourceCountsReady, setResourceCountsReady] = useState(false);
 const subjectImages = {
@@ -106,14 +108,17 @@ function getSubjectImage(subjectName) {
 
   useEffect(() => {
 
-    if (!activeCourse) return;
+    if (!activeCourse) { setLoading(false); return; }
 
+    setLoading(true);
     const fetchSubjects = async () => {
       try {
         const res = await api.get(`/courses/${activeCourse.id}/subjects/`);
         setSubjects(res.data);
       } catch (err) {
         console.error("Failed to load subjects", err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -156,6 +161,24 @@ function getSubjectImage(subjectName) {
       </div>
 
       <div className="subjectsBodyBox">
+        {loading ? (
+          <LoadingState label="Loading study material" />
+        ) : !activeCourse ? (
+          <EmptyState
+            plain
+            icon="file"
+            title="No course selected"
+            message="Enrol in a course to see its study material."
+            action={{ label: "Browse courses", to: "/browse-courses", icon: "search" }}
+          />
+        ) : subjects.length === 0 ? (
+          <EmptyState
+            plain
+            icon="file"
+            title="No study material yet"
+            message="Notes, PDFs, and resources will appear here, grouped by subject, once your teachers add them."
+          />
+        ) : (
         <div className="subjectsGrid">
 
          {subjects.map((item) => (
@@ -176,6 +199,7 @@ function getSubjectImage(subjectName) {
 ))}
 
         </div>
+        )}
       </div>
 
     </div>

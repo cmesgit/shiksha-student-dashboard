@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
+import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import "../styles/teachers.css";
 
 export default function Teachers() {
@@ -41,8 +42,8 @@ export default function Teachers() {
     navigate("/chat", { state: { teacherId: t.id } });
   };
 
-  if (loading) return <div className="teachers-loading">Loading teachers...</div>;
-  if (error) return <div className="teachers-error">{error}</div>;
+  if (loading) return <LoadingState label="Loading teachers" />;
+  if (error) return <ErrorState message={error} />;
 
   return (
     <div className="teachers-page">
@@ -59,7 +60,12 @@ export default function Teachers() {
 
       <div className="teachers-container">
         {filtered.length === 0 ? (
-          <div className="teachers-empty">No teachers found.</div>
+          <EmptyState
+            plain
+            icon="users"
+            title={search ? "No teachers match that" : "No teachers yet"}
+            message={search ? "Try a different name, subject, or qualification." : "Your course teachers will appear here once they're assigned."}
+          />
         ) : (
           <div className="teachers-list">
             {filtered.map((t) => (

@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
+import { LoadingState, EmptyState } from "../components/StateViews";
 import "../styles/subjectDetails.css";
 
 export default function SubjectDetails() {
@@ -27,8 +28,18 @@ export default function SubjectDetails() {
     if (subjectId) fetchSubjectDetails();
   }, [subjectId]);
 
-  if (loading) return <div className="subjectDetailsPage"><p>Loading subject...</p></div>;
-  if (!subjectDetails) return <div className="subjectDetailsPage"><p>Subject not found.</p></div>;
+  if (loading) return <div className="subjectDetailsPage"><LoadingState label="Loading subject" /></div>;
+  if (!subjectDetails)
+    return (
+      <div className="subjectDetailsPage">
+        <EmptyState
+          icon="book"
+          title="Subject not found"
+          message="This subject may have been removed, or the link is out of date."
+          action={{ label: "Back to subjects", to: "/subjects" }}
+        />
+      </div>
+    );
 
   const teachers = subjectDetails.teachers || [];
   const primaryTeacher = teachers[0];

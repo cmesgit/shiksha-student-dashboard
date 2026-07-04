@@ -39,6 +39,7 @@ export default function BrowseCourses() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [board, setBoard] = useState("all");
+  const [stream, setStream] = useState("all");
 
   const { enroll, busyId, error: enrolError, setError: setEnrolError, collectsMoney } = useEnroll();
 
@@ -83,7 +84,8 @@ export default function BrowseCourses() {
     if (res?.redirected) showToast("Opening checkout in a new tab…");
   };
 
-  // Board filter options are derived from the catalog itself.
+  // Filter options are derived from the catalog itself, so new boards and
+  // streams appear automatically as courses are added — no code changes needed.
   const boards = useMemo(() => {
     const map = new Map();
     for (const c of courses) {
@@ -92,16 +94,33 @@ export default function BrowseCourses() {
     return [...map.entries()].map(([id, name]) => ({ id, name }));
   }, [courses]);
 
+  const streams = useMemo(() => {
+    const map = new Map();
+    for (const c of courses) {
+      const s = c.stream || (c.stream_name ? { id: c.stream_name, name: c.stream_name } : null);
+      if (s?.id) map.set(s.id, s.name);
+    }
+    return [...map.entries()].map(([id, name]) => ({ id, name }));
+  }, [courses]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return courses.filter((c) => {
+    const streamIdOf = (c) => c.stream?.id || c.stream_name || null;
+    const matched = courses.filter((c) => {
       if (board !== "all" && c.board?.id !== board) return false;
+      if (stream !== "all" && streamIdOf(c) !== stream) return false;
       if (!q) return true;
       return [c.title, c.description, c.board?.name, c.stream_name, c.lead_teacher]
         .filter(Boolean)
         .some((v) => v.toLowerCase().includes(q));
     });
-  }, [courses, query, board]);
+    // Still-available courses first, already-enrolled ones last (stable sort
+    // keeps the API's board/title order within each group).
+    return matched
+      .map((c, i) => [c, i])
+      .sort((a, b) => (a[0].is_enrolled ? 1 : 0) - (b[0].is_enrolled ? 1 : 0) || a[1] - b[1])
+      .map(([c]) => c);
+  }, [courses, query, board, stream]);
 
   return (
     <div className="ac-page">
@@ -114,7 +133,7 @@ export default function BrowseCourses() {
 
       {(error || enrolError) && (
         <div className="ac-banner ac-banner--error" role="alert">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
           <span>
@@ -144,7 +163,7 @@ export default function BrowseCourses() {
       {!loading && !error && courses.length > 0 && (
         <div className="shop-toolbar">
           <div className="shop-search">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -152,20 +171,32 @@ export default function BrowseCourses() {
               aria-label="Search courses"
             />
           </div>
+
           {boards.length > 1 && (
-            <div className="shop-filters">
-              <button className={`shop-chip${board === "all" ? " is-active" : ""}`} onClick={() => setBoard("all")}>
-                All boards
-              </button>
-              {boards.map((b) => (
-                <button
-                  key={b.id}
-                  className={`shop-chip${board === b.id ? " is-active" : ""}`}
-                  onClick={() => setBoard(b.id)}
-                >
-                  {b.name}
-                </button>
-              ))}
+            <div className="shop-facet">
+              <span className="shop-facet__label">Board</span>
+              <div className="shop-facet__row">
+                <button className={`shop-chip${board === "all" ? " is-active" : ""}`} onClick={() => setBoard("all")}>All</button>
+                {boards.map((b) => (
+                  <button key={b.id} className={`shop-chip${board === b.id ? " is-active" : ""}`} onClick={() => setBoard(b.id)}>
+                    {b.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {streams.length > 1 && (
+            <div className="shop-facet">
+              <span className="shop-facet__label">Stream</span>
+              <div className="shop-facet__row">
+                <button className={`shop-chip${stream === "all" ? " is-active" : ""}`} onClick={() => setStream("all")}>All</button>
+                {streams.map((s) => (
+                  <button key={s.id} className={`shop-chip${stream === s.id ? " is-active" : ""}`} onClick={() => setStream(s.id)}>
+                    {s.name}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -178,7 +209,7 @@ export default function BrowseCourses() {
       ) : error ? null : courses.length === 0 ? (
         <div className="ac-empty">
           <div className="ac-empty__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
             </svg>
           </div>
@@ -191,13 +222,13 @@ export default function BrowseCourses() {
       ) : filtered.length === 0 ? (
         <div className="ac-empty">
           <div className="ac-empty__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           </div>
           <h2 className="ac-empty__title">Nothing matches that</h2>
-          <p className="ac-empty__text">Try a different search term or clear the board filter.</p>
-          <button className="ac-empty__cta" onClick={() => { setQuery(""); setBoard("all"); }}>
+          <p className="ac-empty__text">Try a different search term or clear the filters.</p>
+          <button className="ac-empty__cta" onClick={() => { setQuery(""); setBoard("all"); setStream("all"); }}>
             Clear filters
           </button>
         </div>
