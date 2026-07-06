@@ -10,6 +10,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import "../styles/sidebar.css";
 import logo from "../assets/Vector.svg";
 import { useCourse } from "../contexts/CourseContext";
+import CourseSwitcher from "./CourseSwitcher";
 
 import { MdDashboardCustomize } from "react-icons/md";
 import { BsBook } from "react-icons/bs";
@@ -135,6 +136,11 @@ function AcademySidebar({ setMenuOpen }) {
           <AiOutlineClose />
         </button>
       </div>
+
+      {/* Active-course selector: shows the selected course and, with more than
+          one enrolment, drops down to switch. All course-scoped data
+          (subjects, assignments, live/private sessions…) follows this. */}
+      <CourseSwitcher setMenuOpen={setMenuOpen} />
 
       <nav className="sidebar__nav">
         <NavLink className="sidebar__link" to="/" end onClick={() => setMenuOpen(false)}>
