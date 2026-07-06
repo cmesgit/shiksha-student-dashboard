@@ -59,6 +59,14 @@ export default function CourseShopCard({ course, busy, collectsMoney, onEnrol })
           >
             Go to course
           </button>
+        ) : course.request_pending ? (
+          <button
+            type="button"
+            className="shop-card__btn shop-card__btn--ghost"
+            disabled
+          >
+            Pending approval
+          </button>
         ) : (
           <button
             type="button"

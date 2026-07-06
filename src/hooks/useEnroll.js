@@ -6,9 +6,9 @@
 //
 //   free mode  → one-tap POST /enrollments/free-enroll/, then refreshCourses()
 //                so the new course appears without a reload.
-//   paid mode  → payment + the enrolment form live on the marketing site, so
-//                we open that course in the public catalog in a new tab (the
-//                dashboard session stays put — no redirect to the homepage).
+//   paid mode  → hand the course back to the caller via onNeedsPayment(course)
+//                so it can open the in-dashboard CoursePaymentModal. No more
+//                window.open() redirect to the marketing site.
 //
 // Returns per-course busy state and a single error string, so callers can
 // disable just the card being enrolled and surface failures inline.
@@ -18,7 +18,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useCourse } from "../contexts/CourseContext";
 import { getPaymentConfig, freeEnroll } from "../api/catalog";
 import { extractError } from "../shared/extractError";
-import { ACADEMY_BROWSE_URL } from "../config/urls";
 
 export default function useEnroll() {
   const { refreshCourses } = useCourse();
@@ -36,14 +35,13 @@ export default function useEnroll() {
   const collectsMoney = !!config?.collects_money;
 
   const enroll = useCallback(
-    async (course, { onEnrolled } = {}) => {
+    async (course, { onEnrolled, onNeedsPayment } = {}) => {
       setError("");
 
       if (collectsMoney) {
-        // Deep-link to the course in the public catalog to complete payment.
-        const url = `${ACADEMY_BROWSE_URL}?course=${encodeURIComponent(course.id)}`;
-        window.open(url, "_blank", "noopener,noreferrer");
-        return { redirected: true };
+        // Open the in-dashboard payment flow instead of redirecting out.
+        onNeedsPayment?.(course);
+        return { needsPayment: true };
       }
 
       try {

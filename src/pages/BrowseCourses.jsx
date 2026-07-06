@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getCourseCatalog } from "../api/catalog";
 import useEnroll from "../hooks/useEnroll";
 import CourseShopCard from "../components/CourseShopCard";
+import CoursePaymentModal from "../components/CoursePaymentModal";
 import Skeleton from "../components/Skeleton";
 import { extractError } from "../shared/extractError";
 import "../styles/academyCommon.css";
@@ -41,9 +42,10 @@ export default function BrowseCourses() {
   const [board, setBoard] = useState("all");
   const [stream, setStream] = useState("all");
 
-  const { enroll, busyId, error: enrolError, setError: setEnrolError, collectsMoney } = useEnroll();
+  const { enroll, busyId, error: enrolError, setError: setEnrolError, collectsMoney, config } = useEnroll();
 
   const [toast, setToast] = useState("");
+  const [payCourse, setPayCourse] = useState(null);   // course awaiting in-app payment
   const toastTimer = useRef(null);
 
   const load = async () => {
@@ -80,8 +82,17 @@ export default function BrowseCourses() {
         );
         showToast(`You're enrolled in ${c.title}.`);
       },
+      onNeedsPayment: (c) => setPayCourse(c),
     });
-    if (res?.redirected) showToast("Opening checkout in a new tab…");
+    if (res?.needsPayment) setPayCourse(course);
+  };
+
+  // Manual-proof payment submitted → mark the card as pending admin approval.
+  const handlePaymentSubmitted = (c) => {
+    setCourses((prev) =>
+      prev.map((x) => (x.id === c.id ? { ...x, request_pending: true } : x))
+    );
+    showToast("Payment submitted — pending approval.");
   };
 
   // Filter options are derived from the catalog itself, so new boards and
@@ -250,6 +261,15 @@ export default function BrowseCourses() {
         <span className="shop-toast__dot" />
         {toast}
       </div>
+
+      {payCourse && (
+        <CoursePaymentModal
+          course={payCourse}
+          config={config}
+          onClose={() => setPayCourse(null)}
+          onSubmitted={handlePaymentSubmitted}
+        />
+      )}
     </div>
   );
 }

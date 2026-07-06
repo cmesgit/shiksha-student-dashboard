@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { getCourseCatalog } from "../api/catalog";
 import useEnroll from "../hooks/useEnroll";
 import CourseShopCard from "./CourseShopCard";
+import CoursePaymentModal from "./CoursePaymentModal";
 import Skeleton from "./Skeleton";
 import "../styles/academyCommon.css";
 import "../styles/browseCourses.css";
@@ -50,9 +51,10 @@ export default function AcademyEmptyState({ variant = "dashboard" }) {
 
   const [preview, setPreview] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { enroll, busyId, collectsMoney } = useEnroll();
+  const { enroll, busyId, collectsMoney, config } = useEnroll();
 
   const [toast, setToast] = useState("");
+  const [payCourse, setPayCourse] = useState(null);
   const toastTimer = useRef(null);
 
   useEffect(() => {
@@ -80,8 +82,16 @@ export default function AcademyEmptyState({ variant = "dashboard" }) {
   const handleEnrol = async (course) => {
     const res = await enroll(course, {
       onEnrolled: (c) => showToast(`You're enrolled in ${c.title}.`),
+      onNeedsPayment: (c) => setPayCourse(c),
     });
-    if (res?.redirected) showToast("Opening checkout in a new tab…");
+    if (res?.needsPayment) setPayCourse(course);
+  };
+
+  const handlePaymentSubmitted = (c) => {
+    setPreview((prev) =>
+      prev.map((x) => (x.id === c.id ? { ...x, request_pending: true } : x))
+    );
+    showToast("Payment submitted — pending approval.");
   };
 
   const hasPreview = loading || preview.length > 0;
@@ -162,6 +172,15 @@ export default function AcademyEmptyState({ variant = "dashboard" }) {
         <span className="shop-toast__dot" />
         {toast}
       </div>
+
+      {payCourse && (
+        <CoursePaymentModal
+          course={payCourse}
+          config={config}
+          onClose={() => setPayCourse(null)}
+          onSubmitted={handlePaymentSubmitted}
+        />
+      )}
     </div>
   );
 }
