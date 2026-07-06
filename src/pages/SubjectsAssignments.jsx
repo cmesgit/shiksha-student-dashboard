@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/apiClient";
 import AssignmentPendingCard from "../components/AssignmentPendingCard";
 import AssignmentCompletedCard from "../components/AssignmentCompletedCard";
+import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import "../styles/assignmentPending.css";
 
 export default function SubjectsAssignments() {
@@ -49,8 +50,8 @@ export default function SubjectsAssignments() {
     fetchAssignments();
   }, [subjectId]);
 
-  if (loading) return <div>Loading assignments...</div>;
-  if (error) return <div>{error}</div>;
+  if (loading) return <LoadingState label="Loading assignments" />;
+  if (error) return <ErrorState message={error} />;
 
   return (
     <div className="assignmentPage">
@@ -87,6 +88,15 @@ export default function SubjectsAssignments() {
 
       <div className="assignmentBodyBox">
         <div className="assignmentGrid">
+          {activeTab === "pending" && pendingData.length === 0 && (
+            <EmptyState
+              plain
+              icon="file"
+              title="No pending assignments"
+              message="You're all caught up. New assignments will appear here when your teacher sets them."
+            />
+          )}
+
           {activeTab === "pending" &&
             pendingData
               .map((item) => (
@@ -100,6 +110,15 @@ export default function SubjectsAssignments() {
                   deadline={new Date(item.due_date).toLocaleDateString("en-GB")}
                 />
               ))}
+
+          {activeTab === "completed" && completedData.length === 0 && (
+            <EmptyState
+              plain
+              icon="file"
+              title="Nothing submitted yet"
+              message="Assignments you complete and submit will be listed here."
+            />
+          )}
 
           {activeTab === "completed" &&
             completedData

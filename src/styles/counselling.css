@@ -1,0 +1,72 @@
+/* PLACEMENT: src/styles/counselling.css   (NEW FILE — student dashboard app)
+ * My Counselling section — matches the student dashboard's look
+ * (white cards, #015865 accent) with .mc- scoped classes. */
+
+.mc-page { padding: 0 4px }
+
+.mc-tabs { display: flex; align-items: center; gap: 8px; margin: 14px 0 18px; flex-wrap: wrap }
+.mc-tab { padding: 9px 18px; font-size: 13px; font-weight: 600; color: #64748b; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 100px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px }
+.mc-tab--on { color: #fff; background: #015865; border-color: #015865 }
+.mc-tab-count { font-size: 10.5px; font-weight: 800; background: rgba(255,255,255,.25); border-radius: 100px; padding: 1px 7px }
+.mc-tab:not(.mc-tab--on) .mc-tab-count { background: #f1f5f9; color: #015865 }
+.mc-book-link { margin-left: auto; font-size: 12.5px; font-weight: 700; color: #015865; text-decoration: none }
+.mc-book-link:hover { text-decoration: underline }
+
+.mc-list { display: flex; flex-direction: column; gap: 12px }
+.mc-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden }
+.mc-card--open { box-shadow: 0 6px 18px rgba(2,58,66,.07) }
+.mc-card-head { display: flex; align-items: center; gap: 13px; width: 100%; padding: 15px 18px; background: none; border: none; text-align: left; cursor: pointer }
+.mc-avatar { flex: none; width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #015865, #0a7d8c); color: #fff; font-size: 16px; font-weight: 800; display: flex; align-items: center; justify-content: center }
+.mc-card-main { flex: 1; min-width: 0 }
+.mc-card-title { font-size: 14.5px; font-weight: 700; color: #0f172a }
+.mc-card-sub { font-size: 12px; color: #64748b; margin-top: 2px }
+.mc-caret { color: #94a3b8; font-size: 13px }
+.mc-card-body { padding: 0 18px 16px 73px; display: flex; flex-direction: column; gap: 11px }
+@media (max-width: 640px) { .mc-card-body { padding-left: 18px } }
+
+.mc-chip { font-size: 10.5px; font-weight: 700; padding: 4px 11px; border-radius: 100px; white-space: nowrap }
+.mc-chip--green { color: #047857; background: #d1fae5 }
+.mc-chip--amber { color: #b45309; background: #fef3c7 }
+.mc-chip--red { color: #b91c1c; background: #fee2e2 }
+.mc-chip--grey { color: #475569; background: #f1f5f9 }
+.mc-row-chips { display: flex; gap: 7px; flex-wrap: wrap }
+
+.mc-note { font-size: 12.5px; color: #475569; font-style: italic; background: #f8fafc; border-left: 3px solid #cbd5e1; padding: 8px 12px; border-radius: 0 8px 8px 0 }
+
+.mc-actions { display: flex; gap: 9px; flex-wrap: wrap }
+.mc-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; font-size: 12.5px; font-weight: 700; color: #fff; background: #015865; border: none; border-radius: 9px; cursor: pointer; text-decoration: none }
+.mc-btn:hover { background: #01414b }
+.mc-btn--outline { color: #015865; background: #fff; border: 1.5px solid #015865 }
+.mc-btn--outline:hover { background: #f0fdfa }
+.mc-btn--danger { color: #b91c1c; background: #fff; border: 1.5px solid #fecaca }
+.mc-btn--danger:hover { background: #fef2f2 }
+.mc-btn--disabled { color: #94a3b8; background: #f1f5f9; cursor: default }
+.mc-btn:disabled { opacity: .6; cursor: not-allowed }
+
+.mc-empty { text-align: center; padding: 46px 24px; background: #fff; border: 1.5px dashed #e2e8f0; border-radius: 14px; color: #64748b; font-size: 13px; line-height: 1.65 }
+.mc-empty-title { font-size: 15.5px; font-weight: 800; color: #0f172a; margin-bottom: 6px }
+.mc-done-tick { width: 54px; height: 54px; border-radius: 50%; background: #047857; color: #fff; font-size: 26px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px }
+
+.mc-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; border-radius: 10px; padding: 10px 14px; font-size: 12.5px; font-weight: 600; margin-bottom: 14px }
+.mc-skel { background: linear-gradient(90deg, #f1f5f9, #e2e8f0, #f1f5f9); background-size: 200% 100%; animation: mcShimmer 1.2s infinite; border-radius: 14px }
+@keyframes mcShimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+
+/* reports */
+.mc-report-sec { margin-bottom: 4px }
+.mc-report-label { font-size: 10.5px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 3px }
+.mc-report-text { font-size: 13px; line-height: 1.7; color: #334155; margin: 0; white-space: pre-wrap }
+
+/* assessment */
+.mc-assess { max-width: 680px }
+.mc-assess-intro { font-size: 13px; color: #64748b; line-height: 1.65; margin: 4px 0 16px }
+.mc-asec { padding: 18px; margin-bottom: 14px }
+.mc-asec h3 { font-size: 14.5px; font-weight: 800; color: #015865; margin: 0 0 13px }
+.mc-field { margin-bottom: 14px }
+.mc-label { display: block; font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 6px }
+.mc-input, .mc-textarea { width: 100%; box-sizing: border-box; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 13px; font-size: 13px; color: #0f172a; background: #f8fafc; outline: none; font-family: inherit }
+.mc-input:focus, .mc-textarea:focus { border-color: #015865; background: #fff }
+.mc-textarea { min-height: 78px; resize: vertical }
+.mc-chips { display: flex; flex-wrap: wrap; gap: 8px }
+.mc-choice { padding: 8px 15px; font-size: 12px; font-weight: 600; color: #475569; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 100px; cursor: pointer }
+.mc-choice--on { color: #fff; background: #015865; border-color: #015865 }
+.mc-assess-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px }

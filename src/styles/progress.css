@@ -1,0 +1,92 @@
+/* PLACEMENT: src/styles/progress.css
+   Matches the student Academy look: white rounded panels, teal accent #0a808a,
+   headings #111827, muted #6b7280 (same tokens as subjects.css). */
+
+.progressPage {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.progressHeaderBox {
+  width: 100%;
+  background: #fff;
+  border-radius: 18px 18px 0 0;
+  padding: 20px 24px;
+}
+.progressHeaderBox .pageHeader {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.progressBodyBox {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
+  background: #fff;
+  border-radius: 0 0 18px 18px;
+  padding: 24px;
+}
+
+.prog-muted { color: #6b7280; font-size: 13px; }
+.prog-indent { padding-left: 4px; }
+
+/* Batch / syllabus context */
+.prog-context { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.prog-tag {
+  display: inline-flex; align-items: center;
+  background: #e6f3f4; color: #0a4d55; border: 1px solid #c3e4e7;
+  padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700;
+}
+.prog-tag--muted { background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
+.prog-context-note { font-size: 12.5px; color: #6b7280; }
+
+/* Overall summary */
+.prog-overall {
+  display: flex; align-items: center; gap: 20px;
+  background: #f7fbfb; border: 1px solid #e4eef0; border-radius: 16px;
+  padding: 18px 20px; margin-bottom: 22px;
+}
+.prog-overall-ring {
+  width: 74px; height: 74px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(closest-side, #fff 74%, transparent 75% 100%),
+    conic-gradient(#0a808a var(--pct, 0%), #e4eef0 0);
+  /* Fallback solid ring if conic-gradient unsupported */
+  border: 1px solid #e4eef0;
+}
+.prog-overall-pct { font-size: 18px; font-weight: 800; color: #0a4d55; }
+.prog-overall-meta { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.prog-overall-meta strong { font-size: 15px; color: #111827; font-weight: 700; }
+
+/* Progress bar */
+.prog-bar { height: 8px; background: #e4eef0; border-radius: 999px; overflow: hidden; }
+.prog-bar__fill { height: 100%; background: linear-gradient(90deg, #0a808a, #16a3ad); border-radius: 999px; transition: width 0.3s ease; }
+
+/* Subjects + chapters */
+.prog-subjects { display: flex; flex-direction: column; gap: 20px; }
+.prog-subject-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 7px; gap: 12px; }
+.prog-subject-name { font-size: 15px; font-weight: 700; color: #0f172a; }
+
+.prog-chapters { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.prog-chapter {
+  display: flex; align-items: baseline; gap: 10px;
+  font-size: 14px; color: #6b7280; padding: 2px 0;
+}
+.prog-chapter.covered { color: #111827; }
+.prog-tick { flex: none; font-weight: 800; color: #cbd5db; width: 16px; text-align: center; }
+.prog-chapter.covered .prog-tick { color: #0a808a; }
+.prog-chapter-title { flex: 1; min-width: 0; }
+.prog-date { flex: none; font-size: 11.5px; color: #9ca3af; }
+.prog-note { flex-basis: 100%; padding-left: 26px; font-size: 12.5px; font-style: italic; color: #8a6d00; }
+
+@media (prefers-reduced-motion: reduce) {
+  .prog-bar__fill { transition: none; }
+}

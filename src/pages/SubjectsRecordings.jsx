@@ -4,6 +4,7 @@ import SubjectCard from "../components/SubjectCard";
 import PageHeader from "../components/PageHeader";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
+import { LoadingState, EmptyState } from "../components/StateViews";
 import "../styles/subjects.css";
 
 export default function SubjectsRecordings() {
@@ -11,6 +12,7 @@ export default function SubjectsRecordings() {
   const { activeCourse } = useCourse();
 
   const [subjectData, setSubjectData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const subjectImages = {
     "science": "/images/sci.jpeg",
@@ -103,14 +105,17 @@ function getSubjectImage(subjectName) {
   return matchedKey ? subjectImages[matchedKey] : "/images/default.png";
 }
   useEffect(() => {
-    if (!activeCourse) return;
+    if (!activeCourse) { setLoading(false); return; }
 
+    setLoading(true);
     const fetchSubjects = async () => {
       try {
         const res = await api.get(`/courses/${activeCourse.id}/subjects/`);
         setSubjectData(res.data || []);
       } catch (err) {
         console.error("Failed to load subjects", err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -128,20 +133,39 @@ function getSubjectImage(subjectName) {
       </div>
 
       <div className="subjectsBodyBox">
-        <div className="subjectsGrid">
-          {subjectData.map((item) => (
-            <SubjectCard
-              key={item.id}
-              id={item.id}
-              subject={item.name}
-              teacher={item.teachers?.[0]?.name || "Teacher"}
-              img={getSubjectImage(item.name)}
-              taskCount={item.recordings_count ?? 0}
-              taskLabel="Video"
-              onClick={() => handleSubjectClick(item.id)}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <LoadingState label="Loading recordings" />
+        ) : !activeCourse ? (
+          <EmptyState
+            plain
+            icon="video"
+            title="No course selected"
+            message="Enrol in a course to see its recordings."
+            action={{ label: "Browse courses", to: "/browse-courses", icon: "search" }}
+          />
+        ) : subjectData.length === 0 ? (
+          <EmptyState
+            plain
+            icon="video"
+            title="No recordings yet"
+            message="Recorded classes will appear here, grouped by subject, once your teachers upload them."
+          />
+        ) : (
+          <div className="subjectsGrid">
+            {subjectData.map((item) => (
+              <SubjectCard
+                key={item.id}
+                id={item.id}
+                subject={item.name}
+                teacher={item.teachers?.[0]?.name || "Teacher"}
+                img={getSubjectImage(item.name)}
+                taskCount={item.recordings_count ?? 0}
+                taskLabel="Video"
+                onClick={() => handleSubjectClick(item.id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

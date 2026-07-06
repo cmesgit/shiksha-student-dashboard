@@ -68,8 +68,17 @@ export default function NotificationBell() {
   };
 
   const handleNotifClick = (notif) => {
-    const { type, subject_id, id, is_private_session, is_group_session } = notif;
+    const { type, subject_id, id, is_private_session, is_group_session, link_url } = notif;
     if (id) markOneRead(id);
+
+    // Notifications from the notifications app (counseling.*, forum.*, and
+    // future verbs) carry a link_url — trust it for in-app routing before
+    // falling through to the older per-type logic below.
+    if (link_url && link_url.startsWith("/")) {
+      navigate(link_url);
+      setOpen(false);
+      return;
+    }
 
     // Private session notifications always go to /private-sessions
     // regardless of which side (student or teacher) — the page handles both.

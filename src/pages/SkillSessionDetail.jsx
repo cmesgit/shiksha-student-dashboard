@@ -22,14 +22,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 const T = {
-  forest:    "#125027",
-  forestMid: "#1b9c85",
+  forest:    "#6b2410",
+  forestMid: "#b3402e",
   orange:    "#ff8f01",
   teal:      "#0a808a",
   tealBg:    "#eef6f7",
-  border:    "rgba(9,62,5,0.14)",
-  ink:       "#0e1c0f",
-  soft:      "rgba(14,28,15,0.58)",
+  border:    "rgba(67,20,7,0.14)",
+  ink:       "#26130b",
+  soft:      "rgba(38,19,11,0.58)",
 };
 
 const STATUS_CFG = {
@@ -76,7 +76,7 @@ function ExpertCard({ expert, onMessage }) {
       display: "flex", alignItems: "center", gap: 14,
       background: "#fff", border: `1px solid ${T.border}`,
       borderRadius: 14, padding: "14px 16px",
-      boxShadow: "0 2px 10px rgba(9,62,5,.06)",
+      boxShadow: "0 2px 10px rgba(67,20,7,.06)",
     }}>
       {expert.img
         ? <img src={expert.img} alt={expert.name} style={{ width: 52, height: 52, borderRadius: 12, objectFit: "cover", flexShrink: 0 }} />
@@ -217,7 +217,7 @@ export default function SkillSessionDetail() {
       </button>
 
       {/* Header card */}
-      <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${T.border}`, boxShadow: "0 2px 12px rgba(9,62,5,.06)", padding: "18px 20px", marginBottom: 14 }}>
+      <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${T.border}`, boxShadow: "0 2px 12px rgba(67,20,7,.06)", padding: "18px 20px", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: T.soft, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>
@@ -240,7 +240,7 @@ export default function SkillSessionDetail() {
       </div>
 
       {/* Detail rows */}
-      <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${T.border}`, boxShadow: "0 2px 12px rgba(9,62,5,.06)", padding: "4px 20px 6px", marginBottom: 14 }}>
+      <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${T.border}`, boxShadow: "0 2px 12px rgba(67,20,7,.06)", padding: "4px 20px 6px", marginBottom: 14 }}>
         <Row icon="📅" label="Scheduled" value={s.when || "To be confirmed by teacher"} muted={!s.when} />
         <Row icon="⏱" label="Duration"  value={`${s.duration_mins} minutes`} />
         <Row icon="🎥" label="Mode"      value={s.contact_mode === "session" ? "Video call · Shiksha room" : s.contact_mode} />

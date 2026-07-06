@@ -1,4 +1,39 @@
-import { useState, useEffect, useMemo } from "react";
+// ============================================================
+// STUDENT — src/pages/Dashboard.jsx  (FULL REPLACEMENT)
+// ============================================================
+//
+// WHAT CHANGED vs the previous version
+// ────────────────────────────────────
+// 1. PROFILE-TRUE DATA. The backend /dashboard/ is now scoped to the
+//    JWT's active learner profile and finally honors ?course_id= —
+//    this page sends it as before, aborts in-flight requests on
+//    course switch (no more stale-course race overwriting the fresh
+//    one), and handles the new responses:
+//       409 profile_required → route to the profile picker
+//       error                → retry card instead of a silent shell
+// 2. ONE NOTIFICATION SOURCE. data.notifications + the WS list used
+//    to be merged with JSON.stringify keys → duplicates + ghosts that
+//    404ed on mark-read. The singleton useNotificationSocket store
+//    (server-isolated per profile) is the only source now.
+// 3. CANONICAL TYPES end-to-end: the notification filter and the
+//    schedule filter compare against the UPPERCASE vocabulary the
+//    normalized hook emits — both filters match real data for the
+//    first time, and "Private Session" (always in the calendar
+//    legend) is finally selectable in the schedule filter.
+// 4. HONEST "UPCOMING". The old fallback silently substituted ALL
+//    future sessions when this week had none, under a header that
+//    says "(Remaining classes)". Sessions now mean what the header
+//    says; an empty week shows the designed empty state.
+// 5. LIVE REVALIDATION. An ASSIGNMENT/QUIZ/SESSION push while the
+//    page is open triggers a debounced silent refetch.
+// 6. Dead code removed: the mobile "schedule" tab case was
+//    unreachable (TopSliderTabs never offers it; the Calendar tab
+//    already stacks the schedule beneath the grid).
+//
+// Layout, class names and child components are unchanged — this is a
+// rewiring, not a redesign.
+
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import SessionCard from "../components/SessionCard";
 import AssignmentCard from "../components/AssignmentCard";
@@ -7,33 +42,14 @@ import NotificationCard from "../components/NotificationCard";
 import DropdownMenu from "../components/DropdownMenu";
 import TopSliderTabs from "../components/TopSliderTabs";
 import SkillDevStudentSection from "../components/SkillDevStudentSection";
+import AcademyEmptyState from "../components/AcademyEmptyState";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
 import useNotificationSocket from "../hooks/useNotificationSocket";
+import { PICK_PROFILE_URL } from "../config/urls";
 import "../styles/dashboard.css";
 
 const DATE_FORMAT = { day: "2-digit", month: "short", year: "numeric" };
-
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  return new Date(dateStr).toLocaleDateString("en-GB", DATE_FORMAT);
-}
-
-function toDateKey(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
-}
-
-function isSameDay(a, b) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
 
 const EVENT_COLORS = {
   assignment: "#57D982",
@@ -48,6 +64,57 @@ const SCHEDULE_TYPE_LABELS = {
   quiz: "Quiz",
   "private-session": "Private Session",
 };
+
+// Filter option lists — canonical values, one source of truth.
+const NOTIF_OPTIONS = [
+  { value: "All", label: "All" },
+  { value: "ASSIGNMENT", label: "Assignment" },
+  { value: "SESSION", label: "Live Session" },
+  { value: "QUIZ", label: "Quiz" },
+];
+
+const SCHEDULE_OPTIONS = [
+  { value: "All", label: "All" },
+  { value: "ASSIGNMENT", label: "Assignment" },
+  { value: "SESSION", label: "Live Session" },
+  { value: "QUIZ", label: "Quiz" },
+  { value: "PRIVATE_SESSION", label: "Private Session" },
+];
+
+const SCHEDULE_FILTER_MAP = {
+  ASSIGNMENT: "assignment",
+  SESSION: "live-session",
+  QUIZ: "quiz",
+  PRIVATE_SESSION: "private-session",
+};
+
+// WS types that mean "your academy slices changed".
+const REFRESH_TYPES = new Set(["ASSIGNMENT", "QUIZ", "SESSION"]);
+
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleDateString("en-GB", DATE_FORMAT);
+}
+
+function toDateKey(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+}
+
+function isSameDay(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
 
 export default function Dashboard() {
   const { activeCourse, activeTrack } = useCourse();
@@ -64,20 +131,9 @@ export default function Dashboard() {
   const [currYear, setCurrYear] = useState(today.getFullYear());
 
   const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
   ];
-
   const years = Array.from({ length: 81 }, (_, i) => 1970 + i);
 
   const daysInMonth = new Date(currYear, currMonth + 1, 0).getDate();
@@ -86,68 +142,70 @@ export default function Dashboard() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const { notifications: liveNotifications, markOneRead } = useNotificationSocket();
+  const { notifications, markOneRead, onEvent } = useNotificationSocket();
 
-  useEffect(() => {
-    if (!activeCourse) {
-      setLoading(false);
-      return;
-    }
+  // ── fetch (abortable, race-safe across course switches) ──────────
+  const abortRef = useRef(null);
+  const fetchDashboard = useCallback(async ({ silent = false } = {}) => {
+    if (!activeCourse) { setLoading(false); return; }
 
-    const fetchDashboard = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get(`/dashboard/?course_id=${activeCourse.id}`);
-        setData(res.data);
-      } catch (err) {
-        console.error("Failed to load dashboard", err);
-      } finally {
-        setLoading(false);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    if (!silent) { setLoading(true); setError(""); }
+    try {
+      const res = await api.get(`/dashboard/?course_id=${activeCourse.id}`, {
+        signal: controller.signal,
+      });
+      setData(res.data);
+      setError("");
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      if (err?.response?.data?.code === "profile_required") {
+        window.location.href = PICK_PROFILE_URL;   // token lost its profile
+        return;
       }
-    };
-
-    fetchDashboard();
+      if (!silent) setError("Couldn't load your dashboard.");
+      console.error("Failed to load dashboard", err);
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
   }, [activeCourse]);
 
-  const sessions = data?.sessions?.length ? data.sessions : data?.all_sessions ?? [];
+  useEffect(() => {
+    fetchDashboard();
+    return () => abortRef.current?.abort();
+  }, [fetchDashboard]);
+
+  // Debounced silent refetch when a relevant push lands.
+  useEffect(() => {
+    let t = null;
+    const off = onEvent((n) => {
+      if (!REFRESH_TYPES.has(n?.type)) return;
+      clearTimeout(t);
+      t = setTimeout(() => fetchDashboard({ silent: true }), 1500);
+    });
+    return () => { off(); clearTimeout(t); };
+  }, [onEvent, fetchDashboard]);
+
+  // Honest slices — no all_sessions masquerading as "this week".
+  const sessions = data?.sessions ?? [];
   const allSessions = data?.all_sessions ?? [];
   const assignments = data?.assignments ?? [];
   const quizzes = data?.quizzes ?? [];
   const privateSessions = data?.private_sessions ?? [];
-  const apiNotifications = data?.notifications ?? [];
-
-  const notifications = useMemo(() => {
-    const seen = new Set();
-    const merged = [];
-
-    for (const n of [...liveNotifications, ...apiNotifications]) {
-      const key = n.id || JSON.stringify(n);
-      if (!seen.has(key)) {
-        seen.add(key);
-        merged.push(n);
-      }
-    }
-
-    return merged;
-  }, [liveNotifications, apiNotifications]);
 
   const goToPrevMonth = () => {
-    if (currMonth === 0) {
-      setCurrMonth(11);
-      setCurrYear((y) => y - 1);
-    } else {
-      setCurrMonth((m) => m - 1);
-    }
+    if (currMonth === 0) { setCurrMonth(11); setCurrYear((y) => y - 1); }
+    else setCurrMonth((m) => m - 1);
   };
 
   const goToNextMonth = () => {
-    if (currMonth === 11) {
-      setCurrMonth(0);
-      setCurrYear((y) => y + 1);
-    } else {
-      setCurrMonth((m) => m + 1);
-    }
+    if (currMonth === 11) { setCurrMonth(0); setCurrYear((y) => y + 1); }
+    else setCurrMonth((m) => m + 1);
   };
 
   const renderSessionCard = (s, idx) => {
@@ -157,22 +215,17 @@ export default function Dashboard() {
     const diffMins = Math.round(diffMs / 60000);
 
     let startsIn;
-    if (diffMs < 0) {
-      startsIn = "In progress";
-    } else if (diffMins < 60) {
-      startsIn = `Starts in ${diffMins} min`;
-    } else {
-      startsIn = `Starts in ${Math.floor(diffMins / 60)}h`;
-    }
+    if (Number.isNaN(sessionTime.getTime())) startsIn = "";
+    else if (diffMs < 0) startsIn = "In progress";
+    else if (diffMins < 60) startsIn = `Starts in ${diffMins} min`;
+    else startsIn = `Starts in ${Math.floor(diffMins / 60)}h`;
 
-    const timing = sessionTime.toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+    const timing = Number.isNaN(sessionTime.getTime())
+      ? ""
+      : sessionTime.toLocaleString("en-GB", {
+          day: "2-digit", month: "short", year: "numeric",
+          hour: "2-digit", minute: "2-digit", hour12: true,
+        });
 
     return (
       <SessionCard
@@ -189,19 +242,16 @@ export default function Dashboard() {
 
   const calendarEvents = useMemo(() => {
     const map = {};
-
     const add = (dateStr, type) => {
       const key = toDateKey(dateStr);
       if (!key) return;
       if (!map[key]) map[key] = [];
       if (!map[key].includes(type)) map[key].push(type);
     };
-
     assignments.forEach((a) => add(a.due, "assignment"));
     quizzes.forEach((q) => add(q.due, "quiz"));
     privateSessions.forEach((p) => add(p.date, "private-session"));
     allSessions.forEach((s) => add(s.dateTime, "live-session"));
-
     return map;
   }, [assignments, quizzes, privateSessions, allSessions]);
 
@@ -260,6 +310,8 @@ export default function Dashboard() {
     return items;
   }, [allSessions, assignments, quizzes, privateSessions]);
 
+  // Notifications come pre-isolated (profile-scoped) and pre-normalized
+  // (canonical UPPERCASE type) from the singleton hook.
   const filteredNotifications =
     notificationFilter === "All"
       ? notifications
@@ -267,21 +319,11 @@ export default function Dashboard() {
 
   const filteredAssignments = useMemo(() => {
     const now = new Date();
-
     return assignments.filter((a) => {
       if (!a.due) return assignmentFilter === "due";
-
       const dueDate = new Date(a.due);
-
-      if (Number.isNaN(dueDate.getTime())) {
-        return assignmentFilter === "due";
-      }
-
-      if (assignmentFilter === "due") {
-        return dueDate >= now;
-      }
-
-      return dueDate < now;
+      if (Number.isNaN(dueDate.getTime())) return assignmentFilter === "due";
+      return assignmentFilter === "due" ? dueDate >= now : dueDate < now;
     });
   }, [assignments, assignmentFilter]);
 
@@ -291,17 +333,10 @@ export default function Dashboard() {
       const selDate = new Date(selectedDate.year, selectedDate.month, selectedDate.day);
       if (!isSameDay(itemDate, selDate)) return false;
     }
-
     if (scheduleFilter !== "All") {
-      const filterMap = {
-        ASSIGNMENT: "assignment",
-        SESSION: "live-session",
-        QUIZ: "quiz",
-      };
-      const mapped = filterMap[scheduleFilter] || scheduleFilter;
+      const mapped = SCHEDULE_FILTER_MAP[scheduleFilter] || scheduleFilter;
       if (item.type !== mapped) return false;
     }
-
     return true;
   });
 
@@ -336,9 +371,7 @@ export default function Dashboard() {
               onChange={(e) => setCurrMonth(parseInt(e.target.value, 10))}
             >
               {months.map((m, i) => (
-                <option key={m} value={i}>
-                  {m.substring(0, 3)}
-                </option>
+                <option key={m} value={i}>{m.substring(0, 3)}</option>
               ))}
             </select>
 
@@ -348,9 +381,7 @@ export default function Dashboard() {
               onChange={(e) => setCurrYear(parseInt(e.target.value, 10))}
             >
               {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
+                <option key={y} value={y}>{y}</option>
               ))}
             </select>
           </div>
@@ -362,9 +393,7 @@ export default function Dashboard() {
 
         <div className="calendarGrid">
           {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => (
-            <div key={d} className="calDayName">
-              {d}
-            </div>
+            <div key={d} className="calDayName">{d}</div>
           ))}
 
           {Array.from({ length: startOffset }).map((_, i) => (
@@ -385,10 +414,7 @@ export default function Dashboard() {
               selectedDate.month === currMonth &&
               selectedDate.year === currYear;
 
-            const dateKey = `${currYear}-${String(currMonth + 1).padStart(
-              2,
-              "0"
-            )}-${String(day).padStart(2, "0")}`;
+            const dateKey = `${currYear}-${String(currMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
             const dayEvents = calendarEvents[dateKey] || [];
             const visibleEvents = dayEvents.slice(0, 4);
@@ -427,25 +453,16 @@ export default function Dashboard() {
             <span className="calLegend__dot" style={{ background: EVENT_COLORS.assignment }} />
             Assignment
           </span>
-
           <span className="calLegend__item">
             <span className="calLegend__dot" style={{ background: EVENT_COLORS.quiz }} />
             Quiz
           </span>
-
           <span className="calLegend__item">
-            <span
-              className="calLegend__dot"
-              style={{ background: EVENT_COLORS["live-session"] }}
-            />
+            <span className="calLegend__dot" style={{ background: EVENT_COLORS["live-session"] }} />
             Live Session
           </span>
-
           <span className="calLegend__item">
-            <span
-              className="calLegend__dot"
-              style={{ background: EVENT_COLORS["private-session"] }}
-            />
+            <span className="calLegend__dot" style={{ background: EVENT_COLORS["private-session"] }} />
             Private Session
           </span>
         </div>
@@ -469,9 +486,7 @@ export default function Dashboard() {
       <div
         key={item.id || idx}
         className={`scheduleItem scheduleItem--${typeClass}`}
-        onClick={() => {
-          if (item.link) navigate(item.link);
-        }}
+        onClick={() => { if (item.link) navigate(item.link); }}
         style={item.link ? { cursor: "pointer" } : {}}
       >
         <div className="scheduleItem__header">
@@ -493,7 +508,9 @@ export default function Dashboard() {
         return (
           <div className="mobileSectionContent">
             {sessions.map((s, idx) => renderSessionCard(s, idx))}
-            {sessions.length === 0 && <div className="emptyState">No upcoming live sessions</div>}
+            {sessions.length === 0 && (
+              <div className="emptyState">No upcoming live sessions</div>
+            )}
           </div>
         );
 
@@ -518,12 +535,18 @@ export default function Dashboard() {
                   )}
                 </h3>
 
-                <DropdownMenu value={scheduleFilter} onChange={setScheduleFilter} />
+                <DropdownMenu
+                  value={scheduleFilter}
+                  onChange={setScheduleFilter}
+                  options={SCHEDULE_OPTIONS}
+                />
               </div>
 
               <div className="mobileSectionContent">
                 {filteredSchedule.map((item, idx) => renderScheduleItem(item, idx))}
-                {filteredSchedule.length === 0 && <div className="emptyState">No schedule</div>}
+                {filteredSchedule.length === 0 && (
+                  <div className="emptyState">No schedule</div>
+                )}
               </div>
             </div>
           </div>
@@ -533,9 +556,11 @@ export default function Dashboard() {
         return (
           <div className="mobileSectionContent">
             {assignments.map((a, idx) => (
-              <AssignmentCard key={idx} {...a} />
+              <AssignmentCard key={a.id || idx} {...a} />
             ))}
-            {assignments.length === 0 && <div className="emptyState">No assignments</div>}
+            {assignments.length === 0 && (
+              <div className="emptyState">No assignments</div>
+            )}
           </div>
         );
 
@@ -550,12 +575,8 @@ export default function Dashboard() {
                 deadline={
                   q.due
                     ? new Date(q.due).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: true,
+                        day: "2-digit", month: "short", year: "numeric",
+                        hour: "2-digit", minute: "2-digit", hour12: true,
                       })
                     : "No due date"
                 }
@@ -574,7 +595,11 @@ export default function Dashboard() {
         return (
           <>
             <div className="mobileSectionTopAction">
-              <DropdownMenu value={notificationFilter} onChange={setNotificationFilter} />
+              <DropdownMenu
+                value={notificationFilter}
+                onChange={setNotificationFilter}
+                options={NOTIF_OPTIONS}
+              />
             </div>
             <div className="mobileSectionContent">
               {filteredNotifications.map((n) => (
@@ -587,39 +612,40 @@ export default function Dashboard() {
           </>
         );
 
-      case "schedule":
-        return (
-          <>
-            <div className="mobileSectionTopAction">
-              <DropdownMenu value={scheduleFilter} onChange={setScheduleFilter} />
-            </div>
-            <div className="mobileSectionContent">
-              {filteredSchedule.map((item, idx) => renderScheduleItem(item, idx))}
-              {filteredSchedule.length === 0 && <div className="emptyState">No schedule</div>}
-            </div>
-          </>
-        );
-
       default:
         return null;
     }
   };
 
-  if (loading) return <div style={{ padding: 20 }}>Loading dashboard...</div>;
-
-  // ── Skill Dev track — render the new design instead of the academic dashboard
+  // ── Skill Dev track — render the skill home instead ───────────────
   if (activeTrack === "skill") {
     return (
-      <div style={{ height: "100%", background: "#f7f1de", display: "flex", overflow: "hidden" }}>
+      <div style={{ height: "100%", background: "#f3e2da", display: "flex", overflow: "hidden" }}>
         <SkillDevStudentSection data={data} />
       </div>
     );
   }
 
+  if (loading) return <div style={{ padding: 20 }}>Loading dashboard...</div>;
+
   if (!activeCourse) {
+    // No Academy enrolment on THIS profile — onboarding placeholder.
+    return <AcademyEmptyState variant="dashboard" />;
+  }
+
+  if (error) {
     return (
-      <div style={{ padding: 20 }}>
-        <p>No course selected. Please select a course to view your dashboard.</p>
+      <div className="dashboardShell" style={{ padding: 20 }}>
+        <div className="dashboardCard" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: 18 }}>
+          <p style={{ margin: 0 }}>{error}</p>
+          <button
+            type="button"
+            className="assignmentToggle__btn assignmentToggle__btn--active"
+            onClick={() => fetchDashboard()}
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -633,7 +659,7 @@ export default function Dashboard() {
               <div className="cardHeader liveHeader">
                 <h3>Upcoming Live Sessions</h3>
                 <p className="sessionCountText">
-                  {sessions.length} Classes {sessions.length > 0 ? "(Remaining classes)" : ""}
+                  {sessions.length} {sessions.length === 1 ? "Class" : "Classes"} this week
                 </p>
               </div>
 
@@ -656,7 +682,7 @@ export default function Dashboard() {
                   </div>
 
                   <div className="liveEmptyState__content">
-                    <p className="liveEmptyState__title">No upcoming live sessions for today</p>
+                    <p className="liveEmptyState__title">No upcoming live sessions this week</p>
                     <p className="liveEmptyState__text">Relax and prepare for your next class!</p>
                   </div>
                 </div>
@@ -693,7 +719,7 @@ export default function Dashboard() {
 
                 <div className="cardBodyScroll">
                   {filteredAssignments.map((a, idx) => (
-                    <AssignmentCard key={idx} {...a} />
+                    <AssignmentCard key={a.id || idx} {...a} />
                   ))}
 
                   {filteredAssignments.length === 0 && (
@@ -707,7 +733,11 @@ export default function Dashboard() {
               <section className="dashboardCard dashboardCard--notifications">
                 <div className="cardHeader">
                   <h3>Notifications</h3>
-                  <DropdownMenu value={notificationFilter} onChange={setNotificationFilter} />
+                  <DropdownMenu
+                    value={notificationFilter}
+                    onChange={setNotificationFilter}
+                    options={NOTIF_OPTIONS}
+                  />
                 </div>
 
                 <div className="cardBodyScroll">
@@ -740,7 +770,11 @@ export default function Dashboard() {
                     </span>
                   )}
                 </h3>
-                <DropdownMenu value={scheduleFilter} onChange={setScheduleFilter} />
+                <DropdownMenu
+                  value={scheduleFilter}
+                  onChange={setScheduleFilter}
+                  options={SCHEDULE_OPTIONS}
+                />
               </div>
 
               <div className="cardBodyScroll">

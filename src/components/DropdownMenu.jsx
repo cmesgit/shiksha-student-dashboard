@@ -1,14 +1,27 @@
+// STUDENT — src/components/DropdownMenu.jsx  (FULL REPLACEMENT)
+// ─────────────────────────────────────────────────────────────
+// One change: an optional `options` prop. Every existing call site
+// keeps working untouched (the default is the exact previous list);
+// the Dashboard's Schedule filter passes its own list so "Private
+// Session" — which the calendar legend has always shown — is finally
+// selectable, and canonical values line up with the normalized
+// notification types.
+
 import { useEffect, useRef, useState } from "react";
 import "../styles/dropdown.css";
 
-const OPTIONS = [
+const DEFAULT_OPTIONS = [
   { value: "All", label: "All" },
   { value: "ASSIGNMENT", label: "Assignment" },
   { value: "SESSION", label: "Live Session" },
   { value: "QUIZ", label: "Quiz" },
 ];
 
-export default function DropdownMenu({ value = "All", onChange }) {
+export default function DropdownMenu({
+  value = "All",
+  onChange,
+  options = DEFAULT_OPTIONS,
+}) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
 
@@ -22,7 +35,7 @@ export default function DropdownMenu({ value = "All", onChange }) {
     return () => window.removeEventListener("mousedown", handler);
   }, []);
 
-  const activeLabel = OPTIONS.find((o) => o.value === value)?.label || value;
+  const activeLabel = options.find((o) => o.value === value)?.label || value;
 
   return (
     <div className="dd" ref={boxRef}>
@@ -37,7 +50,7 @@ export default function DropdownMenu({ value = "All", onChange }) {
 
       {open && (
         <div className="dd__menu">
-          {OPTIONS.map((opt) => (
+          {options.map((opt) => (
             <button
               key={opt.value}
               className={`dd__item ${value === opt.value ? "active" : ""}`}

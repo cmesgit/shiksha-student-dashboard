@@ -1,16 +1,32 @@
 // PLACEMENT: student_dashboard/src/skill/SkillBookTutor.jsx  (replace whole file)
-// (openMsg(t.teacher_id, t.name)) instead of the expert's name, so the WS DM opens.
+//
 // skill/SkillBookTutor.jsx — Book a Tutor (skillTab === "book").
+//
+// WHAT CHANGED (free-launch cleanup + payment seam)
+// ─────────────────────────────────────────────────
+//  • Fetches GET /skill/payment-config/ on mount. In free mode (today) the UI
+//    is one-tap booking with an honest "Free during launch" summary. If a paid
+//    mode ever comes back from the config before its UI ships, the confirm
+//    button disables with "Online payment coming soon" instead of lying.
+//    This is the seam: enabling payments later = implement the paid footer
+//    branch here, nothing else moves.
+//  • The "Pricing & packages" card (5-pack / 10-pack, Save 18%) is REMOVED —
+//    it advertised purchases the platform cannot take. `packs` import dropped;
+//    skillData.js can be deleted once nothing else imports it.
+//  • Booking summary shows tutor + slot + "Free during launch phase". The
+//    hourly rate stays visible on tutor chips as information about future
+//    pricing, not as a charge.
+//
 // Wired to:
-//   GET  /skill/student/experts/                  → expert list with availability
-//   GET  /skill/teachers/<id>/availability/        → that expert's open/booked slots
+//   GET  /skill/payment-config/                    → live payment mode
+//   GET  /skill/student/experts/                   → expert list
+//   GET  /skill/teachers/<id>/availability/        → open/booked slots
 //   POST /skill/payments/create-order/             → create booking (reserves slot)
 
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Icon } from "./skillIcons";
-import { Avatar, StarRow, inr } from "./skillUI";
-import { packs } from "./skillData";
+import { Avatar, StarRow } from "./skillUI";
 import { useAuth } from "../contexts/AuthContext";
 import * as AV from "./availability";
 
@@ -26,15 +42,21 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
   const [loading,    setLoading]    = useState(true);
   const [ti,         setTi]         = useState(0);
   const [slot,       setSlot]       = useState(null);
-  const [pk,         setPk]         = useState(1);
   const [avail,      setAvail]      = useState({ open: [], booked: [] });
   const [tick,       setTick]       = useState(0);
   const [confirmed,  setConfirmed]  = useState(null);
   const [booking,    setBooking]    = useState(false);
   const [bookErr,    setBookErr]    = useState("");
+  // Payment mode seam. Defaults to free so a config fetch failure never
+  // blocks booking during the free launch.
+  const [payCfg, setPayCfg] = useState({ provider: "free", is_free: true });
 
-  // Load expert list
+  // Load payment mode + expert list
   useEffect(() => {
+    api.get("/skill/payment-config/")
+      .then(r => setPayCfg({ provider: r.data.provider || "free", is_free: r.data.is_free !== false }))
+      .catch(() => {}); // keep free defaults
+
     api.get("/skill/student/experts/")
       .then(r => {
         const list = Array.isArray(r.data) ? r.data : [];
@@ -60,10 +82,10 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
       .catch(() => setAvail({ open: [], booked: [] }));  // expert hasn't set any slots yet
   }, [t?.id, tick]);
 
-  const pks = t ? packs(t.rate || 480) : packs(480);
+  const canBook = payCfg.is_free; // paid checkout UI ships with the payments launch
 
   const confirm = async () => {
-    if (!slot || !t) return;
+    if (!slot || !t || !canBook) return;
     setBooking(true);
     setBookErr("");
     try {
@@ -76,7 +98,7 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
           duration_mins: 60,
           mode: "online",
         },
-        method: "free",
+        method: payCfg.provider,
         amount: 0,
       });
       // Slot is now reserved server-side; refetch availability so the grid
@@ -167,7 +189,7 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
 
             <div style={{ display: "grid", gridTemplateColumns: `64px repeat(${AV.DAYS.length}, 1fr)`, gap: 6, alignItems: "center" }}>
               <div></div>
-              {AV.DAYS.map((d) => <div key={d} style={{ fontSize: 10.5, fontWeight: 700, color: "#6b7c83", textAlign: "center" }}>{d}</div>)}
+              {AV.dateLabels().map((d) => <div key={d} style={{ fontSize: 10.5, fontWeight: 700, color: "#6b7c83", textAlign: "center" }}>{d}</div>)}
               {AV.SLOTS.map((sl, si) => (
                 <div key={sl} style={{ display: "contents" }}>
                   <div style={{ fontSize: 10.5, fontWeight: 700, color: "#9aa9af", textAlign: "right", paddingRight: 4 }}>{sl}</div>
@@ -176,6 +198,7 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
                     const st = avail.booked.includes(k) ? "booked" : avail.open.includes(k) ? "open" : "closed";
                     if (st === "booked") return <button key={di} disabled className="slot booked" title="Already booked"><Icon.check size={11} /></button>;
                     if (st === "closed") return <button key={di} disabled className="slot off">—</button>;
+                    if (AV.isPastToday(di, si)) return <button key={di} disabled className="slot off" title="Time has passed today">—</button>;
                     return <button key={di} onClick={() => setSlot(k)} className={`slot ${slot === k ? "on" : ""}`} />;
                   })}
                 </div>
@@ -183,40 +206,39 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
             </div>
           </div>
 
-          {/* Packages + summary */}
+          {/* Booking summary */}
           <div style={{ flex: 1, minWidth: 210, display: "flex", flexDirection: "column", gap: 14 }}>
-            <div className="rd-card">
-              <h4>Pricing &amp; packages</h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                {pks.map((p, i) => (
-                  <button key={p.n} onClick={() => setPk(i)} className={`pack ${i === pk ? "on" : ""}`} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${i === pk ? ACC : "#cdbfa8"}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                      {i === pk && <span style={{ width: 9, height: 9, borderRadius: "50%", background: ACC }} />}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 800, color: "#1a1a1a" }}>{p.label}</div>
-                      <div style={{ fontSize: 10.5, color: "#999" }}>₹{p.per}/session{p.n > 1 ? ` · ${p.n} sessions` : ""}</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 800, color: "#1a2c33" }}>₹{inr(p.total)}</div>
-                      {p.save && <div style={{ fontSize: 9.5, fontWeight: 800, color: "#2f9d42" }}>{p.save}</div>}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className="rd-card" style={{ background: "#fff8f0", border: "1px solid #f3d9bd" }}>
               <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".4px", color: "#d97706", marginBottom: 8 }}>Booking summary</div>
               <div style={{ fontSize: 12.5, color: "#444", lineHeight: 1.8 }}>
                 <div><b>{t.name}</b> · {t.role}</div>
                 <div>{slot ? AV.label(slot) : "Pick a time slot above"}</div>
-                <div>{pks[pk].label} — ₹{inr(pks[pk].total)}</div>
+                <div>1-on-1 session · 60 min</div>
               </div>
-              <button onClick={confirm} disabled={!slot || booking}
-                style={{ width: "100%", marginTop: 12, background: slot ? ACC : "#e3dccf", color: "#fff", border: "none", borderRadius: 10, padding: "12px 0", fontSize: 13, fontWeight: 800, cursor: slot ? "pointer" : "not-allowed" }}>
-                {booking ? "Booking…" : slot ? "Confirm booking" : "Select a slot to continue"}
+
+              {/* Free-launch note — replaces the old packages/price rows. */}
+              {canBook ? (
+                <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 7, background: "#ecf8ee", border: "1px solid #bfe6c8", color: "#1f7a37", borderRadius: 8, padding: "8px 10px", fontSize: 11.5, fontWeight: 700 }}>
+                  Free during launch — no payment needed.
+                </div>
+              ) : (
+                <div style={{ marginTop: 10, background: "#fef9ec", border: "1px solid #f3d9bd", color: "#b45309", borderRadius: 8, padding: "8px 10px", fontSize: 11.5, fontWeight: 700 }}>
+                  Online payment is coming soon. Booking will open when it launches.
+                </div>
+              )}
+
+              <button onClick={confirm} disabled={!slot || booking || !canBook}
+                style={{ width: "100%", marginTop: 12, background: slot && canBook ? ACC : "#e3dccf", color: "#fff", border: "none", borderRadius: 10, padding: "12px 0", fontSize: 13, fontWeight: 800, cursor: slot && canBook ? "pointer" : "not-allowed" }}>
+                {booking ? "Booking…" : !canBook ? "Booking opens with payments" : slot ? "Confirm free booking" : "Select a slot to continue"}
               </button>
+            </div>
+
+            <div className="rd-card">
+              <div style={{ fontSize: 11.5, color: "#6b7c83", lineHeight: 1.7 }}>
+                The tutor reviews your request and accepts it — you'll see it move
+                from <b>Requested</b> to <b>Confirmed</b> in My Skill Sessions.
+                Rates shown are what sessions will cost once payments launch.
+              </div>
             </div>
           </div>
         </div>

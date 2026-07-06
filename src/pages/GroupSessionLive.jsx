@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
+import MobileAudioGate from "../components/live/MobileAudioGate";
 import groupSessionService, { extractApiError } from "../api/groupSessionService";
 import GroupSessionClassroomUI from "../components/live/GroupSessionClassroomUI";
 import { useAuth } from "../contexts/AuthContext";
@@ -239,6 +240,7 @@ export default function GroupSessionLive() {
           onEndSession={isHost ? handleEndSession : null}
         />
         <RoomAudioRenderer />
+        <MobileAudioGate />
       </LiveKitRoom>
     </div>
   );

@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
+import { LoadingState, EmptyState } from "../components/StateViews";
 import "../styles/subjectDetails.css";
 
 export default function SubjectDetails() {
@@ -10,15 +11,18 @@ export default function SubjectDetails() {
 
   const [subjectDetails, setSubjectDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [errStatus, setErrStatus] = useState(null);
 
   useEffect(() => {
     async function fetchSubjectDetails() {
       try {
         const res = await api.get(`/courses/subjects/${subjectId}/dashboard/`);
         setSubjectDetails(res.data);
+        setErrStatus(null);
       } catch (err) {
         console.error("Failed to load subject details", err);
         setSubjectDetails(null);
+        setErrStatus(err?.response?.status ?? 0);
       } finally {
         setLoading(false);
       }
@@ -27,8 +31,28 @@ export default function SubjectDetails() {
     if (subjectId) fetchSubjectDetails();
   }, [subjectId]);
 
-  if (loading) return <div className="subjectDetailsPage"><p>Loading subject...</p></div>;
-  if (!subjectDetails) return <div className="subjectDetailsPage"><p>Subject not found.</p></div>;
+  if (loading) return <div className="subjectDetailsPage"><LoadingState label="Loading subject" /></div>;
+  if (!subjectDetails) {
+    const notEnrolled = errStatus === 403;
+    return (
+      <div className="subjectDetailsPage">
+        <EmptyState
+          icon="book"
+          title={notEnrolled ? "You're not enrolled in this course" : "Subject not found"}
+          message={
+            notEnrolled
+              ? "This subject belongs to a course you don't have active access to. Enrol or renew your subscription to open it."
+              : "This subject may have been removed, or the link is out of date."
+          }
+          action={
+            notEnrolled
+              ? { label: "Browse courses", to: "/browse-courses" }
+              : { label: "Back to subjects", to: "/subjects" }
+          }
+        />
+      </div>
+    );
+  }
 
   const teachers = subjectDetails.teachers || [];
   const primaryTeacher = teachers[0];

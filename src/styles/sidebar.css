@@ -1,6 +1,6 @@
 .sidebar {
   width: 250px;
-  background: #015865;
+  background: var(--nav-bg, #425f7f);
   color: white;
   padding: 18px 16px;
   display: flex;
@@ -8,7 +8,88 @@
   height: 100vh;
   position: sticky;
   top: 0;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
 }
+
+.sidebar__sep {
+  height: 1px;
+  background: var(--nav-sep, rgba(255, 255, 255, 0.12));
+  margin: 10px 4px 8px;
+}
+
+/* ── Switch class (course switcher) ──────────────────────────────────── */
+.switch-class { margin-top: 4px; }
+.switch-class-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 13px;
+  color: #fff;
+  opacity: 0.92;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+.switch-class-btn:hover { background: rgba(255, 255, 255, 0.1); }
+.switch-class-btn--static { cursor: default; }
+.switch-class-btn--static:hover { background: transparent; }
+.switch-class-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.4);
+}
+.switch-class-btn svg {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.switch-class-btn__label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.switch-class-btn__caret { width: 14px; height: 14px; transition: transform 0.2s ease; }
+.switch-class-btn__caret.is-open { transform: rotate(180deg); }
+
+.class-dropdown {
+  margin: 4px 0 2px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.2s ease, opacity 0.2s ease;
+}
+.class-dropdown.open { max-height: 60vh; opacity: 1; overflow-y: auto; }
+.class-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 14px;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 12.5px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.85);
+  background: transparent;
+  border: none;
+  transition: background 0.12s ease;
+}
+.class-option:hover { background: rgba(255, 255, 255, 0.1); }
+.class-option.active { color: #ffd166; font-weight: 700; }
 
 .sidebar__brand {
   display: flex;
@@ -67,6 +148,8 @@
 .sidebar__link.active {
   background: rgba(255, 255, 255, 0.18);
   opacity: 1;
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 #ffd166;
 }
 
 .sidebar__subMenu {

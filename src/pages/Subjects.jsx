@@ -4,6 +4,7 @@ import { useCourse } from "../contexts/CourseContext";
 import api from "../api/apiClient";
 import SubjectCard from "../components/SubjectCard";
 import PageHeader from "../components/PageHeader";
+import { LoadingState, EmptyState } from "../components/StateViews";
 import "../styles/subjects.css";
 
 export default function Subjects({ mode }) {
@@ -72,8 +73,16 @@ export default function Subjects({ mode }) {
     fetchTaskCounts();
   }, [subjects, mode]);
 
-  if (loading) return <div>Loading subjects...</div>;
-  if (!activeCourse) return <div>No course selected.</div>;
+  if (loading) return <LoadingState label="Loading subjects" />;
+  if (!activeCourse)
+    return (
+      <EmptyState
+        icon="book"
+        title="No course selected"
+        message="Enrol in a course to see its subjects, assignments, and materials."
+        action={{ label: "Browse courses", to: "/browse-courses", icon: "search" }}
+      />
+    );
 
   return (
     <div className="subjectsPage">
@@ -86,7 +95,16 @@ export default function Subjects({ mode }) {
       <div className="subjectsBodyBox">
         <div className="subjectsGrid">
           {filteredSubjects.length === 0 ? (
-            <div>No subjects found.</div>
+            <EmptyState
+              plain
+              icon="book"
+              title={mode === "assignments" ? "No assignments yet" : "No subjects yet"}
+              message={
+                mode === "assignments"
+                  ? "Assignments will appear here once your teachers set them."
+                  : "Subjects for this course will show up here once they're added."
+              }
+            />
           ) : (
             filteredSubjects.map((subject) => (
               <SubjectCard

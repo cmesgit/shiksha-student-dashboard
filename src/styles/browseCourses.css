@@ -1,0 +1,254 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   browseCourses.css — the Academy "Browse Courses" shop.
+   Design tokens from shared/tokens.css (slate #425f7f, Montserrat/Poppins),
+   matching Learner_Academy_Dashboard.html.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Search + filter toolbar ─────────────────────────────────────────── */
+.shop-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 18px;
+}
+
+/* Labelled, horizontally-scrollable facet — scales to any number of boards or
+   streams without wrapping into a tall block. */
+.shop-facet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+.shop-facet__label {
+  flex-shrink: 0;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--ink-4, #9ca3af);
+}
+.shop-facet__row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.shop-facet__row::-webkit-scrollbar { display: none; }
+.shop-search {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+  max-width: 380px;
+}
+.shop-search svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+  stroke: var(--ink-4, #9ca3af);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.shop-search input {
+  width: 100%;
+  border: 1.5px solid #d7e3e5;
+  border-radius: 10px;
+  padding: 10px 12px 10px 34px;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 13px;
+  color: var(--ink, #1a2c33);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.shop-search input:focus {
+  border-color: var(--academy, #425f7f);
+  box-shadow: var(--focus-ring, 0 0 0 3px rgba(66, 95, 127, 0.18));
+}
+
+.shop-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.shop-chip {
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1.5px solid #dde6ee;
+  background: #fff;
+  color: var(--ink-3, #6b7c83);
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.shop-chip:hover { border-color: var(--academy, #425f7f); color: var(--academy, #425f7f); }
+.shop-chip.is-active {
+  background: var(--academy, #425f7f);
+  border-color: var(--academy, #425f7f);
+  color: #fff;
+}
+.shop-chip:focus-visible { outline: none; box-shadow: var(--focus-ring, 0 0 0 3px rgba(66, 95, 127, 0.3)); }
+
+/* ── Card ────────────────────────────────────────────────────────────── */
+.shop-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(26, 44, 51, 0.06));
+  padding: 18px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.shop-card:hover {
+  transform: translateY(-2px);
+  border-color: #cfdbe6;
+  box-shadow: 0 8px 22px rgba(66, 95, 127, 0.12);
+}
+.shop-card--owned { border-color: var(--success-border, #bfe6c8); }
+
+.shop-card__pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.shop-card__pill {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--academy, #425f7f);
+  background: var(--academy-soft, #e6edee);
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+.shop-card__owned {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--success, #2f9d42);
+  background: var(--success-soft, #ecf8ee);
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+.shop-card__title {
+  font-family: var(--font-display, "Montserrat", system-ui, sans-serif);
+  font-size: 15.5px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--ink, #1a2c33);
+  margin: 0 0 5px;
+}
+.shop-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-3, #6b7c83);
+  margin: 0 0 10px;
+}
+.shop-card__dot { opacity: 0.6; }
+.shop-card__desc {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-3, #6b7c83);
+  margin: 0 0 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.shop-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+.shop-card__price {
+  font-family: var(--font-display, "Montserrat", system-ui, sans-serif);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink, #1a2c33);
+}
+.shop-card__price--free { color: var(--success, #2f9d42); }
+
+.shop-card__btn {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--academy, #425f7f);
+  color: #fff;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+.shop-card__btn:hover:not(:disabled) { background: #344d68; }
+.shop-card__btn:disabled { background: var(--ink-4, #9ca3af); cursor: not-allowed; }
+.shop-card__btn:focus-visible { outline: none; box-shadow: var(--focus-ring, 0 0 0 3px rgba(66, 95, 127, 0.35)); }
+.shop-card__btn--ghost {
+  background: #fff;
+  color: var(--academy, #425f7f);
+  border: 1.5px solid #cdd8e3;
+}
+.shop-card__btn--ghost:hover:not(:disabled) { background: #eef2f7; }
+
+/* ── Skeleton card layout (loading) ──────────────────────────────────── */
+.shop-skel { padding: 18px; }
+.shop-skel > * + * { margin-top: 10px; }
+.shop-skel__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+/* ── Transient toast (enrol feedback) ────────────────────────────────── */
+.shop-toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%) translateY(70px);
+  background: var(--ink, #1a2c33);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  z-index: 9999;
+}
+.shop-toast.is-show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.shop-toast__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success, #2f9d42); flex-shrink: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .shop-toast { transition: opacity 0.2s ease; transform: translateX(-50%); }
+}

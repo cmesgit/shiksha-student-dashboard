@@ -3,7 +3,7 @@
 
 import { Icon } from "./skillIcons";
 
-const PAL = ["#0a808a", "#9c27b0", "#d97706", "#125027", "#b3402e", "#1b9c85", "#5b6ee0"];
+const PAL = ["#0a808a", "#9c27b0", "#d97706", "#6b2410", "#b3402e", "#b3402e", "#5b6ee0"];
 const initials = (name = "") =>
   name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 

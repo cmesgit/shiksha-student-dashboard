@@ -11,7 +11,7 @@
  *   - Added fullscreen <Route path="/skill-session/live/:id" element={<SkillSessionLive />} />  (NEW)
  */
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CourseProvider } from "./contexts/CourseContext";
 import { HOME_URL } from "./config/urls";
@@ -53,12 +53,16 @@ import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
 import MyCourses from "./pages/MyCourses";
+import BrowseCourses from "./pages/BrowseCourses";
+import MyCounselling from "./pages/counselling/MyCounselling";
+import CounsellingAssessment from "./pages/counselling/CounsellingAssessment";
 
 import {
   
   SkillSessionsPage,
   SkillBookPage,
   SkillExplorePage,
+  SkillReviewsPage,
 } from "./skill/SkillRoutes";
 
 
@@ -135,6 +139,18 @@ export default function App() {
 
               <Route path="my-courses" element={<MyCourses />} />
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
+              <Route path="browse-courses" element={<BrowseCourses />} />
+
+              {/* ── Counselling ──
+                  /counseling/* (US spelling) matches the backend's
+                  notification link_urls exactly, so bell clicks
+                  deep-link to the right appointment/report. */}
+              <Route path="counseling" element={<MyCounselling />} />
+              <Route path="counseling/appointments" element={<MyCounselling />} />
+              <Route path="counseling/appointments/:id" element={<MyCounselling />} />
+              <Route path="counseling/appointments/:id/assessment" element={<CounsellingAssessment />} />
+              <Route path="counseling/reports" element={<MyCounselling initialTab="reports" />} />
+              <Route path="counselling/*" element={<Navigate to="/counseling" replace />} />
 
               {/* ── Skill Dev ── */}
               
@@ -142,6 +158,7 @@ export default function App() {
               <Route path="skill-dev/sessions/:id" element={<SkillSessionDetail />} />
               <Route path="skill-dev/book" element={<SkillBookPage />} />
               <Route path="skill-dev/explore" element={<SkillExplorePage />} />
+              <Route path="skill-dev/reviews" element={<SkillReviewsPage />} />
             </Route>
 
             {/* Fullscreen live routes */}
