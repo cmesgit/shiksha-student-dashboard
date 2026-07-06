@@ -53,6 +53,7 @@ import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
 import MyCourses from "./pages/MyCourses";
+import BrowseCourses from "./pages/BrowseCourses";
 import MyCounselling from "./pages/counselling/MyCounselling";
 import CounsellingAssessment from "./pages/counselling/CounsellingAssessment";
 
@@ -138,6 +139,7 @@ export default function App() {
 
               <Route path="my-courses" element={<MyCourses />} />
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
+              <Route path="browse-courses" element={<BrowseCourses />} />
 
               {/* ── Counselling ──
                   /counseling/* (US spelling) matches the backend's

@@ -12,7 +12,7 @@
 // ──────────────────────────────────────────────────────────────────────────
 
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCourse } from "../contexts/CourseContext";
 import AcademyEmptyState from "../components/AcademyEmptyState";
 import Skeleton from "../components/Skeleton";
@@ -42,8 +42,18 @@ function SkeletonCard() {
 }
 
 export default function MyCourses() {
-  const { courses, loading } = useCourse();
+  const { courses, loading, selectCourse, activeCourse } = useCourse();
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
+
+  // Switch the whole dashboard's active-course context to the clicked course,
+  // then drop the learner into that course's subjects. This is the
+  // context-switcher behaviour: everything scoped to activeCourse (subjects,
+  // live sessions, study material…) follows the selection.
+  const switchToCourse = (courseId) => {
+    selectCourse(courseId);
+    navigate("/subjects");
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -111,7 +121,12 @@ export default function MyCourses() {
       ) : (
         <div className="ac-grid">
           {filtered.map((course) => (
-            <CourseCard key={course.id} course={course} />
+            <CourseCard
+              key={course.id}
+              course={course}
+              isActive={activeCourse?.id === course.id}
+              onSelect={() => switchToCourse(course.id)}
+            />
           ))}
         </div>
       )}
@@ -119,14 +134,28 @@ export default function MyCourses() {
   );
 }
 
-function CourseCard({ course }) {
+function CourseCard({ course, isActive, onSelect }) {
   const sub = course.subscription;
   const status = statusOf(sub);
   const board = course.board?.name;
   const stream = course.stream_name;
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onSelect?.();
+    }
+  };
+
   return (
-    <Link to={`/my-courses/${course.id}`} className="mc-card">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={handleKeyDown}
+      className={`mc-card mc-card--switch${isActive ? " mc-card--current" : ""}`}
+      aria-pressed={isActive}
+    >
       <div className="mc-card__top">
         <div className="mc-card__pills">
           {board && <span className="mc-card__pill">{board}</span>}
@@ -160,7 +189,18 @@ function CourseCard({ course }) {
         )}
       </div>
 
-      <span className="mc-card__cta">View course →</span>
-    </Link>
+      <div className="mc-card__foot">
+        <span className="mc-card__cta">
+          {isActive ? "Current course ✓" : "Switch to this course →"}
+        </span>
+        <Link
+          to={`/my-courses/${course.id}`}
+          className="mc-card__details"
+          onClick={(e) => e.stopPropagation()}
+        >
+          View details
+        </Link>
+      </div>
+    </div>
   );
 }

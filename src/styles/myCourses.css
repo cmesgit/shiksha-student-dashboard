@@ -86,3 +86,35 @@
   font-weight: 700;
   color: var(--academy, #425f7f);
 }
+
+/* ── Context-switcher cards (My Courses) ─────────────────────────────── */
+.mc-card--switch {
+  cursor: pointer;
+  text-align: left;
+  border: 1px solid transparent;
+  transition: box-shadow .15s ease, border-color .15s ease, transform .05s ease;
+}
+.mc-card--switch:hover { box-shadow: 0 6px 22px rgba(66, 95, 127, .14); }
+.mc-card--switch:active { transform: translateY(1px); }
+.mc-card--switch:focus-visible { outline: 2px solid #425f7f; outline-offset: 2px; }
+
+/* Currently active course */
+.mc-card--current {
+  border-color: #425f7f;
+  box-shadow: 0 0 0 1px #425f7f inset;
+}
+
+.mc-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+.mc-card__details {
+  font-size: 13px;
+  color: #64748b;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.mc-card__details:hover { color: #425f7f; text-decoration: underline; }

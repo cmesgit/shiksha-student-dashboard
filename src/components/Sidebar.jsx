@@ -19,7 +19,7 @@ import { RiLiveLine, RiLockLine, RiGroupLine, RiCompass3Line } from "react-icons
 import { FaChalkboardTeacher } from "react-icons/fa";
 import { AiOutlineFileDone, AiOutlineClose } from "react-icons/ai";
 import { FiHome, FiSearch, FiCalendar, FiBook, FiLayout, FiMessageCircle, FiShoppingBag, FiStar } from "react-icons/fi";
-import { HOME_URL, ACADEMY_BROWSE_URL } from "../config/urls";
+import { HOME_URL } from "../config/urls";
 
 /* ── Skill Dev design tokens ─────────────────────────────────────── */
 const SD = {
@@ -194,18 +194,11 @@ function AcademySidebar({ setMenuOpen }) {
           Counselling
         </NavLink>
 
-        {/* Purchasable course catalog lives on the marketing site; open it in
-            a new tab so the learner keeps their dashboard session. */}
-        <a
-          className="sidebar__link"
-          href={ACADEMY_BROWSE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => setMenuOpen(false)}
-        >
+        {/* In-dashboard purchasable course catalog. */}
+        <NavLink className="sidebar__link" to="/browse-courses" onClick={() => setMenuOpen(false)}>
           <span className="sidebar__icon"><FiShoppingBag /></span>
           Browse Courses
-        </a>
+        </NavLink>
       </nav>
 
       <div className="sidebar__bottom">
