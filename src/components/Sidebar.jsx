@@ -4,6 +4,14 @@
 // Changes from previous version:
 //   - Added FiMessageCircle to the react-icons/fi import
 //   - Added a "MESSAGES" nav item in SD_NAV pointing to /skill-messages
+//   - Communication Center closure: added a "Messages" nav item to the
+//     Academy sidebar too, pointing to /chat. Previously chat was reachable
+//     from Academy only contextually (Teachers list, a course's "Message
+//     teacher" button, TeacherDetail) with no persistent nav entry at all —
+//     the cross-cutting gap the closure report calls "chat was a feature
+//     bolted on, not a section of the product." /skill-messages is left
+//     exactly as-is (unchanged) since it also carries the landing page's
+//     ?teacherProfileId=&draft= query-string handoff.
 //   - Everything else is identical
 
 import { NavLink, useLocation } from "react-router-dom";
@@ -193,6 +201,11 @@ function AcademySidebar({ setMenuOpen }) {
         <NavLink className="sidebar__link" to="/teachers" onClick={() => setMenuOpen(false)}>
           <span className="sidebar__icon"><FaChalkboardTeacher /></span>
           Teachers
+        </NavLink>
+
+        <NavLink className="sidebar__link" to="/chat" onClick={() => setMenuOpen(false)}>
+          <span className="sidebar__icon"><FiMessageCircle /></span>
+          Messages
         </NavLink>
 
         <NavLink className="sidebar__link" to="/counseling" onClick={() => setMenuOpen(false)}>

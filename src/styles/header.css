@@ -369,6 +369,24 @@ text-align: center;
   overflow-y: auto;
 }
 
+.notif-bell-seeall {
+  display: block;
+  width: 100%;
+  border: none;
+  border-top: 1px solid #f3f4f6;
+  background: #fafafa;
+  color: #b3402e;
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 11px 16px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.notif-bell-seeall:hover {
+  background: #f3f4f6;
+}
+
 .notif-bell-empty {
   padding: 24px;
   text-align: center;
