@@ -53,6 +53,7 @@ import Quiz from "./pages/Quiz";
 import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
+import Progress from "./pages/Progress";
 import MyCourses from "./pages/MyCourses";
 import BrowseCourses from "./pages/BrowseCourses";
 import MyCounselling from "./pages/counselling/MyCounselling";
@@ -141,6 +142,7 @@ export default function App() {
 
               <Route path="my-courses" element={<MyCourses />} />
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
+              <Route path="my-courses/:courseId/progress" element={<Progress />} />
               <Route path="browse-courses" element={<BrowseCourses />} />
 
               {/* ── Counselling ──

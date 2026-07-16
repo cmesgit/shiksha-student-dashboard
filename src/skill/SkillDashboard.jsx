@@ -23,8 +23,8 @@ function Stat({ icon, value, label, loading }) {
 }
 
 const EMPTY = {
-  stats: { enrolled_count: 0, lessons_done: 0, hours_learned: 0, upcoming_count: 0 },
-  skill_courses: [], upcoming_sessions: [], experts: [],
+  stats: { lessons_done: 0, hours_learned: 0, upcoming_count: 0 },
+  upcoming_sessions: [], experts: [],
 };
 
 export default function SkillDashboard({ setTab = () => {}, openMsg = () => {} }) {
@@ -39,47 +39,16 @@ export default function SkillDashboard({ setTab = () => {}, openMsg = () => {} }
       .finally(() => setLoading(false));
   }, []);
 
-  const { stats, skill_courses, upcoming_sessions, experts } = data;
-  const lead = skill_courses[0];
+  const { stats, upcoming_sessions, experts } = data;
 
   return (
     <div style={{ padding: "14px 18px 22px", overflow: "auto", flex: 1 }}>
       {/* Stats row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 13 }}>
-        <Stat loading={loading} icon={<Icon.cap size={16} />}   value={stats.enrolled_count}  label="Enrolled" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 13 }}>
         <Stat loading={loading} icon={<Icon.check size={16} />} value={stats.lessons_done}    label="Lessons done" />
         <Stat loading={loading} icon={<Icon.clock size={16} />} value={`${stats.hours_learned}h`} label="Hours learned" />
         <Stat loading={loading} icon={<Icon.cal size={16} />}   value={stats.upcoming_count}  label="Upcoming" />
       </div>
-
-      {/* Continue where you left off */}
-      {lead && (
-        <div className="rd-card" style={{ marginBottom: 13, background: "linear-gradient(105deg,#2a1c0b,#46300f)", border: "none", color: "#fff" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-            <Avatar name={lead.expert} img={lead.img} size={52} radius={12} />
-            <div style={{ flex: 1, minWidth: 190 }}>
-              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".5px", textTransform: "uppercase", color: "#ffb968" }}>Continue where you left off</div>
-              <div style={{ fontSize: 15, fontWeight: 800, marginTop: 3 }}>{lead.title}</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,.7)", marginTop: 2 }}>{lead.resume.mod} · {lead.resume.lesson}</div>
-              <div style={{ marginTop: 9, height: 6, borderRadius: 100, background: "rgba(255,255,255,.18)", maxWidth: 360, overflow: "hidden" }}>
-                <div style={{ width: `${lead.pct}%`, height: "100%", background: ACC, borderRadius: 100 }} />
-              </div>
-            </div>
-            <button onClick={() => setTab("courses")} style={{ background: ACC, color: "#fff", border: "none", borderRadius: 10, padding: "11px 18px", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7 }}>
-              <Icon.vid size={15} /> Resume
-            </button>
-          </div>
-        </div>
-      )}
-
-      {!lead && !loading && (
-        <div className="rd-card" style={{ marginBottom: 13, textAlign: "center", padding: "24px 16px" }}>
-          <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>You're not enrolled in any courses yet.</div>
-          <button onClick={() => setTab("explore")} style={{ background: ACC, color: "#fff", border: "none", borderRadius: 10, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            Explore experts →
-          </button>
-        </div>
-      )}
 
       {/* Next up */}
       <div className="rd-card" style={{ marginBottom: 13 }}>
@@ -126,7 +95,7 @@ export default function SkillDashboard({ setTab = () => {}, openMsg = () => {} }
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 12.5, fontWeight: 700, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.name}</div>
                   <div style={{ fontSize: 10.5, color: "#999", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <Icon.star size={10} /> {t.rating ?? "—"} · ₹{t.rate}
+                    <Icon.star size={10} /> {t.rating ?? "—"}
                   </div>
                 </div>
               </div>

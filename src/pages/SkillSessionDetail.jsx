@@ -94,7 +94,6 @@ function ExpertCard({ expert, onMessage }) {
         <div style={{ fontSize: 12, color: T.soft, marginTop: 2 }}>{expert.title}</div>
         <div style={{ display: "flex", gap: 10, marginTop: 6, fontSize: 11.5 }}>
           {expert.rating && <span style={{ color: "#f59e0b", fontWeight: 700 }}>★ {expert.rating}</span>}
-          <span style={{ color: T.soft }}>₹{expert.rate}/hr</span>
           {expert.cat && <span style={{ color: T.soft }}>{expert.cat}</span>}
         </div>
       </div>
@@ -203,7 +202,6 @@ export default function SkillSessionDetail() {
   const isCompleted = s.status === "completed";
   const isCancelled = s.status === "cancelled";
   const isRequested = s.status === "requested";
-  const amountRs    = s.amount ? Math.round(s.amount / 100) : 0;
 
   return (
     <div style={{ padding: "16px 18px 32px", fontFamily: "Poppins, sans-serif", maxWidth: 680, margin: "0 auto" }}>
@@ -249,51 +247,33 @@ export default function SkillSessionDetail() {
             <a href={s.meeting_url} target="_blank" rel="noreferrer" style={{ color: T.teal, fontWeight: 700 }}>Join meeting room ↗</a>
           } />
         )}
-        <Row icon="💳" label="Payment" value={
-          s.settlement === "direct"
-            ? (amountRs === 0 ? "Arrange directly with expert" : `₹${s.amount_rupees ?? amountRs} · pay the expert directly`)
-            : (amountRs === 0 ? "Free" : `₹${amountRs} · ${s.payment_status}`)
-        } />
         <div style={{ padding: "11px 0" }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: T.soft, textTransform: "uppercase", letterSpacing: ".4px", marginBottom: 2 }}>Booking ID</div>
           <div style={{ fontSize: 12, fontFamily: "monospace", color: T.soft }}>{s.booking_ref}</div>
         </div>
       </div>
 
-      {/* Pay the expert directly (P2P) — shown when the expert has set a payee */}
-      {s.settlement === "direct" && s.pay_to && (s.pay_to.upi || s.pay_to.name) && (
-        <div style={{ background: T.tealBg, borderRadius: 16, border: `1px solid ${T.teal}33`, padding: "16px 18px", marginBottom: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: T.teal, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>
-            Pay the expert directly
-          </div>
-          <div style={{ fontSize: 12.5, color: T.soft, lineHeight: 1.5, marginBottom: 12 }}>
-            ShikshaCom doesn't handle this payment — send {s.amount_rupees ? `₹${s.amount_rupees}` : "the agreed amount"} straight to the expert and confirm over chat.
-          </div>
-          {s.pay_to.upi && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "#fff", border: `1px solid ${T.border}`, borderRadius: 10, padding: "11px 14px" }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: T.ink }}>{s.pay_to.upi}</div>
-                <div style={{ fontSize: 11.5, color: T.soft }}>{s.pay_to.name}</div>
-              </div>
-              <button
-                onClick={() => { try { navigator.clipboard.writeText(s.pay_to.upi); } catch {} }}
-                style={{ all: "unset", cursor: "pointer", flexShrink: 0, background: T.tealBg, color: T.teal, border: `1px solid ${T.teal}33`, borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 700 }}
-              >
-                Copy
-              </button>
-            </div>
-          )}
-          {s.pay_to.note && (
-            <div style={{ fontSize: 11.5, color: T.soft, marginTop: 8 }}>Note: {s.pay_to.note}</div>
-          )}
-        </div>
-      )}
-
       {/* Expert */}
       <div style={{ marginBottom: 14 }}>
         <div style={{ fontSize: 10.5, fontWeight: 700, color: T.soft, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>Expert</div>
         <ExpertCard expert={s.expert} onMessage={handleMessage} />
       </div>
+
+      {/* Intro video */}
+      {s.expert?.intro_video_embed_url && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, color: T.soft, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>Intro video</div>
+          <div style={{ background: "#fff", borderRadius: 14, border: `1px solid ${T.border}`, overflow: "hidden" }}>
+            <iframe
+              src={s.expert.intro_video_embed_url}
+              title="Expert intro"
+              style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

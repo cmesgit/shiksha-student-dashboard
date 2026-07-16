@@ -11,6 +11,20 @@
   gap: 2px;
 }
 
+.progressBack {
+  align-self: flex-start;
+  background: #0a808a;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+.progressBack:hover { background: #097a83; }
+
 .progressHeaderBox {
   width: 100%;
   background: #fff;

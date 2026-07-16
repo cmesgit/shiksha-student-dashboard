@@ -27,6 +27,10 @@ export default function ControlBar({
   const [canVideo, setCanVideo] = useState(false);
   const [otherOpen, setOtherOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [micBusy, setMicBusy] = useState(false);
+  const [videoBusy, setVideoBusy] = useState(false);
+  const [micError, setMicError] = useState("");
+  const [videoError, setVideoError] = useState("");
 
   const [elapsed, setElapsed] = useState(0);
   const startRef = useRef(Date.now());
@@ -82,18 +86,40 @@ export default function ControlBar({
   const toggleMic = async () => {
     if (!localParticipant) return;
     if (gated && !canUnmute && !micOn) return;
+    if (micBusy) return;
+    setMicBusy(true);
+    setMicError("");
     const next = !micOn;
-    await localParticipant.setMicrophoneEnabled(next);
-    setMicOn(next);
+    try {
+      await localParticipant.setMicrophoneEnabled(next);
+      setMicOn(next);
+    } catch (e) {
+      console.error("Failed to toggle microphone:", e);
+      setMicError("Couldn't access mic");
+      setTimeout(() => setMicError(""), 3000);
+    } finally {
+      setMicBusy(false);
+    }
   };
 
   /* ── video ── */
   const toggleVideo = async () => {
     if (!localParticipant) return;
     if (gated && !canVideo && !videoOn) return;
+    if (videoBusy) return;
+    setVideoBusy(true);
+    setVideoError("");
     const next = !videoOn;
-    await localParticipant.setCameraEnabled(next);
-    setVideoOn(next);
+    try {
+      await localParticipant.setCameraEnabled(next);
+      setVideoOn(next);
+    } catch (e) {
+      console.error("Failed to toggle camera:", e);
+      setVideoError("Couldn't access camera");
+      setTimeout(() => setVideoError(""), 3000);
+    } finally {
+      setVideoBusy(false);
+    }
   };
 
   /* ── screen share ── */
@@ -203,7 +229,8 @@ export default function ControlBar({
         <button
           className="cb-btn"
           onClick={toggleMic}
-          title={micOn ? "Mute" : "Unmute"}
+          disabled={micBusy}
+          title={micError || (micOn ? "Mute" : "Unmute")}
         >
           <div className={`cb-icon ${micOn ? "" : "cb-icon--off"}`}>
             {micOn ? (
@@ -223,14 +250,15 @@ export default function ControlBar({
               </svg>
             )}
           </div>
-          <span className="cb-label">{micOn ? "Mute" : "Unmute"}</span>
+          <span className="cb-label">{micError || (micOn ? "Mute" : "Unmute")}</span>
         </button>
 
         {/* Video */}
         <button
           className="cb-btn"
           onClick={toggleVideo}
-          title={videoOn ? "Turn off camera" : "Turn on camera"}
+          disabled={videoBusy}
+          title={videoError || (videoOn ? "Turn off camera" : "Turn on camera")}
         >
           <div className={`cb-icon ${videoOn ? "" : "cb-icon--off"}`}>
             {videoOn ? (
@@ -245,7 +273,7 @@ export default function ControlBar({
               </svg>
             )}
           </div>
-          <span className="cb-label">Video</span>
+          <span className="cb-label">{videoError || "Video"}</span>
         </button>
 
         {/* Screen Share */}

@@ -123,13 +123,6 @@ function SkillDevSidebar({ setMenuOpen }) {
 
 /* ── Academy sidebar (unchanged) ────────────────────────────────── */
 function AcademySidebar({ setMenuOpen }) {
-  const location = useLocation();
-
-  const isSubjectsActive =
-    location.pathname.startsWith("/subjects") ||
-    location.pathname.startsWith("/assignments") ||
-    location.pathname.startsWith("/study-material");
-
   return (
     <aside className="sidebar">
       <div className="sidebar__top">
@@ -166,22 +159,20 @@ function AcademySidebar({ setMenuOpen }) {
           Subjects
         </NavLink>
 
-        {isSubjectsActive && (
-          <div className="sidebar__subMenu">
-            <NavLink className="sidebar__subLink" to="/assignments" onClick={() => setMenuOpen(false)}>
-              <FaClipboardList /> <span>Assignments</span>
-            </NavLink>
-            <NavLink className="sidebar__subLink" to="/subjects/quiz" onClick={() => setMenuOpen(false)}>
-              <AiOutlineFileDone /> <span>Quiz</span>
-            </NavLink>
-            <NavLink className="sidebar__subLink" to="/subjects/recordings" onClick={() => setMenuOpen(false)}>
-              <BiVideo /> <span>Recordings</span>
-            </NavLink>
-            <NavLink className="sidebar__subLink" to="/study-material" onClick={() => setMenuOpen(false)}>
-              <FaBookOpen /> <span>Study Material</span>
-            </NavLink>
-          </div>
-        )}
+        <div className="sidebar__subMenu">
+          <NavLink className="sidebar__subLink" to="/assignments" onClick={() => setMenuOpen(false)}>
+            <FaClipboardList /> <span>Assignments</span>
+          </NavLink>
+          <NavLink className="sidebar__subLink" to="/subjects/quiz" onClick={() => setMenuOpen(false)}>
+            <AiOutlineFileDone /> <span>Quiz</span>
+          </NavLink>
+          <NavLink className="sidebar__subLink" to="/subjects/recordings" onClick={() => setMenuOpen(false)}>
+            <BiVideo /> <span>Recordings</span>
+          </NavLink>
+          <NavLink className="sidebar__subLink" to="/study-material" onClick={() => setMenuOpen(false)}>
+            <FaBookOpen /> <span>Study Material</span>
+          </NavLink>
+        </div>
 
         <NavLink className="sidebar__link" to="/live-sessions" onClick={() => setMenuOpen(false)}>
           <span className="sidebar__icon"><RiLiveLine /></span>

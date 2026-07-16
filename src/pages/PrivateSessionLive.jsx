@@ -4,6 +4,7 @@ import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import { useAuth } from "../contexts/AuthContext";
 import privateSession from "../api/privateSessionService";
 import PrivateClassroomUI from "../components/live/PrivateClassroomUI";
+import ReconnectingBanner from "../components/live/ReconnectingBanner";
 import "../styles/privateSessions.css";
 
 const fullscreenWrap = {
@@ -137,6 +138,7 @@ export default function PrivateSessionLive() {
         style={liveKitWrap}
         onDisconnected={() => navigate("/private-sessions")}
       >
+        <ReconnectingBanner />
         <PrivateClassroomUI
           role="STUDENT"
           sessionId={id}
