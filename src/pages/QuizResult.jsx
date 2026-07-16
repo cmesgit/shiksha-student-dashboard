@@ -1,8 +1,49 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
 import "../styles/quiz.css";
+import "../styles/quiz-result-analytics.css";
+
+const DIFF_LABEL = { easy: "Easy", medium: "Medium", hard: "Hard" };
+const DIFF_ORDER = { easy: 0, medium: 1, hard: 2 };
+
+function MistakesReview({ questions, onClose }) {
+  const [idx, setIdx] = useState(0);
+  const q = questions[idx];
+  if (!q) return null;
+
+  return (
+    <div className="quizModalOverlay">
+      <div className="mrCard">
+        <div className="mrHeader">
+          <span>Reviewing mistake {idx + 1} of {questions.length}</span>
+          <button className="mrClose" onClick={onClose}>✕</button>
+        </div>
+        <p className="mrQuestionText">{q.text}</p>
+        <div className="mrAnswerRow mrAnswerRow--wrong">✗ Your answer: {q.selected_choice}</div>
+        <div className="mrAnswerRow mrAnswerRow--correct">✓ Correct answer: {q.correct_choice}</div>
+        {q.explanation && (
+          <div className="mrExplanation"><strong>Why:</strong> {q.explanation}</div>
+        )}
+        <div className="mrFooter">
+          <button
+            className="quiz-btn-cancel"
+            onClick={() => setIdx((i) => Math.max(0, i - 1))}
+            disabled={idx === 0}
+          >
+            ← Previous
+          </button>
+          {idx === questions.length - 1 ? (
+            <button className="quiz-btn-exit" onClick={onClose}>Done</button>
+          ) : (
+            <button className="quiz-btn-exit" onClick={() => setIdx((i) => i + 1)}>Next →</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function QuizResult() {
   const navigate = useNavigate();
@@ -12,7 +53,8 @@ export default function QuizResult() {
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState(null);
   const [openExplanation, setOpenExplanation] = useState({});
-  const [showReattemptModal, setShowReattemptModal] = useState(false); // NEW
+  const [showReattemptModal, setShowReattemptModal] = useState(false);
+  const [showMistakes, setShowMistakes] = useState(false);
 
   const toggleExplanation = (id) => {
     setOpenExplanation(prev => ({ ...prev, [id]: !prev[id] }));
@@ -21,7 +63,8 @@ export default function QuizResult() {
   const handleReattempt = async () => {
     try {
       await api.post(`/quizzes/${quizId}/start/`);
-      navigate(`/subjects/quiz/${subjectId}/take/${quizId}`);
+      const path = resultData?.quiz_type === "practice" ? "practice" : "take";
+      navigate(`/subjects/quiz/${subjectId}/${path}/${quizId}`);
     } catch (err) {
       console.error("Failed to reattempt quiz:", err);
       alert("Unable to start reattempt");
@@ -45,6 +88,17 @@ export default function QuizResult() {
     fetchResult();
   }, [quizId]);
 
+  const wrongQuestions = useMemo(() => {
+    if (!resultData) return [];
+    const wrongIds = new Set(resultData.wrong_question_ids || []);
+    return resultData.questions.filter((q) => wrongIds.has(q.id));
+  }, [resultData]);
+
+  const maxTimeSpent = useMemo(() => {
+    if (!resultData) return 1;
+    return Math.max(1, ...resultData.questions.map((q) => q.time_spent_seconds || 0));
+  }, [resultData]);
+
   if (loading) return <div className="quizResultPage">Loading result...</div>;
   if (error)   return <div className="quizResultPage">{error}</div>;
   if (!resultData) return null;
@@ -53,6 +107,12 @@ export default function QuizResult() {
   const correct   = resultData.questions.filter(q => q.is_correct).length;
   const incorrect = total - correct;
   const pct       = Math.round((correct / total) * 100);
+
+  const topicBreakdown = resultData.topic_breakdown || [];
+  const difficultyBreakdown = [...(resultData.difficulty_breakdown || [])].sort(
+    (a, b) => (DIFF_ORDER[a.difficulty] ?? 9) - (DIFF_ORDER[b.difficulty] ?? 9)
+  );
+  const scoreTrend = resultData.score_trend || [];
 
   return (
     <div className="quizResultPage">
@@ -120,8 +180,109 @@ export default function QuizResult() {
           ))}
         </div>
 
+        {/* ── Class comparison ── */}
+        <div className="qraCompareRow">
+          <span>Class average: <strong>{resultData.class_avg_percent}%</strong></span>
+          <span>You're in the top <strong>{resultData.percentile}%</strong> of attempts</span>
+        </div>
+
+        {/* ── Score trend ── */}
+        {scoreTrend.length >= 2 && (
+          <div className="qraCard">
+            <div className="qraCardTitle">Score trend</div>
+            <div className="qraCardSub">Last {scoreTrend.length} attempts · {resultData.subject_name}</div>
+            <svg viewBox="0 0 640 120" width="100%" height="120" preserveAspectRatio="none" className="qraTrendSvg">
+              {(() => {
+                const n = scoreTrend.length;
+                const toPts = (key) => scoreTrend
+                  .map((p, i) => `${(i / (n - 1 || 1)) * 620 + 10},${110 - (p[key] / 100) * 100}`)
+                  .join(" ");
+                return (
+                  <>
+                    <polyline points={toPts("class_avg_pct")} fill="none" stroke="#c7d0d6" strokeWidth="2" strokeDasharray="5 5" />
+                    <polyline points={toPts("pct")} fill="none" stroke="#425f7f" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+                  </>
+                );
+              })()}
+            </svg>
+            <div className="qraTrendLegend">
+              <span><span className="qraDot qraDot--you" /> You</span>
+              <span><span className="qraDot qraDot--avg" /> Class average</span>
+            </div>
+          </div>
+        )}
+
+        {/* ── Analytics grid ── */}
+        <div className="qraGrid">
+          {topicBreakdown.length > 0 && (
+            <div className="qraCard">
+              <div className="qraCardTitle">Topic strengths</div>
+              <div className="qraBarList">
+                {topicBreakdown.map((t) => (
+                  <div key={t.topic} className="qraBarRow">
+                    <div className="qraBarRowTop">
+                      <span>{t.topic}</span>
+                      <span className={t.pct < 65 ? "qraWeak" : "qraStrong"}>{t.pct}%</span>
+                    </div>
+                    <div className="qraTrack">
+                      <div
+                        className={`qraFill ${t.pct < 65 ? "qraFill--weak" : "qraFill--strong"}`}
+                        style={{ width: `${t.pct}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {difficultyBreakdown.length > 0 && (
+            <div className="qraCard">
+              <div className="qraCardTitle">Accuracy by difficulty</div>
+              <div className="qraDiffBars">
+                {difficultyBreakdown.map((d) => (
+                  <div key={d.difficulty} className="qraDiffCol">
+                    <div className="qraDiffPct">{d.pct}%</div>
+                    <div
+                      className={`qraDiffBar qraDiffBar--${d.difficulty}`}
+                      style={{ height: `${Math.max(6, d.pct * 0.9)}px` }}
+                    />
+                    <div className="qraDiffLabel">{DIFF_LABEL[d.difficulty] || d.difficulty}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="qraCard">
+            <div className="qraCardTitle">Time per question</div>
+            <div className="qraTimeList">
+              {resultData.questions.map((q, i) => (
+                <div key={q.id} className="qraTimeRow">
+                  <span className="qraTimeQ">Q{i + 1}</span>
+                  <div className="qraTrack qraTrack--time">
+                    <div
+                      className={`qraFill ${q.time_spent_seconds > maxTimeSpent * 0.75 ? "qraFill--slow" : "qraFill--strong"}`}
+                      style={{ width: `${Math.min(100, (q.time_spent_seconds / maxTimeSpent) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="qraTimeSecs">{q.time_spent_seconds || 0}s</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* ── Questions ── */}
         <div className="quizDetailQuestions">
+          <div className="qraQuestionsHeader">
+            <span>Question review</span>
+            {wrongQuestions.length > 0 && (
+              <button className="qraRetryBtn" onClick={() => setShowMistakes(true)}>
+                ↻ Practice my {wrongQuestions.length} mistake{wrongQuestions.length > 1 ? "s" : ""}
+              </button>
+            )}
+          </div>
           {resultData.questions.map((q, index) => (
             <div
               key={q.id}
@@ -140,6 +301,16 @@ export default function QuizResult() {
                   Ans: {q.correct_choice}
                 </span>
               </div>
+
+              {(q.topic || q.difficulty) && (
+                <div className="qraQuestionMeta">
+                  {q.topic && <span className="qraMetaChip">{q.topic}</span>}
+                  {q.difficulty && <span className="qraMetaChip qraMetaChip--muted">{DIFF_LABEL[q.difficulty] || q.difficulty}</span>}
+                  {typeof q.time_spent_seconds === "number" && (
+                    <span className="qraMetaChip qraMetaChip--muted">{q.time_spent_seconds}s</span>
+                  )}
+                </div>
+              )}
 
               <div className={`quizResultAnswerPill ${q.is_correct ? "quizResultAnswerPill--correct" : "quizResultAnswerPill--wrong"}`}>
                 {q.is_correct ? "✓" : "✗"} Your Answer: {q.selected_choice}
@@ -194,6 +365,10 @@ export default function QuizResult() {
     </div>
   </div>
 )}
+
+      {showMistakes && wrongQuestions.length > 0 && (
+        <MistakesReview questions={wrongQuestions} onClose={() => setShowMistakes(false)} />
+      )}
     </div>
   );
 }

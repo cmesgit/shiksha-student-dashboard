@@ -9,6 +9,7 @@ export default function QuizAttempts() {
 
   const [attempts, setAttempts] = useState([]);
   const [quizTitle, setQuizTitle] = useState("");
+  const [quizType, setQuizType] = useState("mock");
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
   const [starting, setStarting] = useState(false);
@@ -22,6 +23,7 @@ export default function QuizAttempts() {
         const res = await api.get(`/student/quizzes/${quizId}/attempts/`);
         setAttempts(res.data.attempts ?? res.data);
         setQuizTitle(res.data.title ?? "");
+        setQuizType(res.data.quiz_type ?? "mock");
       } catch (err) {
         console.error("Failed to load attempts:", err);
         setError("Unable to load attempts.");
@@ -36,7 +38,8 @@ export default function QuizAttempts() {
     try {
       setStarting(true);
       await api.post(`/quizzes/${quizId}/start/`);
-      navigate(`/subjects/quiz/${subjectId}/take/${quizId}`);
+      const path = quizType === "practice" ? "practice" : "take";
+      navigate(`/subjects/quiz/${subjectId}/${path}/${quizId}`);
     } catch (err) {
       const msg = err.response?.data?.detail || "Unable to start reattempt.";
       alert(msg);

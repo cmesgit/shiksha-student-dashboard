@@ -111,6 +111,7 @@ export default function QuizDetail() {
   const [error, setError]                = useState(null);
   const [timeLeft, setTimeLeft]          = useState(null);
   const [palette, setPalette]            = useState({});
+  const [marked, setMarked]              = useState({});
   const [showExitModal, setShowExitModal] = useState(false);
   const [quizReady, setQuizReady]        = useState(false);
 
@@ -120,6 +121,21 @@ export default function QuizDetail() {
   const durationRef   = useRef(null);
   const startTimeRef  = useRef(null);
   const attemptKeyRef = useRef("1"); // will be set to attempt_number from backend
+  const timeSpentRef  = useRef({});  // questionId -> accumulated seconds (results "time per question")
+  const questionEnteredAtRef = useRef(Date.now());
+  const markedRef = useRef({});
+  const currentIndexRef = useRef(0);
+  const shuffledQuestionsRef = useRef([]);
+
+  const flushTimeSpent = () => {
+    const qs = shuffledQuestionsRef.current;
+    if (!qs.length) return;
+    const qId = qs[currentIndexRef.current]?.id;
+    if (!qId) return;
+    const elapsed = Math.round((Date.now() - questionEnteredAtRef.current) / 1000);
+    timeSpentRef.current[qId] = (timeSpentRef.current[qId] || 0) + Math.max(0, elapsed);
+    questionEnteredAtRef.current = Date.now();
+  };
 
   // ── fetch + start ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -164,6 +180,7 @@ export default function QuizDetail() {
           attemptNumber
         );
         setShuffled(shuffled);
+        shuffledQuestionsRef.current = shuffled;
 
         // Initialise palette
         const init = {};
@@ -198,6 +215,7 @@ export default function QuizDetail() {
         }
 
         setTimeLeft(remaining);
+        questionEnteredAtRef.current = Date.now();
         setQuizReady(true);
       } catch (err) {
         setError(err.response?.data?.detail || "Unable to load quiz.");
@@ -286,11 +304,14 @@ export default function QuizDetail() {
   const handleAutoSubmit = useCallback(async () => {
     // Don't submit if student navigated away — they can resume later
     if (!mountedRef.current) return;
+    flushTimeSpent();
+    const buildFormatted = () => Object.entries(answersRef.current).map(([q, c]) => ({
+      question: q, selected_choice: c,
+      time_spent: timeSpentRef.current[q] || 0,
+      marked_for_review: !!markedRef.current[q],
+    }));
     try {
-      const formatted = Object.entries(answersRef.current).map(([q, c]) => ({
-        question: q, selected_choice: c,
-      }));
-      await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
+      await api.post(`/student/quizzes/${quizId}/submit/`, { answers: buildFormatted() });
       localStorage.removeItem(`quiz_${quizId}_start`);
       navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
     } catch (err) {
@@ -298,10 +319,7 @@ export default function QuizDetail() {
       setTimeout(async () => {
         if (!mountedRef.current) return;
         try {
-          const formatted = Object.entries(answersRef.current).map(([q, c]) => ({
-            question: q, selected_choice: c,
-          }));
-          await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
+          await api.post(`/student/quizzes/${quizId}/submit/`, { answers: buildFormatted() });
           localStorage.removeItem(`quiz_${quizId}_start`);
           navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
         } catch (retryErr) {
@@ -345,12 +363,24 @@ export default function QuizDetail() {
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   const goTo = (idx) => {
+    flushTimeSpent();
     const qId = shuffledQuestions[idx].id;
     setPalette(p => ({
       ...p,
       [qId]: p[qId] === S.NOT_VISITED ? S.NOT_ANSWERED : p[qId],
     }));
+    currentIndexRef.current = idx;
     setCurrentIndex(idx);
+  };
+
+  const toggleMark = () => {
+    const qId = shuffledQuestions[currentIndex]?.id;
+    if (!qId) return;
+    setMarked(m => {
+      const next = { ...m, [qId]: !m[qId] };
+      markedRef.current = next;
+      return next;
+    });
   };
 
   const handleAnswerChange = (questionId, choiceId) => {
@@ -401,8 +431,11 @@ export default function QuizDetail() {
     try {
       setSubmitting(true);
       setError(null);
+      flushTimeSpent();
       const formatted = Object.entries(answers).map(([q, c]) => ({
         question: q, selected_choice: c,
+        time_spent: timeSpentRef.current[q] || 0,
+        marked_for_review: !!markedRef.current[q],
       }));
       await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
       localStorage.removeItem(`quiz_${quizId}_start`);
@@ -450,7 +483,15 @@ export default function QuizDetail() {
 
           {error && <div className="quiz-error-box">{error}</div>}
 
-          <h2 className="quiz-q-heading">Question {currentIndex + 1}.</h2>
+          <div className="quiz-q-heading-row">
+            <h2 className="quiz-q-heading">Question {currentIndex + 1}.</h2>
+            <button
+              className={`quiz-mark-btn ${marked[q.id] ? "quiz-mark-btn--on" : ""}`}
+              onClick={toggleMark}
+            >
+              {marked[q.id] ? "🚩 Marked for review" : "🏳 Mark for review"}
+            </button>
+          </div>
           <p className="quiz-q-text">{q.text}</p>
 
           <div className="quiz-options">
@@ -517,18 +558,28 @@ export default function QuizDetail() {
             <span className="pal-legend-item">
               <span className="pal-dot not-visited" />Not visited
             </span>
+            <span className="pal-legend-item">
+              <span className="pal-dot marked" />Marked for review
+            </span>
           </div>
 
           <div className="quiz-palette-grid">
-            {shuffledQuestions.map((pq, idx) => (
-              <button
-                key={pq.id}
-                className={`quiz-pal-btn ${palClass(palette[pq.id])} ${idx === currentIndex ? "active" : ""}`}
-                onClick={() => goTo(idx)}
-              >
-                {idx + 1}
-              </button>
-            ))}
+            {shuffledQuestions.map((pq, idx) => {
+              const isMarked = !!marked[pq.id];
+              const status = palette[pq.id];
+              const stateCls = isMarked
+                ? (status === S.ANSWERED ? "marked-answered" : "marked")
+                : palClass(status);
+              return (
+                <button
+                  key={pq.id}
+                  className={`quiz-pal-btn ${stateCls} ${idx === currentIndex ? "active" : ""}`}
+                  onClick={() => goTo(idx)}
+                >
+                  {idx + 1}
+                </button>
+              );
+            })}
           </div>
 
           <button

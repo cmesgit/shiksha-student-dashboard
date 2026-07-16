@@ -80,11 +80,13 @@ export default function QuizList() {
       navigate(`/subjects/quiz/${subjectId}/attempts/${quiz.id}`);
       return;
     }
+    const path = quiz.quiz_type === "practice" ? "practice" : "take";
     // Pending tab
     const alreadyStarted = !!localStorage.getItem(`quiz_${quiz.id}_start`);
-    if (alreadyStarted) {
-      // Resume in-progress attempt — skip modal
-      navigate(`/subjects/quiz/${subjectId}/take/${quiz.id}`);
+    if (alreadyStarted && quiz.quiz_type !== "practice") {
+      // Resume in-progress attempt — skip modal (mock exams only; practice
+      // has no timer/localStorage state to resume from).
+      navigate(`/subjects/quiz/${subjectId}/${path}/${quiz.id}`);
       return;
     }
     // Fresh start or re-attempt — show confirmation modal
@@ -93,7 +95,8 @@ export default function QuizList() {
   };
 
   const confirmStartQuiz = () => {
-    navigate(`/subjects/quiz/${subjectId}/take/${selectedQuiz.id}`);
+    const path = selectedQuiz.quiz_type === "practice" ? "practice" : "take";
+    navigate(`/subjects/quiz/${subjectId}/${path}/${selectedQuiz.id}`);
     setShowModal(false);
   };
 
@@ -158,9 +161,12 @@ export default function QuizList() {
                   key={quiz.id}
                   title={quiz.title}
                   teacher={quiz.teacher_name}
-                  deadline={`${quiz.questions_count ?? "?"} questions • ${quiz.time_limit_minutes ?? "?"} min`}
+                  deadline={`${quiz.questions_count ?? "?"} questions • ${
+                    quiz.quiz_type === "practice" ? "untimed" : `${quiz.time_limit_minutes ?? "?"} min`
+                  }`}
+                  mode={quiz.quiz_type === "practice" ? "Practice" : "Mock"}
                   isCompleted={activeTab === "completed"}
-                  inProgress={activeTab === "pending" && inProgressIds.has(quiz.id)}
+                  inProgress={activeTab === "pending" && quiz.quiz_type !== "practice" && inProgressIds.has(quiz.id)}
                   // Show attempt count badge for completed quizzes
                   badge={activeTab === "completed" && quiz.attempts_count > 1
                     ? `${quiz.attempts_count} attempts`
@@ -177,16 +183,25 @@ export default function QuizList() {
       {showModal && (
         <div className="quizModalOverlay">
           <div className="quizModalBox">
-            <h3>Start Quiz?</h3>
+            <h3>{selectedQuiz?.quiz_type === "practice" ? "Start Practice?" : "Start Quiz?"}</h3>
             <p>
               You are about to start <b>{selectedQuiz?.title}</b>
             </p>
-            <ul className="quizModalRules">
-              <li>⏱ Timer starts immediately and cannot be paused</li>
-              <li>📝 Unanswered questions are scored 0</li>
-              <li>🔁 You can re-attempt after submitting</li>
-              <li>✅ Results are shown immediately after submission</li>
-            </ul>
+            {selectedQuiz?.quiz_type === "practice" ? (
+              <ul className="quizModalRules">
+                <li>🕊 Untimed — go at your own pace</li>
+                <li>💡 Instant feedback + explanation after every question</li>
+                <li>🔥 Build a streak by answering correctly in a row</li>
+                <li>🔁 You can re-attempt anytime</li>
+              </ul>
+            ) : (
+              <ul className="quizModalRules">
+                <li>⏱ Timer starts immediately and cannot be paused</li>
+                <li>📝 Unanswered questions are scored 0</li>
+                <li>🔁 You can re-attempt after submitting</li>
+                <li>✅ Results are shown immediately after submission</li>
+              </ul>
+            )}
             <div className="quizModalActions">
               <button className="startBtn" onClick={confirmStartQuiz}>
                 Start

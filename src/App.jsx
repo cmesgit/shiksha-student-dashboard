@@ -34,6 +34,7 @@ import AssignmentDetail from "./pages/AssignmentDetail";
 import SubjectsQuiz from "./pages/SubjectsQuiz";
 import QuizList from "./pages/QuizList";
 import QuizDetail from "./pages/QuizDetail";
+import QuizPractice from "./pages/QuizPractice";
 import QuizResult from "./pages/QuizResult";
 import QuizAttempts from "./pages/QuizAttempts";
 import SubjectsRecordings from "./pages/SubjectsRecordings";
@@ -115,6 +116,7 @@ export default function App() {
               <Route path="subjects/quiz" element={<SubjectsQuiz />} />
               <Route path="subjects/quiz/:subjectId" element={<QuizList />} />
               <Route path="subjects/quiz/:subjectId/take/:quizId" element={<QuizDetail />} />
+              <Route path="subjects/quiz/:subjectId/practice/:quizId" element={<QuizPractice />} />
               <Route path="subjects/quiz/:subjectId/result/:quizId" element={<QuizResult />} />
               <Route path="subjects/quiz/:subjectId/attempts/:quizId" element={<QuizAttempts />} />
 
