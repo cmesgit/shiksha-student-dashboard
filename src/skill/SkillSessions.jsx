@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { Icon } from "./skillIcons";
 import { Avatar } from "./skillUI";
 import { useAuth } from "../contexts/AuthContext";
+import { LoadingState } from "../components/StateViews";
 import SkillReviewModal from "../components/SkillReviewModal";
 
 const ACC = "#ff8f01";
@@ -63,7 +64,7 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
         </div>
 
         {loading ? (
-          <div style={{ fontSize: 12, color: "#888" }}>Loading…</div>
+          <LoadingState plain label="Loading sessions" />
         ) : upcoming.length === 0 ? (
           <div style={{ fontSize: 12, color: "#888", padding: "8px 0" }}>
             No upcoming sessions.{" "}
@@ -134,7 +135,7 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
       <div className="rd-card">
         <h4>Past sessions</h4>
         {loading ? (
-          <div style={{ fontSize: 12, color: "#888" }}>Loading…</div>
+          <LoadingState plain label="Loading sessions" />
         ) : past.length === 0 ? (
           <div style={{ fontSize: 12, color: "#888" }}>No completed sessions yet.</div>
         ) : past.map((s) => (

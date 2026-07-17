@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
+import { LoadingState } from "../components/StateViews";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../api/apiClient";
 import groupSessionService, { extractApiError } from "../api/groupSessionService";
@@ -1209,7 +1210,7 @@ export default function GroupSessions() {
         </div>
 
         {loading ? (
-          <div className="sg__loading sg__loading--figma">Loading group sessions…</div>
+          <LoadingState plain label="Loading group sessions" />
         ) : visibleGroups.length > 0 ? (
           <div className="sg__figmaGrid">
             {visibleGroups.map((g) => (

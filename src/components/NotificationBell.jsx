@@ -14,6 +14,7 @@ import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { IoNotificationsOutline, IoNotificationsSharp } from "react-icons/io5";
 import useNotificationSocket from "../hooks/useNotificationSocket";
+import { LoadingState } from "./StateViews";
 
 const TYPE_ICONS = {
   ASSIGNMENT:      "📝",
@@ -152,7 +153,7 @@ export default function NotificationBell() {
 
           <div className="notif-bell-list">
             {loading ? (
-              <div className="notif-bell-empty">Loading...</div>
+              <LoadingState plain label="Loading" />
             ) : notifications.length === 0 ? (
               <div className="notif-bell-empty">No notifications</div>
             ) : (

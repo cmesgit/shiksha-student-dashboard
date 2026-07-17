@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
+import { LoadingState } from "../components/StateViews";
 import "../styles/quiz.css";
 import "../styles/quiz-result-analytics.css";
 
@@ -99,7 +100,7 @@ export default function QuizResult() {
     return Math.max(1, ...resultData.questions.map((q) => q.time_spent_seconds || 0));
   }, [resultData]);
 
-  if (loading) return <div className="quizResultPage">Loading result...</div>;
+  if (loading) return <LoadingState label="Loading result" />;
   if (error)   return <div className="quizResultPage">{error}</div>;
   if (!resultData) return null;
 

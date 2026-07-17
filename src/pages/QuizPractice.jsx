@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/apiClient";
+import { LoadingState } from "../components/StateViews";
 import "../styles/quiz-practice.css";
 
 const OPTION_LABELS = ["A", "B", "C", "D", "E", "F"];
@@ -48,7 +49,7 @@ export default function QuizPractice() {
     if (quizId) init();
   }, [quizId]);
 
-  if (loading) return <div className="qp-center">Loading practice set…</div>;
+  if (loading) return <LoadingState label="Loading practice set" />;
   if (error) return <div className="qp-center qp-error">{error}</div>;
   if (!quiz || !quiz.questions?.length) return null;
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
+import { LoadingState } from "../components/StateViews";
 import "../styles/private-details.css";
 
 const GENDER_OPTIONS = ["male", "female", "other"];
@@ -104,7 +105,7 @@ export default function PrivateDetails() {
     setIsEditing(false);
   };
 
-  if (loading) return <div className="pd-loading">Loading...</div>;
+  if (loading) return <LoadingState label="Loading" />;
   if (error) return <div className="pd-error">{error}</div>;
   if (!profile) return null;
 

@@ -43,6 +43,7 @@ import DropdownMenu from "../components/DropdownMenu";
 import TopSliderTabs from "../components/TopSliderTabs";
 import SkillDevStudentSection from "../components/SkillDevStudentSection";
 import AcademyEmptyState from "../components/AcademyEmptyState";
+import { LoadingState } from "../components/StateViews";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
 import useNotificationSocket from "../hooks/useNotificationSocket";
@@ -626,7 +627,7 @@ export default function Dashboard() {
     );
   }
 
-  if (loading) return <div style={{ padding: 20 }}>Loading dashboard...</div>;
+  if (loading) return <LoadingState label="Loading dashboard" />;
 
   if (!activeCourse) {
     // No Academy enrolment on THIS profile — onboarding placeholder.

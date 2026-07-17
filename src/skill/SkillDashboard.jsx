@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { Icon } from "./skillIcons";
 import { Avatar } from "./skillUI";
 import { useAuth } from "../contexts/AuthContext";
+import { LoadingState } from "../components/StateViews";
 
 const ACC = "#ff8f01";
 
@@ -54,7 +55,7 @@ export default function SkillDashboard({ setTab = () => {}, openMsg = () => {} }
       <div className="rd-card" style={{ marginBottom: 13 }}>
         <h4>Next up</h4>
         {loading ? (
-          <div style={{ fontSize: 12, color: "#888" }}>Loading…</div>
+          <LoadingState plain label="Loading" />
         ) : upcoming_sessions.length === 0 ? (
           <div style={{ fontSize: 12, color: "#888" }}>No upcoming sessions. <button onClick={() => setTab("book")} style={{ background: "none", border: "none", color: ACC, fontWeight: 700, cursor: "pointer", fontSize: 12 }}>Book a tutor →</button></div>
         ) : upcoming_sessions.slice(0, 3).map((s) => (
@@ -84,7 +85,7 @@ export default function SkillDashboard({ setTab = () => {}, openMsg = () => {} }
           <button onClick={() => setTab("explore")} style={{ background: "none", border: "none", color: "#d97706", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Explore →</button>
         </div>
         {loading ? (
-          <div style={{ fontSize: 12, color: "#888" }}>Loading…</div>
+          <LoadingState plain label="Loading" />
         ) : experts.length === 0 ? (
           <div style={{ fontSize: 12, color: "#888" }}>No experts yet. Book a session to get started.</div>
         ) : (

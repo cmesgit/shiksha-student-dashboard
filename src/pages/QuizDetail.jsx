@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/apiClient";
+import { LoadingState } from "../components/StateViews";
 import "../styles/QuizDetail.css";
 
 // ── Palette state constants ───────────────────────────────────────────────────
@@ -455,7 +456,7 @@ export default function QuizDetail() {
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  if (loading) return <div className="quiz-center">Loading quiz…</div>;
+  if (loading) return <LoadingState label="Loading quiz" />;
   if (error && !quizData) return <div className="quiz-center quiz-error-full">{error}</div>;
   if (!quizData || shuffledQuestions.length === 0) return null;
 

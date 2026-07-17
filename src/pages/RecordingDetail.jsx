@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
 import PageHeader from "../components/PageHeader";
 import api from "../api/apiClient";
+import { LoadingState } from "../components/StateViews";
 import "../styles/recordingDetail.css";
 
 const LIBRARY_ID = import.meta.env.VITE_BUNNY_LIBRARY_ID;
@@ -92,7 +93,7 @@ export default function RecordingDetail() {
   }, [saveProgress]);
 
   // ── render ────────────────────────────────────────────────────────────────
-  if (loading) return <div style={{ padding: 20 }}>Loading video...</div>;
+  if (loading) return <LoadingState label="Loading video" />;
   if (!videoData) return <div style={{ padding: 20 }}>Video not found.</div>;
 
   const videoUrl =

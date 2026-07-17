@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../api/apiClient";
+import { LoadingState } from "../components/StateViews";
 import "../styles/quiz.css";
 
 export default function QuizAttempts() {
@@ -48,7 +49,7 @@ export default function QuizAttempts() {
     }
   };
 
-  if (loading) return <div className="quizResultPage">Loading attempts…</div>;
+  if (loading) return <LoadingState label="Loading attempts" />;
   if (error)   return <div className="quizResultPage">{error}</div>;
 
   return (

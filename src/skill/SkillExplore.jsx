@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Icon } from "./skillIcons";
 import { Avatar } from "./skillUI";
 import { useAuth } from "../contexts/AuthContext";
+import { LoadingState } from "../components/StateViews";
 
 const ACC = "#6b2410";
 
@@ -123,7 +124,7 @@ export default function SkillExplore({ setTab = () => {}, openMsg = () => {} }) 
         </div>
 
         {loading ? (
-          <div style={{ fontSize: 12, color: "#888", padding: "12px 0" }}>Loading…</div>
+          <LoadingState plain label="Loading" />
         ) : experts.length === 0 ? (
           <div style={{ fontSize: 12, color: "#888", padding: "12px 0" }}>No experts found. Try a different category.</div>
         ) : (

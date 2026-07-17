@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/apiClient";
+import { LoadingState } from "../components/StateViews";
 import "../styles/teachers.css";
 
 export default function TeacherDetail() {
@@ -29,7 +30,7 @@ export default function TeacherDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="teachers-loading">Loading...</div>;
+  if (loading) return <LoadingState label="Loading" />;
   if (error) return <div className="teachers-error">{error}</div>;
   if (!teacher) return null;
 

@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCourse } from "../contexts/CourseContext";
 import RenewSubscriptionModal from "../components/RenewSubscriptionModal";
+import { LoadingState } from "../components/StateViews";
 import "../styles/myCourseDetail.css";
 
 const DATE_FORMAT = { day: "2-digit", month: "short", year: "numeric" };
@@ -36,7 +37,7 @@ export default function MyCourseDetail() {
   );
 
   if (loading) {
-    return <div className="myCourseDetail__loading">Loading...</div>;
+    return <LoadingState label="Loading" />;
   }
 
   if (!course) {

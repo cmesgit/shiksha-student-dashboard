@@ -27,6 +27,7 @@ import { useLocation } from "react-router-dom";
 import { Icon } from "./skillIcons";
 import { Avatar, StarRow } from "./skillUI";
 import { useAuth } from "../contexts/AuthContext";
+import { LoadingState } from "../components/StateViews";
 import * as AV from "./availability";
 
 const ACC = "#ff8f01";
@@ -113,7 +114,7 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
   };
 
   if (loading) {
-    return <div style={{ padding: "14px 18px 22px", fontSize: 12, color: "#888" }}>Loading experts…</div>;
+    return <LoadingState label="Loading experts" />;
   }
 
   if (experts.length === 0) {
