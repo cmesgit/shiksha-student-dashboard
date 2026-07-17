@@ -54,6 +54,7 @@ import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
 import Progress from "./pages/Progress";
+import AssignmentsSubjects from "./pages/AssignmentsSubjects";
 import MyCourses from "./pages/MyCourses";
 import BrowseCourses from "./pages/BrowseCourses";
 import MyCounselling from "./pages/counselling/MyCounselling";
@@ -110,7 +111,13 @@ export default function App() {
               <Route path="subjects" element={<Subjects />} />
               <Route path="subjects/:subjectId" element={<SubjectDetails />} />
 
-              <Route path="assignments" element={<Navigate to="/subjects" replace />} />
+              {/* Top-level Progress (mockup nav item). Progress falls back to
+                  the active course when no :courseId is present. */}
+              <Route path="progress" element={<Progress />} />
+
+              {/* Top-level Assignments landing (subject picker). Replaces the
+                  old redirect to /subjects so the nav item is a real page. */}
+              <Route path="assignments" element={<AssignmentsSubjects />} />
               <Route path="subjects/:subjectId/assignments" element={<SubjectsAssignments />} />
               <Route path="subjects/:subjectId/assignments/:assignmentId" element={<AssignmentDetail />} />
 

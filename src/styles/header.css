@@ -3,8 +3,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
+  padding: 10px 24px;
   position: relative;
+  background: #ffffff;
+  border-bottom: 1px solid #e5eaed;
 }
 
 .header__left {
@@ -14,14 +16,16 @@
 }
 
 .header__title {
+  font-family: "Montserrat", system-ui, sans-serif;
   font-size: 18px;
   font-weight: 800;
-  color: #1a1a1a;
+  letter-spacing: -0.3px;
+  color: #1a2c33;
 }
 
 .header__subtitle {
   font-size: 12px;
-  color: #666;
+  color: #6b7c83;
 }
 
 .header__courseWrap {
@@ -36,7 +40,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #0a4d55;
+  background: #425f7f;
   color: white;
   border: none;
   padding: 8px 20px;
@@ -61,7 +65,7 @@
 .header__dropdown {
   margin-top: 6px;
   width: 100%;
-  background: #0a808a;
+  background: #425f7f;
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);

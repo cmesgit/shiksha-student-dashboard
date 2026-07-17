@@ -4,17 +4,19 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  background: #0a96a3;
+  background: #fff;
+  border: 1px solid #e5eaed;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 1px 3px rgba(26, 44, 51, .06);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .subjectCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 8px 18px rgba(26, 44, 51, 0.10);
+  border-color: #cfdbe6;
 }
 
 .subjectCard__imageBox {
@@ -51,7 +53,7 @@
   display: grid;
   place-items: center;
   background: rgba(255, 255, 255, 0.86);
-  color: #0f766e;
+  color: #425f7f;
   font-size: 17px;
   font-weight: 800;
 }
@@ -83,30 +85,27 @@
 }
 
 .subjectCard__badge--pending {
-  background: #f59e0b;
+  background: #d97706;
 }
 
 .subjectCard__badge--completed {
-  background: #12c99b;
+  background: #2f9d42;
 }
 
 .subjectCard__badge--info {
-  background: #1e9af0;
+  background: #1d4ed8;
 }
 
 .subjectCard__content {
   flex: 1;
   min-height: 0;
-  padding: 8px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  background: #313b3b;
-  color: #ffffff;
-}
-.subjectCard__content:hover{
-  background: #0a96a3;
+  background: #fff;
+  color: #1a2c33;
 }
 
 .subjectCard__progress {
@@ -119,19 +118,19 @@
   flex: 1;
   height: 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: #eef1f2;
   overflow: hidden;
 }
 .subjectCard__progressFill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #12c99b, #16a3ad);
+  background: #425f7f;
   transition: width 0.3s ease;
 }
 .subjectCard__progressLabel {
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.85);
+  color: #6b7c83;
   flex-shrink: 0;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -141,10 +140,11 @@
 .subjectCard__title {
   margin: 0;
   max-width: 100%;
-  font-size: 16px;
+  font-family: "Montserrat", system-ui, sans-serif;
+  font-size: 14.5px;
   font-weight: 700;
-  line-height: 1.2;
-  color: #ffffff;
+  line-height: 1.25;
+  color: #1a2c33;
 
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -156,10 +156,10 @@
 .subjectCard__teacher {
   margin: auto 0 0;
   max-width: 100%;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.2;
-  color: rgba(255, 255, 255, 0.95);
+  color: #6b7c83;
 
   overflow: hidden;
   text-overflow: ellipsis;

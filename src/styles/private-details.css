@@ -422,7 +422,7 @@ button.pd-yn-btn:hover:not(.pd-yn-btn--active) {
 .pd-back {
   background: transparent;
   border: 1.5px solid #bcd;
-  color: #0a4d55;
+  color: #425f7f;
   padding: 6px 14px;
   border-radius: 8px;
   font-size: 13px;
@@ -433,7 +433,7 @@ button.pd-yn-btn:hover:not(.pd-yn-btn--active) {
 
 .pd-back:hover {
   background: rgba(10, 77, 85, 0.06);
-  border-color: #0a4d55;
+  border-color: #425f7f;
 }
 
 .pd-actions {
@@ -453,9 +453,9 @@ button.pd-yn-btn:hover:not(.pd-yn-btn--active) {
 }
 
 .pd-edit-btn {
-  background: #0a4d55;
+  background: #425f7f;
   color: #fff;
-  border: 1.5px solid #0a4d55;
+  border: 1.5px solid #425f7f;
 }
 
 .pd-edit-btn:hover {
@@ -474,9 +474,9 @@ button.pd-yn-btn:hover:not(.pd-yn-btn--active) {
 }
 
 .pd-save-btn {
-  background: #0a4d55;
+  background: #425f7f;
   color: #fff;
-  border: 1.5px solid #0a4d55;
+  border: 1.5px solid #425f7f;
 }
 
 .pd-save-btn:hover:not(:disabled) {

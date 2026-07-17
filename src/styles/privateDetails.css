@@ -61,7 +61,7 @@
 .pd__avatarFallback {
   font-size: 36px;
   font-weight: 700;
-  color: #0a4d55;
+  color: #425f7f;
   text-transform: uppercase;
 }
 
@@ -109,8 +109,8 @@
 }
 
 .pd__badge--lang {
-  border: 1.5px solid #0a4d55;
-  color: #0a4d55;
+  border: 1.5px solid #425f7f;
+  color: #425f7f;
   background: transparent;
 }
 

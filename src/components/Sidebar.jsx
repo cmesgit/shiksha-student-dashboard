@@ -16,18 +16,14 @@
 
 import { NavLink, useLocation } from "react-router-dom";
 import "../styles/sidebar.css";
-import logo from "../assets/Vector.svg";
 import { useCourse } from "../contexts/CourseContext";
+import { useAuth } from "../contexts/AuthContext";
 import CourseSwitcher from "./CourseSwitcher";
+import NavIcon from "./NavIcon";
 
-import { MdDashboardCustomize } from "react-icons/md";
-import { BsBook } from "react-icons/bs";
 import { BiVideo } from "react-icons/bi";
-import { FaBookOpen, FaGraduationCap } from "react-icons/fa";
-import { RiLiveLine, RiLockLine, RiGroupLine, RiCompass3Line } from "react-icons/ri";
-import { FaChalkboardTeacher } from "react-icons/fa";
-import { AiOutlineFileDone, AiOutlineClose } from "react-icons/ai";
-import { FiHome, FiSearch, FiCalendar, FiBook, FiLayout, FiMessageCircle, FiShoppingBag, FiStar } from "react-icons/fi";
+import { AiOutlineClose } from "react-icons/ai";
+import { FiHome, FiSearch, FiLayout, FiMessageCircle, FiStar } from "react-icons/fi";
 import { HOME_URL } from "../config/urls";
 
 /* ── Skill Dev design tokens ─────────────────────────────────────── */
@@ -121,96 +117,116 @@ function SkillDevSidebar({ setMenuOpen }) {
   );
 }
 
-/* ── Academy sidebar (unchanged) ────────────────────────────────── */
+/* ── Academy sidebar — matches Academy Dashboard.html mockup ─────────
+   Slate #425f7f chrome, sectioned nav (LEARN / LIVE / PRACTICE / CONNECT),
+   the course switcher in the mockup's selector slot, and a user footer.
+   Every item routes to a live page (Progress + Assignments now have their
+   own top-level landings). */
+const ACAD_NAV = [
+  { section: "LEARN" },
+  { l: "Dashboard", i: "home", to: "/", end: true },
+  { l: "My Courses", i: "book", to: "/my-courses" },
+  { l: "Subjects", i: "layers", to: "/subjects", end: true },
+  { l: "Progress", i: "trend", to: "/progress" },
+  { section: "LIVE" },
+  { l: "Live Sessions", i: "video", to: "/live-sessions" },
+  { l: "Private Sessions", i: "lock", to: "/private-sessions" },
+  { l: "Group Sessions", i: "users", to: "/group-sessions" },
+  { l: "Recordings", i: "play", to: "/subjects/recordings" },
+  { section: "PRACTICE" },
+  { l: "Assignments", i: "file", to: "/assignments" },
+  { l: "Quizzes", i: "help", to: "/subjects/quiz" },
+  { l: "Study Material", i: "clip", to: "/study-material" },
+  { section: "CONNECT" },
+  { l: "Teachers", i: "grad", to: "/teachers" },
+  { l: "Messages", i: "msg", to: "/chat" },
+  { l: "Counselling", i: "help", to: "/counseling" },
+  { l: "Browse Courses", i: "book", to: "/browse-courses" },
+];
+
+const initialsOf = (name) =>
+  (name || "")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase() || "S";
+
 function AcademySidebar({ setMenuOpen }) {
+  const { user, activeProfile } = useAuth();
+  const userName =
+    activeProfile?.display_name || user?.name || user?.full_name ||
+    user?.username || (user?.email ? user.email.split("@")[0] : "") || "Learner";
+  const userInitials = initialsOf(userName);
+
   return (
-    <aside className="sidebar">
-      <div className="sidebar__top">
-        <div className="sidebar__brand">
-          <img src={logo} alt="Logo" className="sidebar__logoCircle" />
-          <div>
-            <h2 className="sidebar__title">ShikshaCom</h2>
-            <p className="sidebar__tagline">Empowerment Through Education</p>
-          </div>
+    <aside style={{ width: "100%", height: "100%", background: "#425f7f", display: "flex", flexDirection: "column", fontFamily: '"Poppins", system-ui, sans-serif' }}>
+      {/* Brand */}
+      <div style={{ padding: "18px 16px 14px", borderBottom: "1px solid rgba(255,255,255,.12)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 9, background: "rgba(255,255,255,.12)", border: "2px solid rgba(255,255,255,.22)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
+          </svg>
         </div>
-        <button className="sidebar__closeBtn" onClick={() => setMenuOpen(false)} type="button" aria-label="Close sidebar">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ color: "#fff", fontFamily: '"Montserrat", sans-serif', fontWeight: 800, fontSize: 14, letterSpacing: "-.3px", lineHeight: 1.15 }}>ShikshaCom</div>
+          <div style={{ color: "rgba(255,255,255,.55)", fontSize: 8.5, fontWeight: 700, letterSpacing: ".8px", textTransform: "uppercase", marginTop: 2 }}>Academy</div>
+        </div>
+        <button onClick={() => setMenuOpen(false)} type="button" aria-label="Close sidebar" className="sidebar__closeBtn" style={{ background: "none", border: "none", color: "rgba(255,255,255,.6)", cursor: "pointer" }}>
           <AiOutlineClose />
         </button>
       </div>
 
-      {/* Active-course selector: shows the selected course and, with more than
-          one enrolment, drops down to switch. All course-scoped data
-          (subjects, assignments, live/private sessions…) follows this. */}
+      {/* Active-course selector (mockup selector slot). Renders the switch
+          control when the learner has 2+ enrolments, a static badge otherwise. */}
       <CourseSwitcher setMenuOpen={setMenuOpen} />
 
-      <nav className="sidebar__nav">
-        <NavLink className="sidebar__link" to="/" end onClick={() => setMenuOpen(false)}>
-          <span className="sidebar__icon"><MdDashboardCustomize /></span>
-          Dashboard
-        </NavLink>
-
-        <NavLink className="sidebar__link" to="/my-courses" onClick={() => setMenuOpen(false)}>
-          <span className="sidebar__icon"><FaGraduationCap /></span>
-          My Courses
-        </NavLink>
-
-        <NavLink className="sidebar__link" to="/subjects" end onClick={() => setMenuOpen(false)}>
-          <span className="sidebar__icon"><BsBook /></span>
-          Subjects
-        </NavLink>
-
-        <div className="sidebar__subMenu">
-          <NavLink className="sidebar__subLink" to="/subjects/quiz" onClick={() => setMenuOpen(false)}>
-            <AiOutlineFileDone /> <span>Quiz</span>
-          </NavLink>
-          <NavLink className="sidebar__subLink" to="/subjects/recordings" onClick={() => setMenuOpen(false)}>
-            <BiVideo /> <span>Recordings</span>
-          </NavLink>
-          <NavLink className="sidebar__subLink" to="/study-material" onClick={() => setMenuOpen(false)}>
-            <FaBookOpen /> <span>Study Material</span>
-          </NavLink>
-        </div>
-
-        <NavLink className="sidebar__link" to="/live-sessions" onClick={() => setMenuOpen(false)}>
-          <span className="sidebar__icon"><RiLiveLine /></span>
-          Live Sessions
-        </NavLink>
-
-        <NavLink className="sidebar__link" to="/private-sessions" onClick={() => setMenuOpen(false)}>
-          <span className="sidebar__icon"><RiLockLine /></span>
-          Private Sessions
-        </NavLink>
-
-        <NavLink className="sidebar__link" to="/group-sessions" onClick={() => setMenuOpen(false)}>
-          <span className="sidebar__icon"><RiGroupLine /></span>
-          Group Sessions
-        </NavLink>
-
-        <NavLink className="sidebar__link" to="/teachers" onClick={() => setMenuOpen(false)}>
-          <span className="sidebar__icon"><FaChalkboardTeacher /></span>
-          Teachers
-        </NavLink>
-
-        <NavLink className="sidebar__link" to="/chat" onClick={() => setMenuOpen(false)}>
-          <span className="sidebar__icon"><FiMessageCircle /></span>
-          Messages
-        </NavLink>
-
-        <NavLink className="sidebar__link" to="/counseling" onClick={() => setMenuOpen(false)}>
-          <span className="sidebar__icon"><RiCompass3Line /></span>
-          Counselling
-        </NavLink>
-
-        {/* In-dashboard purchasable course catalog. */}
-        <NavLink className="sidebar__link" to="/browse-courses" onClick={() => setMenuOpen(false)}>
-          <span className="sidebar__icon"><FiShoppingBag /></span>
-          Browse Courses
-        </NavLink>
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: "6px 10px", overflowY: "auto", overflowX: "hidden" }}>
+        {ACAD_NAV.map((item, idx) => {
+          if (item.section) {
+            return (
+              <div key={`s-${idx}`} style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,.32)", letterSpacing: ".9px", textTransform: "uppercase", padding: "13px 8px 5px" }}>
+                {item.section}
+              </div>
+            );
+          }
+          return (
+            <NavLink
+              key={item.l}
+              to={item.to}
+              end={item.end}
+              onClick={() => setMenuOpen(false)}
+              style={({ isActive }) => ({
+                display: "flex", alignItems: "center", gap: 9, width: "100%",
+                textAlign: "left", padding: "9px 10px", fontSize: 12.5,
+                textDecoration: "none", borderRadius: 8, marginBottom: 1, transition: "background .15s",
+                background: isActive ? "rgba(255,255,255,.16)" : "transparent",
+                color: isActive ? "#fff" : "rgba(255,255,255,.62)",
+                fontWeight: isActive ? 700 : 500,
+              })}
+            >
+              <NavIcon name={item.i} size={14} />
+              {item.l}
+            </NavLink>
+          );
+        })}
       </nav>
 
-      <div className="sidebar__bottom">
-        <a href={HOME_URL} className="sidebar__homeBtn">
-          <FiHome /> Return to Homepage
+      {/* User footer */}
+      <div style={{ padding: 12, borderTop: "1px solid rgba(255,255,255,.12)", display: "flex", alignItems: "center", gap: 9 }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#13899b", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11.5, fontWeight: 700, flexShrink: 0 }}>{userInitials}</div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ color: "#fff", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userName}</div>
+          <div style={{ color: "rgba(255,255,255,.5)", fontSize: 10 }}>Student</div>
+        </div>
+      </div>
+
+      {/* Return to homepage */}
+      <div style={{ padding: 10, borderTop: "1px solid rgba(255,255,255,.12)" }}>
+        <a href={HOME_URL} style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 7, color: "rgba(255,255,255,.42)", fontSize: 11.5, padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,.1)" }}>
+          <FiHome size={13} /> Return to Homepage
         </a>
       </div>
     </aside>
