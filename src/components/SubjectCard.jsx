@@ -5,6 +5,7 @@ export default function SubjectCard({
   img,
   subject,
   teacher,
+  progressPercent,
   pendingCount,
   completedCount,
   taskCount,
@@ -77,6 +78,18 @@ export default function SubjectCard({
         <p className="subjectCard__teacher" title={teacher}>
           {teacher || "No teacher assigned"}
         </p>
+
+        {progressPercent !== undefined && (
+          <div className="subjectCard__progress">
+            <div className="subjectCard__progressBar">
+              <div
+                className="subjectCard__progressFill"
+                style={{ width: `${Math.min(100, progressPercent || 0)}%` }}
+              />
+            </div>
+            <span className="subjectCard__progressLabel">{progressPercent}%</span>
+          </div>
+        )}
       </div>
     </div>
   );

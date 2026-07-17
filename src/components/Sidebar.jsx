@@ -23,7 +23,7 @@ import CourseSwitcher from "./CourseSwitcher";
 import { MdDashboardCustomize } from "react-icons/md";
 import { BsBook } from "react-icons/bs";
 import { BiVideo } from "react-icons/bi";
-import { FaClipboardList, FaBookOpen, FaGraduationCap } from "react-icons/fa";
+import { FaBookOpen, FaGraduationCap } from "react-icons/fa";
 import { RiLiveLine, RiLockLine, RiGroupLine, RiCompass3Line } from "react-icons/ri";
 import { FaChalkboardTeacher } from "react-icons/fa";
 import { AiOutlineFileDone, AiOutlineClose } from "react-icons/ai";
@@ -160,9 +160,6 @@ function AcademySidebar({ setMenuOpen }) {
         </NavLink>
 
         <div className="sidebar__subMenu">
-          <NavLink className="sidebar__subLink" to="/assignments" onClick={() => setMenuOpen(false)}>
-            <FaClipboardList /> <span>Assignments</span>
-          </NavLink>
           <NavLink className="sidebar__subLink" to="/subjects/quiz" onClick={() => setMenuOpen(false)}>
             <AiOutlineFileDone /> <span>Quiz</span>
           </NavLink>

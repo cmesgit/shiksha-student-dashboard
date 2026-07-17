@@ -69,7 +69,7 @@ export default function NotificationBell() {
   };
 
   const handleNotifClick = (notif) => {
-    const { type, subject_id, id, is_private_session, is_group_session, link_url } = notif;
+    const { type, subject_id, id, is_private_session, is_group_session, is_skill_session, link_url } = notif;
     if (id) markOneRead(id);
 
     // Notifications from the notifications app (counseling.*, forum.*, and
@@ -94,6 +94,14 @@ export default function NotificationBell() {
     // the Group Sessions page, not /live-sessions.
     if (is_group_session) {
       navigate("/group-sessions");
+      setOpen(false);
+      return;
+    }
+
+    // Skill-Dev (1-on-1 expert) session notifications — confirm/decline/
+    // cancel/complete/reschedule all carry this flag.
+    if (is_skill_session) {
+      navigate(id ? `/skill-dev/sessions/${id}` : "/skill-dev/sessions");
       setOpen(false);
       return;
     }

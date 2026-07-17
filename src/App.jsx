@@ -110,7 +110,7 @@ export default function App() {
               <Route path="subjects" element={<Subjects />} />
               <Route path="subjects/:subjectId" element={<SubjectDetails />} />
 
-              <Route path="assignments" element={<Subjects mode="assignments" />} />
+              <Route path="assignments" element={<Navigate to="/subjects" replace />} />
               <Route path="subjects/:subjectId/assignments" element={<SubjectsAssignments />} />
               <Route path="subjects/:subjectId/assignments/:assignmentId" element={<AssignmentDetail />} />
 
