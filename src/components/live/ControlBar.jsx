@@ -18,7 +18,12 @@ export default function ControlBar({
   const gated = isStudent && !unrestricted;   // only group-class students are gated
 
   const room = useRoomContext();
-  const { localParticipant } = useLocalParticipant();
+  const {
+    localParticipant,
+    isMicrophoneEnabled,
+    isCameraEnabled,
+    isScreenShareEnabled,
+  } = useLocalParticipant();
 
   const [micOn, setMicOn] = useState(false);
   const [videoOn, setVideoOn] = useState(false);
@@ -59,13 +64,15 @@ export default function ControlBar({
     setVideoOn(false);
   }, [gated, localParticipant]);
 
-  /* ── presenter / 1-on-1: reflect the participant's real track state ── */
+  /* ── presenter / 1-on-1: reflect the participant's real track state ──
+     Keyed on the reactive enabled-flags so the icon re-syncs once the track
+     actually publishes, instead of catching a stale `false` on mount. ── */
   useEffect(() => {
     if (gated || !localParticipant) return;
-    setMicOn(!!localParticipant.isMicrophoneEnabled);
-    setVideoOn(!!localParticipant.isCameraEnabled);
-    setScreenOn(!!localParticipant.isScreenShareEnabled);
-  }, [gated, localParticipant]);
+    setMicOn(!!isMicrophoneEnabled);
+    setVideoOn(!!isCameraEnabled);
+    setScreenOn(!!isScreenShareEnabled);
+  }, [gated, localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled]);
 
   /* ── timer ── */
   useEffect(() => {

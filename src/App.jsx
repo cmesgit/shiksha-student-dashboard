@@ -14,6 +14,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CourseProvider } from "./contexts/CourseContext";
+import DocumentTitle from "./components/DocumentTitle";
 import { HOME_URL } from "./config/urls";
 
 import StudentLayout from "./layout/StudentLayout";
@@ -91,6 +92,7 @@ export default function App() {
     <AuthProvider>
       <CourseProvider>
         <BrowserRouter>
+          <DocumentTitle />
           <Routes>
             <Route
               path="/"

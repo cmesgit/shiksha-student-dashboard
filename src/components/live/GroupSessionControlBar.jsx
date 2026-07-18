@@ -24,7 +24,12 @@ export default function GroupSessionControlBar({
   const isStudent = role !== "PRESENTER";
 
   const room = useRoomContext();
-  const { localParticipant } = useLocalParticipant();
+  const {
+    localParticipant,
+    isMicrophoneEnabled,
+    isCameraEnabled,
+    isScreenShareEnabled,
+  } = useLocalParticipant();
 
   const [micOn, setMicOn] = useState(false);
   const [videoOn, setVideoOn] = useState(false);
@@ -100,13 +105,15 @@ export default function GroupSessionControlBar({
     setVideoOn(false);
   }, [isStudent, localParticipant]);
 
+  /* Keyed on the reactive enabled-flags so the icon re-syncs once the track
+     actually publishes, instead of catching a stale `false` on mount. */
   useEffect(() => {
     if (isStudent || !localParticipant) return;
 
-    setMicOn(!!localParticipant.isMicrophoneEnabled);
-    setVideoOn(!!localParticipant.isCameraEnabled);
-    setScreenOn(!!localParticipant.isScreenShareEnabled);
-  }, [isStudent, localParticipant]);
+    setMicOn(!!isMicrophoneEnabled);
+    setVideoOn(!!isCameraEnabled);
+    setScreenOn(!!isScreenShareEnabled);
+  }, [isStudent, localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled]);
 
   useEffect(() => {
     if (!room || !localParticipant) return;

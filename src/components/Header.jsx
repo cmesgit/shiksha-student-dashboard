@@ -14,6 +14,7 @@ import ProfileSwitcher from "../shared/ProfileSwitcher";
 import LearnerTrackSwitcher from "./LearnerTrackSwitcher";
 import "../styles/header.css";
 import "../shared/ProfileSwitcher.css";
+import MessageIcon from "./MessageIcon";
 import NotificationBell from "./NotificationBell";
 import { HOME_URL, TEACHER_DASHBOARD_URL as TEACHER_URL } from "../config/urls";
 
@@ -54,6 +55,7 @@ export default function Header({ toggleMenu, menuOpen }) {
       <LearnerTrackSwitcher />
 
       <div className="header__right" style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" }}>
+        <MessageIcon to={activeTrack === "skill" ? "/skill-messages" : "/chat"} />
         <NotificationBell />
         <ProfileSwitcher
           teacherSignupUrl={`${HOME_URL}/signup?role=teacher`}

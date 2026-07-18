@@ -1,8 +1,18 @@
 /**
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │  GENERATED FILE — DO NOT EDIT HERE.                                         │
+ * │  Canonical source: <workspace>/shared/src/shared/SettingsModal.jsx          │
+ * │  Edit the canonical copy, then run `npm run sync:shared` (any app) to        │
+ * │  propagate. `npm run check:shared` fails if an app's copy has drifted.       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
  * SettingsModal.jsx · src/shared/SettingsModal.jsx
  * ──────────────────────────────────────────────────────────────────
  * One Settings surface, byte-identical across landing / student / teacher.
  * No cross-domain redirects — each domain manages everything in-app.
+ *
+ * Terminology (keep consistent — no "mode" / "context" in labels):
+ *   Account · Profile · Track · Faculty (Academy) · Expert (Skill-Dev).
  *
  * Tabs
  * ────
@@ -45,7 +55,7 @@ const loadPrefs = (email) => {
   try { return JSON.parse(localStorage.getItem(prefsKey(email)) || "{}"); } catch { return {}; }
 };
 const savePrefs = (email, p) => {
-  try { localStorage.setItem(prefsKey(email), JSON.stringify(p)); } catch {}
+  try { localStorage.setItem(prefsKey(email), JSON.stringify(p)); } catch { /* ignore */ }
 };
 
 /* Cross-domain destinations (faculty form, expert editor, add-track) are
@@ -94,7 +104,7 @@ function loadShkPrefs() {
 
 function PrefsSection() {
   const [prefs, setPrefs] = useState(loadShkPrefs);
-  const save = (next) => { setPrefs(next); try { localStorage.setItem(PREFS_KEY, JSON.stringify(next)); } catch {} };
+  const save = (next) => { setPrefs(next); try { localStorage.setItem(PREFS_KEY, JSON.stringify(next)); } catch { /* ignore */ } };
   const flip = (k) => save({ ...prefs, [k]: !(prefs[k] ?? true) });
 
   return (
@@ -126,7 +136,7 @@ function TeacherSection({ teacherInfo, mkAddTrack, facultyFormUrl, expertProfile
   const TRACK_DEFS = [
     { key: "academy", label: "Faculty",          sub: "Academic teaching (Academy)", icon: "🎓",
       manageUrl: facultyFormUrl,   manageLabel: "Application form" },
-    { key: "skill",   label: "Expert (Skill Dev)", sub: "Skill-development sessions",  icon: "⚡",
+    { key: "skill",   label: "Expert (Skill-Dev)", sub: "Skill-development sessions",  icon: "⚡",
       manageUrl: expertProfileUrl, manageLabel: "Edit profile" },
   ];
 
@@ -134,7 +144,7 @@ function TeacherSection({ teacherInfo, mkAddTrack, facultyFormUrl, expertProfile
     <>
       <div className="sm-sec sm-sec--teacher">Teacher identity</div>
       <div className="sm-teacher-note">
-        Your teaching tracks. Skill Dev lists once your expert profile is complete;
+        Your teaching tracks. Skill-Dev lists once your expert profile is complete;
         Academy requires admin approval. Use the links to fill in or edit each
         track's details — the advertised expert profile and the faculty
         application both live behind these.
