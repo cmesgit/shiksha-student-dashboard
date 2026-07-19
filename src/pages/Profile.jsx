@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import { getPublicProfile, savePublicProfile } from "../utils/profileStorage";
+import { LoadingState } from "../components/StateViews";
 import "../styles/profile.css";
 
 export default function Profile() {
@@ -199,7 +200,7 @@ export default function Profile() {
     }
   };
 
-  if (loading) return <div className="profileLoading">Loading...</div>;
+  if (loading) return <LoadingState label="Loading" />;
 
   const metaBits = [
     studentInfo?.currentClass && `Class ${studentInfo.currentClass}`,

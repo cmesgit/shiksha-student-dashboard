@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import api from "../api/apiClient";
 import PrivateClassroomUI from "../components/live/PrivateClassroomUI";
+import ReconnectingBanner from "../components/live/ReconnectingBanner";
 import "../styles/privateSessions.css";
 
 const fullscreenWrap = {
@@ -156,6 +157,7 @@ export default function SkillSessionLive() {
         style={liveKitWrap}
         onDisconnected={goBack}
       >
+        <ReconnectingBanner />
         <PrivateClassroomUI role="STUDENT" sessionId={id} onLeave={goBack} unrestricted />
         <RoomAudioRenderer />
       </LiveKitRoom>

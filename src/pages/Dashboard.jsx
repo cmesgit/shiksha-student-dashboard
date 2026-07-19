@@ -41,8 +41,10 @@ import QuizCard from "../components/QuizCard";
 import NotificationCard from "../components/NotificationCard";
 import DropdownMenu from "../components/DropdownMenu";
 import TopSliderTabs from "../components/TopSliderTabs";
+import NavIcon from "../components/NavIcon";
 import SkillDevStudentSection from "../components/SkillDevStudentSection";
 import AcademyEmptyState from "../components/AcademyEmptyState";
+import { LoadingState } from "../components/StateViews";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
 import useNotificationSocket from "../hooks/useNotificationSocket";
@@ -626,7 +628,7 @@ export default function Dashboard() {
     );
   }
 
-  if (loading) return <div style={{ padding: 20 }}>Loading dashboard...</div>;
+  if (loading) return <LoadingState label="Loading dashboard" />;
 
   if (!activeCourse) {
     // No Academy enrolment on THIS profile — onboarding placeholder.
@@ -650,9 +652,34 @@ export default function Dashboard() {
     );
   }
 
+  const _now = new Date();
+  const _pendingAssignments = assignments.filter((a) => {
+    const d = a.dueDate || a.due ? new Date(a.dueDate || a.due) : null;
+    return !d || Number.isNaN(d.getTime()) || d >= _now;
+  }).length;
+  const statCards = [
+    { icon: "video", iconBg: "#e6f4f6", iconColor: "#13899b", value: sessions.length,        label: "Classes this week" },
+    { icon: "file",  iconBg: "#ecf8ee", iconColor: "#2f9d42", value: _pendingAssignments,     label: "Assignments due" },
+    { icon: "help",  iconBg: "#e8edfb", iconColor: "#1d4ed8", value: quizzes.length,          label: "Quizzes" },
+    { icon: "lock",  iconBg: "#fff8f0", iconColor: "#d97706", value: privateSessions.length,  label: "1-on-1 sessions" },
+  ];
+
   return (
     <div className="dashboardShell">
       <div className="desktopOnly">
+        <div className="dashStatRow">
+          {statCards.map((st) => (
+            <div className="dashStat" key={st.label}>
+              <div className="dashStat__icon" style={{ background: st.iconBg, color: st.iconColor }}>
+                <NavIcon name={st.icon} size={18} color={st.iconColor} />
+              </div>
+              <div>
+                <div className="dashStat__value">{st.value}</div>
+                <div className="dashStat__label">{st.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
         <div className="dashboardMain">
           <div className="dashboardLeft">
             <section className="dashboardCard dashboardCard--live">

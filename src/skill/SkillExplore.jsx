@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Icon } from "./skillIcons";
 import { Avatar } from "./skillUI";
 import { useAuth } from "../contexts/AuthContext";
+import { LoadingState } from "../components/StateViews";
 
 const ACC = "#6b2410";
 
@@ -25,6 +26,8 @@ export default function SkillExplore({ setTab = () => {}, openMsg = () => {} }) 
   const [categories, setCategories] = useState([]);
   const [offlineOnly, setOfflineOnly] = useState(false);
   const [pincode,    setPincode]    = useState("");
+  // Only one card's intro-video preview open at a time.
+  const [openVideoId, setOpenVideoId] = useState(null);
 
   const load = useCallback((cat, q, opts = {}) => {
     setLoading(true);
@@ -121,46 +124,70 @@ export default function SkillExplore({ setTab = () => {}, openMsg = () => {} }) 
         </div>
 
         {loading ? (
-          <div style={{ fontSize: 12, color: "#888", padding: "12px 0" }}>Loading…</div>
+          <LoadingState plain label="Loading" />
         ) : experts.length === 0 ? (
           <div style={{ fontSize: 12, color: "#888", padding: "12px 0" }}>No experts found. Try a different category.</div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {experts.map((t) => (
-              <div key={t.id} style={{ display: "flex", gap: 12, alignItems: "center", border: "1px solid #efe2d6", borderRadius: 13, padding: 12 }}>
-                <Avatar name={t.name} img={t.img} size={46} radius={11} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: "#1a1a1a", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    {t.name}
-                    {t.advertised && (
-                      <span title="Featured" style={{ fontSize: 9, fontWeight: 800, color: "#b46a00", background: "#ff8f0122", padding: "1px 6px", borderRadius: 100 }}>
-                        Featured
-                      </span>
+              <div key={t.id} style={{ border: "1px solid #efe2d6", borderRadius: 13, padding: 12 }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                  <Avatar name={t.name} img={t.img} size={46} radius={11} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#1a1a1a", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      {t.name}
+                      {t.advertised && (
+                        <span title="Featured" style={{ fontSize: 9, fontWeight: 800, color: "#b46a00", background: "#ff8f0122", padding: "1px 6px", borderRadius: 100 }}>
+                          Featured
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#888", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.role}</div>
+                    <div style={{ fontSize: 11, color: "#6b7c83", marginTop: 3, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <Icon.star size={11} /> {t.rating ?? "—"}
+                    </div>
+                    {t.offline && (
+                      <div style={{ fontSize: 10.5, color: "#6b2410", marginTop: 3 }}>
+                        📍 Offline{t.location?.city ? ` · ${t.location.city}` : t.location?.district ? ` · ${t.location.district}` : ""}
+                      </div>
                     )}
                   </div>
-                  <div style={{ fontSize: 11, color: "#888", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.role}</div>
-                  <div style={{ fontSize: 11, color: "#6b7c83", marginTop: 3, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <Icon.star size={11} /> {t.rating ?? "—"} · ₹{t.rate}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+                    <button onClick={() => setTab("book", { expertId: t.id })} style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>
+                      View
+                    </button>
+                    <button
+                      onClick={() => openMsg(t.teacher_profile_id, t.name)}
+                      disabled={!t.teacher_profile_id}
+                      title={t.teacher_profile_id ? "Message this expert" : "Messaging unavailable"}
+                      style={{ background: "#fff", color: ACC, border: `1.5px solid ${ACC}`, borderRadius: 8, padding: "7px 12px", fontSize: 11.5, fontWeight: 700, cursor: t.teacher_profile_id ? "pointer" : "not-allowed", opacity: t.teacher_profile_id ? 1 : 0.5, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5 }}
+                    >
+                      <Icon.msg size={12} /> Message
+                    </button>
                   </div>
-                  {t.offline && (
-                    <div style={{ fontSize: 10.5, color: "#6b2410", marginTop: 3 }}>
-                      📍 Offline{t.location?.city ? ` · ${t.location.city}` : t.location?.district ? ` · ${t.location.district}` : ""}
-                    </div>
-                  )}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
-                  <button onClick={() => setTab("book", { expertId: t.id })} style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "8px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}>
-                    View
-                  </button>
-                  <button
-                    onClick={() => openMsg(t.teacher_profile_id, t.name)}
-                    disabled={!t.teacher_profile_id}
-                    title={t.teacher_profile_id ? "Message this expert" : "Messaging unavailable"}
-                    style={{ background: "#fff", color: ACC, border: `1.5px solid ${ACC}`, borderRadius: 8, padding: "7px 12px", fontSize: 11.5, fontWeight: 700, cursor: t.teacher_profile_id ? "pointer" : "not-allowed", opacity: t.teacher_profile_id ? 1 : 0.5, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5 }}
-                  >
-                    <Icon.msg size={12} /> Message
-                  </button>
-                </div>
+
+                {t.intro_video_embed_url && (
+                  <div style={{ marginTop: 10 }}>
+                    <button
+                      onClick={() => setOpenVideoId(openVideoId === t.id ? null : t.id)}
+                      style={{ background: "none", border: "none", color: ACC, fontSize: 11.5, fontWeight: 700, cursor: "pointer", padding: 0, display: "inline-flex", alignItems: "center", gap: 5 }}
+                    >
+                      {openVideoId === t.id ? "▲ Hide intro" : "▶ Watch intro"}
+                    </button>
+                    {openVideoId === t.id && (
+                      <div style={{ marginTop: 8 }}>
+                        <iframe
+                          src={t.intro_video_embed_url}
+                          title={`${t.name} intro`}
+                          style={{ width: "100%", aspectRatio: "16/9", border: "none", borderRadius: 10 }}
+                          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

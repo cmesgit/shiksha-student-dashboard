@@ -15,6 +15,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { LoadingState } from "./StateViews";
 import "../styles/skillDevDashboard.css";
 
 /* ── Icons ─────────────────────────────────────────────────────────── */
@@ -148,7 +149,7 @@ export default function SkillDevStudentSection() {
         <SectionHead title="Next session" action="View all →" onClick={() => navigate("/skill-dev/sessions")} />
 
         {loading ? (
-          <div style={emptyBox}>Loading your sessions…</div>
+          <LoadingState label="Loading your sessions" />
         ) : sessions.length === 0 ? (
           <div style={emptyBox}>
             No upcoming sessions.{" "}
@@ -199,7 +200,7 @@ export default function SkillDevStudentSection() {
         </div>
 
         {loading ? (
-          <p style={{ fontSize: 12, color: C.soft, fontFamily: MP }}>Loading…</p>
+          <LoadingState plain label="Loading" />
         ) : experts.length === 0 ? (
           <p style={{ fontSize: 12, color: C.soft, fontFamily: MP }}>No tutors yet. Book a session to get started.</p>
         ) : experts.map((e) => (

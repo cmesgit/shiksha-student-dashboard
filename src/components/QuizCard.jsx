@@ -4,6 +4,7 @@ export default function QuizCard({
   title,
   teacher,
   deadline,
+  mode,
   isCompleted,
   inProgress,
   badge,
@@ -23,6 +24,11 @@ export default function QuizCard({
       )}
 
       <div className="quizCard__top">
+        {mode && (
+          <span className={`quizCard__mode quizCard__mode--${mode.toLowerCase()}`}>
+            {mode}
+          </span>
+        )}
         <p className="quizCard__title">{title}</p>
       </div>
 

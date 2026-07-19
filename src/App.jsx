@@ -14,6 +14,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CourseProvider } from "./contexts/CourseContext";
+import DocumentTitle from "./components/DocumentTitle";
 import { HOME_URL } from "./config/urls";
 
 import StudentLayout from "./layout/StudentLayout";
@@ -34,6 +35,7 @@ import AssignmentDetail from "./pages/AssignmentDetail";
 import SubjectsQuiz from "./pages/SubjectsQuiz";
 import QuizList from "./pages/QuizList";
 import QuizDetail from "./pages/QuizDetail";
+import QuizPractice from "./pages/QuizPractice";
 import QuizResult from "./pages/QuizResult";
 import QuizAttempts from "./pages/QuizAttempts";
 import SubjectsRecordings from "./pages/SubjectsRecordings";
@@ -52,6 +54,8 @@ import Quiz from "./pages/Quiz";
 import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
+import Progress from "./pages/Progress";
+import AssignmentsSubjects from "./pages/AssignmentsSubjects";
 import MyCourses from "./pages/MyCourses";
 import BrowseCourses from "./pages/BrowseCourses";
 import MyCounselling from "./pages/counselling/MyCounselling";
@@ -88,6 +92,7 @@ export default function App() {
     <AuthProvider>
       <CourseProvider>
         <BrowserRouter>
+          <DocumentTitle />
           <Routes>
             <Route
               path="/"
@@ -108,13 +113,20 @@ export default function App() {
               <Route path="subjects" element={<Subjects />} />
               <Route path="subjects/:subjectId" element={<SubjectDetails />} />
 
-              <Route path="assignments" element={<Subjects mode="assignments" />} />
+              {/* Top-level Progress (mockup nav item). Progress falls back to
+                  the active course when no :courseId is present. */}
+              <Route path="progress" element={<Progress />} />
+
+              {/* Top-level Assignments landing (subject picker). Replaces the
+                  old redirect to /subjects so the nav item is a real page. */}
+              <Route path="assignments" element={<AssignmentsSubjects />} />
               <Route path="subjects/:subjectId/assignments" element={<SubjectsAssignments />} />
               <Route path="subjects/:subjectId/assignments/:assignmentId" element={<AssignmentDetail />} />
 
               <Route path="subjects/quiz" element={<SubjectsQuiz />} />
               <Route path="subjects/quiz/:subjectId" element={<QuizList />} />
               <Route path="subjects/quiz/:subjectId/take/:quizId" element={<QuizDetail />} />
+              <Route path="subjects/quiz/:subjectId/practice/:quizId" element={<QuizPractice />} />
               <Route path="subjects/quiz/:subjectId/result/:quizId" element={<QuizResult />} />
               <Route path="subjects/quiz/:subjectId/attempts/:quizId" element={<QuizAttempts />} />
 
@@ -139,6 +151,7 @@ export default function App() {
 
               <Route path="my-courses" element={<MyCourses />} />
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
+              <Route path="my-courses/:courseId/progress" element={<Progress />} />
               <Route path="browse-courses" element={<BrowseCourses />} />
 
               {/* ── Counselling ──

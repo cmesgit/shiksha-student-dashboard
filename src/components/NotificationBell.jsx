@@ -14,6 +14,7 @@ import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { IoNotificationsOutline, IoNotificationsSharp } from "react-icons/io5";
 import useNotificationSocket from "../hooks/useNotificationSocket";
+import { LoadingState } from "./StateViews";
 
 const TYPE_ICONS = {
   ASSIGNMENT:      "📝",
@@ -68,7 +69,7 @@ export default function NotificationBell() {
   };
 
   const handleNotifClick = (notif) => {
-    const { type, subject_id, id, is_private_session, is_group_session, link_url } = notif;
+    const { type, subject_id, id, is_private_session, is_group_session, is_skill_session, link_url } = notif;
     if (id) markOneRead(id);
 
     // Notifications from the notifications app (counseling.*, forum.*, and
@@ -93,6 +94,14 @@ export default function NotificationBell() {
     // the Group Sessions page, not /live-sessions.
     if (is_group_session) {
       navigate("/group-sessions");
+      setOpen(false);
+      return;
+    }
+
+    // Skill-Dev (1-on-1 expert) session notifications — confirm/decline/
+    // cancel/complete/reschedule all carry this flag.
+    if (is_skill_session) {
+      navigate(id ? `/skill-dev/sessions/${id}` : "/skill-dev/sessions");
       setOpen(false);
       return;
     }
@@ -152,7 +161,7 @@ export default function NotificationBell() {
 
           <div className="notif-bell-list">
             {loading ? (
-              <div className="notif-bell-empty">Loading...</div>
+              <LoadingState plain label="Loading" />
             ) : notifications.length === 0 ? (
               <div className="notif-bell-empty">No notifications</div>
             ) : (
@@ -188,6 +197,13 @@ export default function NotificationBell() {
               })
             )}
           </div>
+
+          <button
+            className="notif-bell-seeall"
+            onClick={() => { setOpen(false); navigate("/chat?view=notifications"); }}
+          >
+            See all in Communication Center
+          </button>
         </div>
       )}
     </div>

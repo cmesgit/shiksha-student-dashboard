@@ -6,20 +6,23 @@
  * activeTrack in CourseContext. (The old "Select Course" dropdown stays
  * removed — the active course comes from enrollment.)
  */
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useCourse } from "../contexts/CourseContext";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
+import { RiDashboardLine, RiBookOpenLine } from "react-icons/ri";
 import { useAuth } from "../contexts/AuthContext";
 import ProfileSwitcher from "../shared/ProfileSwitcher";
 import LearnerTrackSwitcher from "./LearnerTrackSwitcher";
 import "../styles/header.css";
 import "../shared/ProfileSwitcher.css";
+import MessageIcon from "./MessageIcon";
 import NotificationBell from "./NotificationBell";
 import { HOME_URL, TEACHER_DASHBOARD_URL as TEACHER_URL } from "../config/urls";
 
 export default function Header({ toggleMenu, menuOpen }) {
   const { activeTrack } = useCourse();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const isDashboard = pathname === "/";
 
   const { user, activeProfile, isTeacherContext } = useAuth();
@@ -54,11 +57,18 @@ export default function Header({ toggleMenu, menuOpen }) {
       <LearnerTrackSwitcher />
 
       <div className="header__right" style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" }}>
+        <MessageIcon to={activeTrack === "skill" ? "/skill-messages" : "/chat"} />
         <NotificationBell />
         <ProfileSwitcher
           teacherSignupUrl={`${HOME_URL}/signup?role=teacher`}
           learnUrl={window.location.origin}
           teachUrl={TEACHER_URL}
+          quickActions={[
+            { label: "Dashboard", icon: <RiDashboardLine />, onClick: () => navigate("/") },
+            activeTrack === "skill"
+              ? { label: "My sessions", icon: <RiBookOpenLine />, onClick: () => navigate("/skill-dev/sessions") }
+              : { label: "My courses", icon: <RiBookOpenLine />, onClick: () => navigate("/my-courses") },
+          ]}
         />
       </div>
     </header>

@@ -12,12 +12,28 @@
   background: white;
   border-radius: 18px 18px 0 0;
   padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .subjectsHeaderBox .pageHeader {
   padding-bottom: 0;
   margin-bottom: 0;
   border-bottom: none;
+}
+
+.subjectsFullProgressLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: #425f7f;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.subjectsFullProgressLink:hover {
+  text-decoration: underline;
 }
 
 .subjectsBodyBox {

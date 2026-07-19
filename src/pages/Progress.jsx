@@ -1,13 +1,20 @@
 // PLACEMENT: src/pages/Progress.jsx
 //
-// Read-only view of the student's course progress. If the student is in a
-// batch, this shows THAT batch's coverage (teachers tick chapters per batch);
-// if they're not assigned to a batch yet, the backend falls back to the
-// course-wide syllabus coverage and flags it, which we label accordingly.
+// Read-only view of a course's progress. If the student is in a batch, this
+// shows THAT batch's coverage (teachers tick chapters per batch); if they're
+// not assigned to a batch yet, the backend falls back to the course-wide
+// syllabus coverage and flags it, which we label accordingly.
 //
-// Endpoint: GET /courses/my-batch-progress/?course=<activeCourse.id>
+// Routed at /my-courses/:courseId/progress (linked from MyCourseDetail's
+// "Progress" card) so it always shows the course being viewed — NOT
+// CourseContext's globally active course, which can differ if the student
+// has more than one enrollment and is looking at a course they didn't
+// switch to.
+//
+// Endpoint: GET /courses/my-batch-progress/?course=<courseId>
 
 import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useCourse } from "../contexts/CourseContext";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
@@ -26,14 +33,24 @@ function Bar({ percent }) {
 }
 
 export default function Progress() {
-  const { activeCourse, loading: courseLoading } = useCourse();
+  const { courseId } = useParams();
+  const navigate = useNavigate();
+  const { courses, activeCourse, loading: courseLoading } = useCourse();
+
+  // Routed with a courseId → show THAT course, regardless of which one is
+  // globally "active". Reached with no param (shouldn't normally happen,
+  // but keeps the component safe to reuse) → fall back to activeCourse.
+  const course = courseId
+    ? courses?.find((c) => c.id === courseId)
+    : activeCourse;
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (courseLoading) return;
-    if (!activeCourse) { setData(null); setLoading(false); return; }
+    if (!course) { setData(null); setLoading(false); return; }
 
     let cancel = false;
     setLoading(true);
@@ -41,7 +58,7 @@ export default function Progress() {
     (async () => {
       try {
         const res = await api.get("/courses/my-batch-progress/", {
-          params: { course: activeCourse.id },
+          params: { course: course.id },
         });
         if (!cancel) setData(res.data);
       } catch (err) {
@@ -52,12 +69,13 @@ export default function Progress() {
       }
     })();
     return () => { cancel = true; };
-  }, [activeCourse, courseLoading]);
+  }, [course, courseLoading]);
 
   const isFallback = data && (data.batch === null || data.fallback === "course_wide");
 
   return (
     <div className="progressPage">
+      <button className="progressBack" onClick={() => navigate(-1)}>← Back</button>
       <div className="progressHeaderBox">
         <PageHeader title="Course Progress" />
       </div>
@@ -65,13 +83,13 @@ export default function Progress() {
       <div className="progressBodyBox">
         {courseLoading || loading ? (
           <LoadingState plain label="Loading progress" />
-        ) : !activeCourse ? (
+        ) : !course ? (
           <EmptyState
             plain
             icon="book"
-            title="No course selected"
-            message="Enrol in a course to follow how much of the syllabus your teachers have covered."
-            action={{ label: "Browse courses", to: "/browse-courses", icon: "search" }}
+            title="Course not found"
+            message="You're not enrolled in this course, or it no longer exists."
+            action={{ label: "My courses", to: "/my-courses", icon: "search" }}
           />
         ) : failed ? (
           <ErrorState

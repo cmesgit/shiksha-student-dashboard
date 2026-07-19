@@ -413,3 +413,72 @@
   opacity: .8;
 }
 .quiz-tab-warning-close:hover { opacity: 1; }
+/* ── Question heading row + mark-for-review ── */
+.quiz-q-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.quiz-q-heading-row .quiz-q-heading { margin: 0; }
+
+.quiz-mark-btn {
+  margin-left: auto;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #6b7280;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.quiz-mark-btn:hover { background: #f5f5f5; }
+.quiz-mark-btn--on {
+  background: #f3e8fb;
+  border-color: #6a1b9a;
+  color: #6a1b9a;
+}
+
+/* ── Palette legend ── */
+.quiz-palette-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 10px;
+}
+.pal-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.pal-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+.pal-dot.answered     { background: #43a047; }
+.pal-dot.not-answered { background: #eceff1; border: 1px solid #bbb; }
+.pal-dot.not-visited  { background: #546e7a; }
+.pal-dot.marked       { background: #6a1b9a; }
+
+/* ── Mobile: stack the question palette below the question instead of
+   squeezing a fixed 210px sidebar next to it ── */
+@media (max-width: 768px) {
+  .quiz-body {
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .quiz-q-panel {
+    padding: 20px 16px;
+  }
+  .quiz-sidebar {
+    width: 100%;
+    flex-shrink: 0;
+  }
+}

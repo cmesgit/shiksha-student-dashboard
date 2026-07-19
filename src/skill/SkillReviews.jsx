@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { Icon } from "./skillIcons";
 import { Avatar } from "./skillUI";
 import { useAuth } from "../contexts/AuthContext";
+import { LoadingState } from "../components/StateViews";
 
 const ACC = "#ff8f01";
 
@@ -84,7 +85,7 @@ export default function SkillReviews() {
       </div>
 
       {loading ? (
-        <div className="rd-card" style={{ textAlign: "center", padding: "26px 16px", fontSize: 12.5, color: "#888" }}>Loading your reviews…</div>
+        <LoadingState label="Loading your reviews" />
       ) : reviews.length === 0 ? (
         <div className="rd-card" style={{ textAlign: "center", padding: "30px 16px" }}>
           <div style={{ fontSize: 13, color: "#888" }}>You haven&apos;t written any reviews yet.</div>

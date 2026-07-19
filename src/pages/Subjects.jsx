@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useCourse } from "../contexts/CourseContext";
 import api from "../api/apiClient";
@@ -7,21 +7,20 @@ import PageHeader from "../components/PageHeader";
 import { LoadingState, EmptyState } from "../components/StateViews";
 import "../styles/subjects.css";
 
-export default function Subjects({ mode }) {
+export default function Subjects() {
   const navigate = useNavigate();
   const { activeCourse, loading: courseLoading } = useCourse();
 
   const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);  // ← fixed typo (setaLoading → setLoading)
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [taskCounts, setTaskCounts] = useState({});
   const [taskCountsReady, setTaskCountsReady] = useState(false);
+  const [progressBySubject, setProgressBySubject] = useState({});
 
   const filteredSubjects = subjects.filter((subject) =>
     subject.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // ← removed subjectImages entirely
 
   useEffect(() => {
     if (courseLoading) return;
@@ -47,8 +46,34 @@ export default function Subjects({ mode }) {
     fetchSubjects();
   }, [activeCourse, courseLoading]);
 
+  // Per-subject chapter-coverage percent — same data Progress.jsx uses,
+  // merged inline here so a subject's progress is visible without a
+  // separate trip to /my-courses/:id/progress.
   useEffect(() => {
-    if (mode !== "assignments" || subjects.length === 0) return;
+    if (!activeCourse) { setProgressBySubject({}); return; }
+
+    async function fetchProgress() {
+      try {
+        const res = await api.get("/courses/my-batch-progress/", {
+          params: { course: activeCourse.id },
+        });
+        const bySubject = {};
+        (res.data?.subjects || []).forEach((s) => {
+          bySubject[s.id] = s.percent;
+        });
+        setProgressBySubject(bySubject);
+      } catch (err) {
+        console.error("Failed to load subject progress", err);
+        setProgressBySubject({});
+      }
+    }
+
+    fetchProgress();
+  }, [activeCourse]);
+
+  // Per-subject assignment pending/completed counts.
+  useEffect(() => {
+    if (subjects.length === 0) return;
 
     async function fetchTaskCounts() {
       const results = await Promise.allSettled(
@@ -71,7 +96,7 @@ export default function Subjects({ mode }) {
     }
 
     fetchTaskCounts();
-  }, [subjects, mode]);
+  }, [subjects]);
 
   if (loading) return <LoadingState label="Loading subjects" />;
   if (!activeCourse)
@@ -79,7 +104,7 @@ export default function Subjects({ mode }) {
       <EmptyState
         icon="book"
         title="No course selected"
-        message="Enrol in a course to see its subjects, assignments, and materials."
+        message="Enrol in a course to see its subjects, assignments, and progress."
         action={{ label: "Browse courses", to: "/browse-courses", icon: "search" }}
       />
     );
@@ -87,9 +112,10 @@ export default function Subjects({ mode }) {
   return (
     <div className="subjectsPage">
       <div className="subjectsHeaderBox">
-        <PageHeader
-          title={mode === "assignments" ? "All Assignments" : "Subjects"}
-        />
+        <PageHeader title="Subjects" />
+        <Link to={`/my-courses/${activeCourse.id}/progress`} className="subjectsFullProgressLink">
+          View full progress →
+        </Link>
       </div>
 
       <div className="subjectsBodyBox">
@@ -98,31 +124,24 @@ export default function Subjects({ mode }) {
             <EmptyState
               plain
               icon="book"
-              title={mode === "assignments" ? "No assignments yet" : "No subjects yet"}
-              message={
-                mode === "assignments"
-                  ? "Assignments will appear here once your teachers set them."
-                  : "Subjects for this course will show up here once they're added."
-              }
+              title="No subjects yet"
+              message="Subjects for this course will show up here once they're added."
             />
           ) : (
             filteredSubjects.map((subject) => (
               <SubjectCard
                 key={subject.id}
-                img={subject.image || "/images/default.png"}  // ← changed
+                img={subject.image || "/images/default.png"}
                 subject={subject.name}
                 teacher={
                   subject.teachers?.length
                     ? subject.teachers.map((t) => t.name).join(", ")
                     : "No teacher assigned"
                 }
-                pendingCount={mode === "assignments" && taskCountsReady ? (taskCounts[subject.id]?.pending ?? 0) : undefined}
-                completedCount={mode === "assignments" && taskCountsReady ? (taskCounts[subject.id]?.completed ?? 0) : undefined}
-                onClick={() =>
-                  mode === "assignments"
-                    ? navigate(`/subjects/${subject.id}/assignments`)
-                    : navigate(`/subjects/${subject.id}`)
-                }
+                progressPercent={progressBySubject[subject.id]}
+                pendingCount={taskCountsReady ? (taskCounts[subject.id]?.pending ?? 0) : undefined}
+                completedCount={taskCountsReady ? (taskCounts[subject.id]?.completed ?? 0) : undefined}
+                onClick={() => navigate(`/subjects/${subject.id}`)}
               />
             ))
           )}

@@ -1,0 +1,137 @@
+.qraCompareRow {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: #6b7c83;
+  background: #f8fafb;
+  border: 1px solid #eef1f2;
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin: 12px 0;
+}
+.qraCompareRow strong { color: #1a2c33; }
+
+.qraGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin: 14px 0;
+}
+
+.qraCard {
+  background: #fff;
+  border: 1px solid #e5eaed;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+
+.qraCardTitle { font-size: 13px; font-weight: 700; color: #1a2c33; margin-bottom: 4px; }
+.qraCardSub { font-size: 11px; color: #6b7c83; margin-bottom: 10px; }
+
+.qraTrendSvg { display: block; margin: 6px 0; }
+.qraTrendLegend { display: flex; gap: 16px; font-size: 11px; color: #6b7c83; }
+.qraDot { width: 12px; height: 3px; display: inline-block; border-radius: 2px; margin-right: 5px; }
+.qraDot--you { background: #425f7f; }
+.qraDot--avg { background: #c7d0d6; }
+
+.qraBarList { display: flex; flex-direction: column; gap: 12px; }
+.qraBarRow { }
+.qraBarRowTop { display: flex; justify-content: space-between; font-size: 11.5px; margin-bottom: 4px; }
+.qraStrong { font-weight: 700; color: #1a2c33; }
+.qraWeak { font-weight: 700; color: #b45309; }
+
+.qraTrack { height: 7px; border-radius: 99px; background: #eef1f2; overflow: hidden; }
+.qraTrack--time { height: 9px; }
+.qraFill { height: 100%; border-radius: 99px; }
+.qraFill--strong { background: #425f7f; }
+.qraFill--weak { background: #f59e0b; }
+.qraFill--slow { background: #f59e0b; }
+
+.qraDiffBars {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  height: 120px;
+  padding: 0 6px;
+}
+.qraDiffCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  justify-content: flex-end;
+}
+.qraDiffPct { font-size: 12px; font-weight: 700; color: #1a2c33; }
+.qraDiffBar { width: 38px; border-radius: 8px 8px 4px 4px; }
+.qraDiffBar--easy { background: #17b17f; }
+.qraDiffBar--medium { background: #f59e0b; }
+.qraDiffBar--hard { background: #dc2626; }
+.qraDiffLabel { font-size: 11px; color: #6b7c83; }
+
+.qraTimeList { display: flex; flex-direction: column; gap: 8px; }
+.qraTimeRow { display: flex; align-items: center; gap: 8px; }
+.qraTimeQ { font-size: 10.5px; font-weight: 600; color: #6b7c83; width: 28px; }
+.qraTimeSecs { font-size: 10.5px; color: #6b7c83; width: 34px; text-align: right; }
+
+.qraQuestionsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.qraQuestionsHeader > span:first-child { font-size: 13px; font-weight: 700; color: #1a2c33; }
+
+.qraRetryBtn {
+  border: 1px solid #cfdbe6;
+  background: #e6edee;
+  color: #425f7f;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.qraRetryBtn:hover { background: #d8e3e5; }
+
+.qraQuestionMeta { display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
+.qraMetaChip {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .2px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #e6edee;
+  color: #425f7f;
+}
+.qraMetaChip--muted { background: #eef1f2; color: #6b7c83; text-transform: none; font-weight: 600; }
+
+/* ── mistakes review carousel ── */
+.mrCard {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  width: 460px;
+  max-width: 92vw;
+  box-shadow: 0 20px 50px rgba(26, 44, 51, .25);
+}
+.mrHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7c83;
+  margin-bottom: 10px;
+}
+.mrClose { border: none; background: none; color: #9ca3af; font-size: 16px; cursor: pointer; }
+.mrQuestionText { font-size: 15px; font-weight: 600; color: #1a2c33; margin-bottom: 14px; }
+.mrAnswerRow { border-radius: 8px; padding: 10px 12px; font-size: 12.5px; margin-bottom: 8px; }
+.mrAnswerRow--wrong { background: #fdeaea; color: #b91c1c; }
+.mrAnswerRow--correct { background: #ecf8ee; color: #1f8a45; }
+.mrExplanation { font-size: 12.5px; color: #374151; background: #f8fafb; border-radius: 8px; padding: 10px 12px; margin-top: 6px; }
+.mrFooter { display: flex; justify-content: space-between; margin-top: 18px; }

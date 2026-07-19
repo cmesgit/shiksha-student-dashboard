@@ -395,7 +395,7 @@
 }
 
 .interests__addInput::placeholder {
-  color: #bbb;
+  color: #8a8f95;
 }
 
 .interests__addBtn {
@@ -618,6 +618,7 @@
 
 .avatarPicker__saveBtn:disabled {
   background: #ccc;
+  color: #767676;
   cursor: not-allowed;
 }
 
@@ -849,7 +850,7 @@
 }
 
 .editModal__addInput::placeholder {
-  color: #bbb;
+  color: #8a8f95;
 }
 
 .editModal__addBtn {

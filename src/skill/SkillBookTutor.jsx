@@ -11,11 +11,10 @@
 //    This is the seam: enabling payments later = implement the paid footer
 //    branch here, nothing else moves.
 //  • The "Pricing & packages" card (5-pack / 10-pack, Save 18%) is REMOVED —
-//    it advertised purchases the platform cannot take. `packs` import dropped;
-//    skillData.js can be deleted once nothing else imports it.
-//  • Booking summary shows tutor + slot + "Free during launch phase". The
-//    hourly rate stays visible on tutor chips as information about future
-//    pricing, not as a charge.
+//    it advertised purchases the platform cannot take. `packs` import dropped.
+//  • All rate/price displays are stripped — booking is free at launch and
+//    nothing in this UI implies a charge. Booking summary shows tutor + slot
+//    + a "Free during launch" note.
 //
 // Wired to:
 //   GET  /skill/payment-config/                    → live payment mode
@@ -28,6 +27,7 @@ import { useLocation } from "react-router-dom";
 import { Icon } from "./skillIcons";
 import { Avatar, StarRow } from "./skillUI";
 import { useAuth } from "../contexts/AuthContext";
+import { LoadingState } from "../components/StateViews";
 import * as AV from "./availability";
 
 const ACC = "#ff8f01";
@@ -114,7 +114,7 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
   };
 
   if (loading) {
-    return <div style={{ padding: "14px 18px 22px", fontSize: 12, color: "#888" }}>Loading experts…</div>;
+    return <LoadingState label="Loading experts" />;
   }
 
   if (experts.length === 0) {
@@ -150,7 +150,7 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
               <Avatar name={bt.name} img={bt.img} size={38} circle />
               <div>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: "#1a1a1a" }}>{bt.name}</div>
-                <div style={{ fontSize: 10.5, color: "#999" }}>{bt.role} · ₹{bt.rate}/hr</div>
+                <div style={{ fontSize: 10.5, color: "#999" }}>{bt.role}</div>
               </div>
             </button>
           ))}
@@ -177,6 +177,18 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
                 <Icon.msg size={14} /> Message
               </button>
             </div>
+
+            {t.intro_video_embed_url && (
+              <div style={{ marginBottom: 14 }}>
+                <iframe
+                  src={t.intro_video_embed_url}
+                  title={`${t.name} intro`}
+                  style={{ width: "100%", aspectRatio: "16/9", border: "none", borderRadius: 10 }}
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+                  allowFullScreen
+                />
+              </div>
+            )}
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 800, color: "#1a2c33" }}>Pick a time · this week</div>
@@ -237,7 +249,6 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
               <div style={{ fontSize: 11.5, color: "#6b7c83", lineHeight: 1.7 }}>
                 The tutor reviews your request and accepts it — you'll see it move
                 from <b>Requested</b> to <b>Confirmed</b> in My Skill Sessions.
-                Rates shown are what sessions will cost once payments launch.
               </div>
             </div>
           </div>
