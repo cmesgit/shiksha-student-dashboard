@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { IoSend } from "react-icons/io5";
-import "./ChatPanel.css";
+import "./LiveChatPanel.css";
 
-export default function ChatPanel({
+export default function LiveChatPanel({
   messages = [],
   onSendMessage,
 }) {

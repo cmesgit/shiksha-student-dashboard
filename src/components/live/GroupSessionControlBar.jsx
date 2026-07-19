@@ -105,8 +105,9 @@ export default function GroupSessionControlBar({
     setVideoOn(false);
   }, [isStudent, localParticipant]);
 
-  /* Keyed on the reactive enabled-flags so the icon re-syncs once the track
-     actually publishes, instead of catching a stale `false` on mount. */
+  /* Keyed on the reactive enabled-flags so the icon re-syncs once the mic/camera
+     track actually publishes (reading the getter once on mount caught a stale
+     `false` and forced a double-click to mute). */
   useEffect(() => {
     if (isStudent || !localParticipant) return;
 
@@ -171,6 +172,9 @@ export default function GroupSessionControlBar({
 
   const toggleMic = async () => {
     if (!localParticipant) return;
+    // A tap is a valid user gesture — use it to also unblock mobile audio
+    // playback in case the RoomAudioRenderer was autoplay-suppressed.
+    room?.startAudio?.().catch(() => {});
     if (isStudent && !canUnmute && !micOn) return;
     if (micBusy) return;
 

@@ -1,6 +1,6 @@
 import { useTracks, VideoTrack, useRoomContext } from "@livekit/components-react";
 import { Track } from "livekit-client";
-import ChatPanel from "./ChatPanel";
+import LiveChatPanel from "./LiveChatPanel";
 import RaiseHandButton from "./RaiseHandButton";
 import ControlBar from "./ControlBar";
 import React, { useState, useRef, useEffect } from "react";
@@ -232,7 +232,7 @@ export default function ClassroomUI({
           {/* CHAT */}
           {activePanel === "chat" && (
             <>
-              <ChatPanel
+              <LiveChatPanel
                 role={role}
                 messages={chatMessages}
                 onSendMessage={sendMessage}
