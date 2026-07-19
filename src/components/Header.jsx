@@ -65,7 +65,9 @@ export default function Header({ toggleMenu, menuOpen }) {
           teachUrl={TEACHER_URL}
           quickActions={[
             { label: "Dashboard", icon: <RiDashboardLine />, onClick: () => navigate("/") },
-            { label: "My courses", icon: <RiBookOpenLine />, onClick: () => navigate("/my-courses") },
+            activeTrack === "skill"
+              ? { label: "My sessions", icon: <RiBookOpenLine />, onClick: () => navigate("/skill-dev/sessions") }
+              : { label: "My courses", icon: <RiBookOpenLine />, onClick: () => navigate("/my-courses") },
           ]}
         />
       </div>
