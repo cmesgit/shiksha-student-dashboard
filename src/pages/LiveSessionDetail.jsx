@@ -22,6 +22,17 @@ function readCache(id) {
   }
 }
 
+const centerMsg = {
+  width: "100vw",
+  height: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexDirection: "column",
+  gap: 16,
+  background: "#c9dde1",
+};
+
 export default function LiveSessionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -59,14 +70,36 @@ export default function LiveSessionDetail() {
     navigate("/live-sessions");
   };
 
-  if (error) return (
-    <div style={{ padding: 20 }}>
-      <p style={{ color: "red" }}>{error}</p>
-      <button onClick={() => navigate("/live-sessions")}>Go back</button>
-    </div>
-  );
+  if (error) {
+    return (
+      <div style={centerMsg}>
+        <p style={{ fontSize: 16, color: "#102a2a", margin: 0 }}>{error}</p>
+        <button
+          onClick={() => navigate("/live-sessions")}
+          style={{
+            padding: "10px 24px",
+            borderRadius: 999,
+            border: "none",
+            background: "#005f6f",
+            color: "#fff",
+            cursor: "pointer",
+            fontSize: 14,
+            fontWeight: 600,
+          }}
+        >
+          Go back
+        </button>
+      </div>
+    );
+  }
 
-  if (!data) return <div style={{ padding: 20 }}>Joining session...</div>;
+  if (!data) {
+    return (
+      <div style={centerMsg}>
+        <p style={{ fontSize: 16, color: "#102a2a", margin: 0 }}>Connecting...</p>
+      </div>
+    );
+  }
 
   return (
     <LiveKitRoom
