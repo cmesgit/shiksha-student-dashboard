@@ -171,6 +171,9 @@ export default function QuizList() {
                   badge={activeTab === "completed" && quiz.attempts_count > 1
                     ? `${quiz.attempts_count} attempts`
                     : null}
+                  scoreLabel={activeTab === "completed" && quiz.score != null
+                    ? `${quiz.score}/${quiz.total_marks}`
+                    : null}
                   onClick={() => handleQuizClick(quiz)}
                 />
               ))

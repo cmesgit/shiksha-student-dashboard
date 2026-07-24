@@ -8,6 +8,7 @@ export default function QuizCard({
   isCompleted,
   inProgress,
   badge,
+  scoreLabel,
   onClick,
 }) {
   return (
@@ -16,7 +17,11 @@ export default function QuizCard({
       onClick={onClick}
     >
       {/* Status badge — top-right corner */}
-      {isCompleted && <span className="quizCard__badge quizCard__badge--done">✓ Completed</span>}
+      {isCompleted && (
+        <span className="quizCard__badge quizCard__badge--done">
+          ✓ Completed{scoreLabel ? ` · ${scoreLabel}` : ""}
+        </span>
+      )}
       {inProgress && (
         <span className="quizCard__badge quizCard__badge--progress">
           ▶ In Progress

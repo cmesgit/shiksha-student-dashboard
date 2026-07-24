@@ -186,6 +186,9 @@ function SessionList({ list, focusId, past = false, onCancel, onOpenAssessment, 
                 {a.student_note && (
                   <div className="mc-note">"{a.student_note}"</div>
                 )}
+                {a.status === "cancelled" && a.cancel_reason && (
+                  <div className="mc-note mc-note--cancel">Cancelled: {a.cancel_reason}</div>
+                )}
                 <div className="mc-row-chips">
                   {assessLabel && !past && <span className={`mc-chip ${assessCls}`}>{assessLabel}</span>}
                   {a.has_report && <span className="mc-chip mc-chip--green">Report published</span>}

@@ -193,6 +193,27 @@ export default function AssignmentDetail() {
     </div>
   </div>
 )}
+
+              {assignment.files?.length > 0 && (
+                <div>
+                  {assignment.files.map((f) => (
+                    <div key={f.id}>
+                      <div className="fileStrip">
+                        <div className="fileStripIcon">📄</div>
+                        <div className="fileStripName">{f.original_filename}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: "10px", marginTop: "8px", marginBottom: "8px" }}>
+                        <button className="openFileBtn" onClick={() => window.open(f.url, "_blank")}>
+                          View
+                        </button>
+                        <a href={f.url} download className="openFileBtn" style={{ textAlign: "center", display: "inline-block" }}>
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

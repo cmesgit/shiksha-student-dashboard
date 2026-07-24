@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
@@ -49,6 +49,8 @@ function MistakesReview({ questions, onClose }) {
 export default function QuizResult() {
   const navigate = useNavigate();
   const { subjectId, quizId } = useParams();
+  const [searchParams] = useSearchParams();
+  const attemptId = searchParams.get("attempt");
 
   const [resultData, setResultData]       = useState(null);
   const [loading, setLoading]             = useState(true);
@@ -77,7 +79,9 @@ export default function QuizResult() {
       try {
         setLoading(true);
         setError(null);
-        const res = await api.get(`/quizzes/${quizId}/result/`);
+        const res = await api.get(`/quizzes/${quizId}/result/`, {
+          params: attemptId ? { attempt: attemptId } : {},
+        });
         setResultData(res.data);
       } catch (err) {
         console.error("Failed to load result:", err);
@@ -87,7 +91,7 @@ export default function QuizResult() {
       }
     }
     fetchResult();
-  }, [quizId]);
+  }, [quizId, attemptId]);
 
   const wrongQuestions = useMemo(() => {
     if (!resultData) return [];

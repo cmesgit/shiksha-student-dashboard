@@ -253,6 +253,35 @@ export default function SkillSessionDetail() {
         </div>
       </div>
 
+      {/* Payment — settled directly with the expert */}
+      {s.amount > 0 && (
+        <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${T.border}`, boxShadow: "0 2px 12px rgba(67,20,7,.06)", padding: "4px 20px 6px", marginBottom: 14 }}>
+          <Row
+            icon="₹"
+            label="Payment"
+            value={
+              <span>
+                ₹{s.amount_rupees} · <span style={{ color: s.payment_status === "paid" ? "#059669" : "#b45309", fontWeight: 700 }}>
+                  {s.payment_status === "paid" ? "Paid" : "Unpaid"}
+                </span>
+              </span>
+            }
+          />
+          {s.payment_status !== "paid" && s.pay_to && (
+            <Row
+              icon="💳"
+              label={`Pay ${s.pay_to.name}`}
+              value={
+                <span>
+                  UPI: <span style={{ fontFamily: "monospace" }}>{s.pay_to.upi}</span>
+                  {s.pay_to.note && <div style={{ marginTop: 4, fontWeight: 500, color: T.soft }}>{s.pay_to.note}</div>}
+                </span>
+              }
+            />
+          )}
+        </div>
+      )}
+
       {/* Expert */}
       <div style={{ marginBottom: 14 }}>
         <div style={{ fontSize: 10.5, fontWeight: 700, color: T.soft, textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>Expert</div>
