@@ -1,11 +1,5 @@
 import "../styles/subjectCard.css";
-import { subjectChipPalette } from "../utils/subjectChips";
-
-export function subjectInitials(name) {
-  const trimmed = (name || "").trim();
-  if (!trimmed) return "S";
-  return trimmed.slice(0, 1).toUpperCase() + (trimmed.slice(1, 2).toLowerCase() || "");
-}
+import { subjectChipPalette, subjectInitials } from "../utils/subjectChips";
 
 export default function SubjectCard({
   subject,

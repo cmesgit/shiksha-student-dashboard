@@ -1,346 +1,323 @@
-/* ===== PAGE WRAPPER ===== */
-.subjectDetailsPage {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+/* ============================================================
+   SUBJECT DETAIL — design-system rewrite (sd- prefix)
+   Matches the Academy Dashboard refactor's "Detail page" spec:
+   hero strip, then a two-column body (chapters+recordings left,
+   about+upcoming right).
+   ============================================================ */
 
-/* ===== BACK BUTTON (above the header box) ===== */
-.subjectDetailsBack {
-  background: #425f7f;
-  color: white;
+.sd-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
   border: none;
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 0;
+  margin-bottom: 16px;
+  color: #6b7c83;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  align-self: flex-start;
-  margin-bottom: 4px;
+}
+.sd-back:hover {
+  color: #425f7f;
 }
 
-.subjectDetailsBack:hover {
-  background: #097a83;
+.sd-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid #e5eaed;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(26, 44, 51, 0.06);
 }
 
-/* ===== HEADER BOX (fixed, does not scroll) ===== */
-.subjectDetailsHeaderBox {
-  width: 100%;
-  background: white;
-  border-radius: 18px 18px 0 0;
-  padding: 20px 24px;
+.sd-hero__avatar {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Montserrat, sans-serif;
+  font-size: 18px;
+  font-weight: 800;
 }
 
-.subjectDetailsHeaderBox .pageHeader {
-  padding-bottom: 0;
-  margin-bottom: 0;
-  border-bottom: none;
-}
-
-/* ===== BODY BOX (scrolls) ===== */
-.subjectDetailsBodyBox {
+.sd-hero__main {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  width: 100%;
-  background: white;
-  border-radius: 0 0 18px 18px;
-  padding: 20px 24px;
+  min-width: 0;
+}
+
+.sd-hero__title {
+  margin: 0;
+  font-family: Montserrat, sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #1a2c33;
+}
+
+.sd-hero__meta {
+  margin: 4px 0 0;
+  color: #6b7c83;
+  font-size: 12.5px;
+}
+
+.sd-hero__stats {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.sd-hero__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: #f9fafb;
+  border: 1px solid #e5eaed;
+  border-radius: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.sd-hero__stat:hover {
+  background: #f1f5f9;
+  border-color: #cfdbe6;
+}
+.sd-hero__stat strong {
+  font-family: Montserrat, sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  color: #425f7f;
+}
+.sd-hero__stat span {
+  font-size: 10px;
+  color: #6b7c83;
+}
+
+.sd-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .sd-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sd-main,
+.sd-side {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-/* ===== TOP GRID ===== */
-.topGrid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
-}
-
-/* Teacher big card (horizontal) */
-.teacherDetailsCard {
-  background: #eef2f3;
+.sd-card {
+  background: #fff;
+  border: 1px solid #e5eaed;
   border-radius: 12px;
-  padding: 14px;
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(26, 44, 51, 0.06);
 }
 
-.teacherLeft {
-  flex: 1;
-}
-
-.teacherRight {
-  width: 170px;
+.sd-card__headRow {
   display: flex;
-  justify-content: center;
   align-items: center;
-}
-
-.teacherPhoto {
-  width: 150px;
-  height: 120px;
-  border-radius: 10px;
-  object-fit: cover;
-}
-
-.teacherName {
-  font-size: 13px;
-  font-weight: 800;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 10px;
 }
 
-.teacherInfoGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 18px;
-}
-
-.teacherInfoRow {
-  display: flex;
-  gap: 6px;
-  font-size: 11px;
-}
-
-.label {
+.sd-card__heading {
+  margin: 0;
+  font-family: Montserrat, sans-serif;
+  font-size: 13.5px;
   font-weight: 700;
-  color: #111827;
+  color: #1a2c33;
 }
 
-.value {
-  color: #374151;
-  font-weight: 600;
+.sd-card__sub {
+  font-size: 11px;
+  color: #6b7c83;
+  white-space: nowrap;
 }
 
-/* Right small cards */
-.miniStatCard {
-  background: #eef2f3;
-  border-radius: 12px;
-  padding: 14px;
+.sd-card__link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #425f7f;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sd-card__link:hover {
+  color: #2d4560;
+}
+
+.sd-empty {
+  color: #9ca3af;
+  font-size: 12px;
+  margin: 0;
+}
+
+/* Chapters */
+.sd-chapterList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
 
-.miniStatTitle {
-  font-size: 12px;
-  font-weight: 800;
-  color: #111827;
-  text-align: center;
-}
-
-.miniStatNumber {
-  font-size: 34px;
-  font-weight: 900;
-  color: #7BBEC7;
-  line-height: 1;
-  text-align: center;
-  transition: transform 0.3s ease;
-  cursor: pointer;
-}
-
-.miniStatNumber:hover {
-  transform: scale(1.15);
-  color: #0a7c86;
-}
-
-.miniStatText {
-  font-size: 12px;
-  font-weight: 700;
-  color: #0a7c86;
-  text-align: center;
-}
-
-/* ===== SECOND GRID ===== */
-.secondGrid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
-}
-
-/* Upcoming live sessions wide */
-.liveSessionsCard {
-  background: #eef2f3;
-  border-radius: 12px;
-  padding: 14px;
-}
-
-.cardTitleMain {
-  font-size: 12px;
-  font-weight: 800;
-  margin-bottom: 12px;
-}
-
-.sessionsGridInside {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.sessionItemText {
-  font-size: 10px;
-  color: #4b5563;
-  margin: 2px 0;
-}
-
-/* ===== BOTTOM GRID ===== */
-.bottomGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.assignQuizCard {
-  background: #eef2f3;
-  border-radius: 12px;
-  padding: 16px;
-  text-align: center;
-}
-
-.assignQuizCardTitle {
-  font-size: 13px;
-  font-weight: 900;
-  color: #111827;
-  margin-bottom: 14px;
-}
-
-/* metrics */
-.metricsRow {
+.sd-chapterRow {
   display: flex;
-  justify-content: space-around;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f1f4f6;
+  font-size: 12.5px;
+  color: #1a2c33;
+}
+.sd-chapterRow:last-child {
+  border-bottom: none;
 }
 
-.metricCol {
+.sd-chapterRow__tick {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid #cfdbe6;
+  color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+.sd-chapterRow--done .sd-chapterRow__tick {
+  background: #2f9d42;
+  border-color: #2f9d42;
+  color: #fff;
+}
+
+.sd-chapterRow__title {
+  flex: 1;
+}
+.sd-chapterRow--done .sd-chapterRow__title {
+  color: #6b7c83;
+}
+
+.sd-chapterRow__date {
+  font-size: 11px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+/* Recordings */
+.sd-recordingList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  cursor: pointer;
 }
 
-.metricCol:hover {
-  transform: scale(1.05);
-}
-
-.blueBig {
-  color: #7BBEC7;
-  font-size: 34px;
-  font-weight: 900;
-  line-height: 1;
-  transition: transform 0.3s ease;
-  cursor: pointer;
-}
-
-.blueBig:hover {
-  transform: scale(1.15);
-  color: #0a7c86;
-}
-
-.metricText {
-  font-size: 11px;
-  font-weight: 700;
-  color: #0a7c86;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 950px) {
-  .topGrid,
-  .secondGrid,
-  .bottomGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .teacherDetailsCard {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .teacherInfoGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .teacherRight {
-    width: 100%;
-  }
-}
-
-@media (max-width: 768px) {
-  .subjectDetailsHeaderBox,
-  .subjectDetailsBodyBox {
-    padding: 14px;
-  }
-
-  .teacherDetailsCard {
-    display: flex;
-    flex-direction: row !important;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-  }
-
-  .teacherInfoGrid {
-    display: block;
-    flex: 1;
-  }
-
-  .teacherRight {
-    width: auto;
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .teacherRight img {
-    width: 90px;
-    height: 90px;
-    border-radius: 16px;
-    object-fit: cover;
-  }
-}
-
-.sessionItem {
+.sd-recordingRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  margin-top: 10px;
-  background: #fff;
-  border-radius: 8px;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f1f4f6;
+  font-size: 12.5px;
+  color: #1a2c33;
   cursor: pointer;
-  transition: background 0.2s;
+}
+.sd-recordingRow:last-child {
+  border-bottom: none;
+}
+.sd-recordingRow:hover .sd-recordingRow__title {
+  color: #425f7f;
 }
 
-.sessionItem:hover {
-  background: #f0f0f0;
+.sd-recordingRow__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.sessionItemTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: #222;
-}
-
-.sessionItemTime {
-  font-size: 12px;
-  color: #666;
-}
-
-.sessionBadge {
+.sd-recordingRow__date {
   font-size: 11px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+/* About */
+.sd-about {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sd-about__bio {
+  margin: 0;
+  color: #1a2c33;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.sd-about__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #6b7c83;
+  padding-top: 8px;
+  border-top: 1px solid #f1f4f6;
+}
+.sd-about__row strong {
+  color: #1a2c33;
   font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 12px;
 }
 
-.sessionBadge--scheduled {
-  background: #dbeafe;
-  color: #1d4ed8;
+/* Upcoming classes */
+.sd-upcomingList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.sessionBadge--live {
-  background: #dcfce7;
-  color: #16a34a;
+.sd-upcomingRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f1f4f6;
+  font-size: 12.5px;
+  color: #1a2c33;
+  cursor: pointer;
+}
+.sd-upcomingRow:last-child {
+  border-bottom: none;
+}
+.sd-upcomingRow:hover .sd-upcomingRow__title {
+  color: #425f7f;
+}
+
+.sd-upcomingRow__time {
+  font-size: 11px;
+  color: #6b7c83;
 }

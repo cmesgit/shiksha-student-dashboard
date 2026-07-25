@@ -37,3 +37,9 @@ const SUBJECT_PALETTE = [
 export function subjectChipPalette(name) {
   return SUBJECT_PALETTE[hashString(name) % SUBJECT_PALETTE.length];
 }
+
+export function subjectInitials(name) {
+  const trimmed = (name || "").trim();
+  if (!trimmed) return "S";
+  return trimmed.slice(0, 1).toUpperCase() + (trimmed.slice(1, 2).toLowerCase() || "");
+}
