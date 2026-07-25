@@ -21,7 +21,7 @@ export function initials(name) {
 // Small, deterministic hash -> one of a fixed palette, so the same person
 // always gets the same "no photo" avatar color instead of a random one
 // re-rolling on every render.
-const AV_COLORS = ["#b3402e", "#1dcaab", "#ff8f01", "#6b2410", "#2c6e8f", "#7a4fb5"];
+const AV_COLORS = ["#425f7f", "#13899b", "#2f9d42", "#c2701c", "#7a1c1c", "#1d4ed8"];
 export function avatarColor(seed) {
   let h = 0;
   for (let i = 0; i < (seed || "").length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;

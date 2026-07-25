@@ -5,20 +5,29 @@
 // not assigned to a batch yet, the backend falls back to the course-wide
 // syllabus coverage and flags it, which we label accordingly.
 //
-// Routed at /my-courses/:courseId/progress (linked from MyCourseDetail's
-// "Progress" card) so it always shows the course being viewed — NOT
-// CourseContext's globally active course, which can differ if the student
-// has more than one enrollment and is looking at a course they didn't
-// switch to.
+// Routed at both:
+//   /progress                          (sidebar nav item — falls back to
+//                                        CourseContext's active course)
+//   /my-courses/:courseId/progress     (linked from MyCourseDetail's
+//                                        "Progress" card) so it always shows
+//                                        the course being viewed — NOT
+//                                        CourseContext's globally active
+//                                        course, which can differ if the
+//                                        student has more than one enrolment.
 //
 // Endpoint: GET /courses/my-batch-progress/?course=<courseId>
+//
+// Layout matches the Academy design system's Progress screen: a page
+// heading, then one progress card per subject (title, percentage, bar,
+// supporting stats) laid out in a grid that fills the full content width —
+// there is no "Recent results" side rail on the student view.
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCourse } from "../contexts/CourseContext";
 import api from "../api/apiClient";
-import PageHeader from "../components/PageHeader";
 import { LoadingState, EmptyState, ErrorState } from "../components/StateViews";
+import "../styles/academyCommon.css";
 import "../styles/progress.css";
 
 const fmtDate = (d) =>
@@ -38,8 +47,8 @@ export default function Progress() {
   const { courses, activeCourse, loading: courseLoading } = useCourse();
 
   // Routed with a courseId → show THAT course, regardless of which one is
-  // globally "active". Reached with no param (shouldn't normally happen,
-  // but keeps the component safe to reuse) → fall back to activeCourse.
+  // globally "active". Reached with no param (the sidebar nav item) → fall
+  // back to activeCourse.
   const course = courseId
     ? courses?.find((c) => c.id === courseId)
     : activeCourse;
@@ -74,73 +83,80 @@ export default function Progress() {
   const isFallback = data && (data.batch === null || data.fallback === "course_wide");
 
   return (
-    <div className="progressPage">
+    <div className="ac-page progressPage">
       <button className="progressBack" onClick={() => navigate(-1)}>← Back</button>
-      <div className="progressHeaderBox">
-        <PageHeader title="Course Progress" />
+
+      <div className="ac-page__head">
+        <h1 className="ac-page__title">Progress</h1>
+        <p className="ac-page__sub">Your learning summary across all subjects.</p>
       </div>
 
-      <div className="progressBodyBox">
-        {courseLoading || loading ? (
-          <LoadingState plain label="Loading progress" />
-        ) : !course ? (
-          <EmptyState
-            plain
-            icon="book"
-            title="Course not found"
-            message="You're not enrolled in this course, or it no longer exists."
-            action={{ label: "My courses", to: "/my-courses", icon: "search" }}
-          />
-        ) : failed ? (
-          <ErrorState
-            plain
-            title="Couldn't load progress"
-            message="Please try again in a moment."
-          />
-        ) : !data || (data.subjects || []).length === 0 ? (
-          <EmptyState
-            plain
-            icon="book"
-            title="Nothing to track yet"
-            message="Once your teachers start marking chapters as covered, your progress will show up here."
-          />
-        ) : (
-          <>
-            <div className="prog-context">
-              {isFallback ? (
-                <span className="prog-tag prog-tag--muted">Course syllabus</span>
-              ) : (
-                <span className="prog-tag">
-                  {data.batch?.name}
-                  {data.batch?.code ? ` · ${data.batch.code}` : ""}
-                </span>
-              )}
-              {isFallback && (
-                <span className="prog-context-note">
-                  You’re not in a specific batch yet — showing the overall course syllabus.
-                </span>
-              )}
-            </div>
+      {courseLoading || loading ? (
+        <LoadingState label="Loading progress" />
+      ) : !course ? (
+        <EmptyState
+          icon="book"
+          title="Course not found"
+          message="You're not enrolled in this course, or it no longer exists."
+          action={{ label: "My courses", to: "/my-courses", icon: "search" }}
+        />
+      ) : failed ? (
+        <ErrorState
+          title="Couldn't load progress"
+          message="Please try again in a moment."
+        />
+      ) : !data || (data.subjects || []).length === 0 ? (
+        <EmptyState
+          icon="book"
+          title="Nothing to track yet"
+          message="Once your teachers start marking chapters as covered, your progress will show up here."
+        />
+      ) : (
+        <>
+          <div className="prog-context">
+            {isFallback ? (
+              <span className="prog-tag prog-tag--muted">Course syllabus</span>
+            ) : (
+              <span className="prog-tag">
+                {data.batch?.name}
+                {data.batch?.code ? ` · ${data.batch.code}` : ""}
+              </span>
+            )}
+            {isFallback && (
+              <span className="prog-context-note">
+                You’re not in a specific batch yet — showing the overall course syllabus.
+              </span>
+            )}
+          </div>
 
-            <div className="prog-overall">
-              <div className="prog-overall-ring" style={{ "--pct": `${data.percent}%` }}>
-                <span className="prog-overall-pct">{data.percent}%</span>
-              </div>
-              <div className="prog-overall-meta">
-                <strong>{data.chapters_done} of {data.chapters_total} chapters covered</strong>
-                <span className="prog-muted">{data.chapters_left} left</span>
-                <Bar percent={data.percent} />
-              </div>
+          <div className="prog-overall">
+            <div className="prog-overall-ring" style={{ "--pct": `${data.percent}%` }}>
+              <span className="prog-overall-pct">{data.percent}%</span>
             </div>
+            <div className="prog-overall-meta">
+              <strong>{data.chapters_done} of {data.chapters_total} chapters covered</strong>
+              <span className="prog-muted">{data.chapters_left} left</span>
+              <Bar percent={data.percent} />
+            </div>
+          </div>
 
-            <div className="prog-subjects">
-              {data.subjects.map((s) => (
-                <section className="prog-subject" key={s.id}>
-                  <div className="prog-subject-head">
-                    <span className="prog-subject-name">{s.name}</span>
-                    <span className="prog-muted">{s.chapters_done}/{s.chapters_total} · {s.percent}%</span>
+          <div className="prog-cards">
+            {data.subjects.map((s) => {
+              const left = Math.max(0, (s.chapters_total || 0) - (s.chapters_done || 0));
+              return (
+                <section className="prog-card" key={s.id}>
+                  <div className="prog-card__head">
+                    <span className="prog-card__title">{s.name}</span>
+                    <span className="prog-card__pct">{s.percent}%</span>
                   </div>
+
                   <Bar percent={s.percent} />
+
+                  <div className="prog-card__stats">
+                    <span>{s.chapters_done}/{s.chapters_total} chapters covered</span>
+                    <span className="prog-card__statsDot">·</span>
+                    <span>{left} left</span>
+                  </div>
 
                   {s.chapters.length === 0 ? (
                     <p className="prog-muted prog-indent">No chapters yet.</p>
@@ -159,11 +175,11 @@ export default function Progress() {
                     </ul>
                   )}
                 </section>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -16,6 +16,7 @@ export default function Subjects() {
   const [searchTerm, setSearchTerm] = useState("");
   const [taskCounts, setTaskCounts] = useState({});
   const [taskCountsReady, setTaskCountsReady] = useState(false);
+  // keyed by subject id -> { percent, chapters_done, chapters_total }
   const [progressBySubject, setProgressBySubject] = useState({});
 
   const filteredSubjects = subjects.filter((subject) =>
@@ -59,7 +60,11 @@ export default function Subjects() {
         });
         const bySubject = {};
         (res.data?.subjects || []).forEach((s) => {
-          bySubject[s.id] = s.percent;
+          bySubject[s.id] = {
+            percent: s.percent,
+            chapters_done: s.chapters_done,
+            chapters_total: s.chapters_total,
+          };
         });
         setProgressBySubject(bySubject);
       } catch (err) {
@@ -112,7 +117,10 @@ export default function Subjects() {
   return (
     <div className="subjectsPage">
       <div className="subjectsHeaderBox">
-        <PageHeader title="Subjects" />
+        <div>
+          <PageHeader title="Subjects" />
+          <p className="subjectsSub">Your syllabus coverage, subject by subject.</p>
+        </div>
         <Link to={`/my-courses/${activeCourse.id}/progress`} className="subjectsFullProgressLink">
           View full progress →
         </Link>
@@ -128,22 +136,26 @@ export default function Subjects() {
               message="Subjects for this course will show up here once they're added."
             />
           ) : (
-            filteredSubjects.map((subject) => (
-              <SubjectCard
-                key={subject.id}
-                img={subject.image || "/images/default.png"}
-                subject={subject.name}
-                teacher={
-                  subject.teachers?.length
-                    ? subject.teachers.map((t) => t.name).join(", ")
-                    : "No teacher assigned"
-                }
-                progressPercent={progressBySubject[subject.id]}
-                pendingCount={taskCountsReady ? (taskCounts[subject.id]?.pending ?? 0) : undefined}
-                completedCount={taskCountsReady ? (taskCounts[subject.id]?.completed ?? 0) : undefined}
-                onClick={() => navigate(`/subjects/${subject.id}`)}
-              />
-            ))
+            filteredSubjects.map((subject) => {
+              const progress = progressBySubject[subject.id];
+              return (
+                <SubjectCard
+                  key={subject.id}
+                  subject={subject.name}
+                  teacher={
+                    subject.teachers?.length
+                      ? subject.teachers.map((t) => t.name).join(", ")
+                      : "No teacher assigned"
+                  }
+                  progressPercent={progress?.percent}
+                  chaptersDone={progress?.chapters_done}
+                  chaptersTotal={progress?.chapters_total}
+                  pendingCount={taskCountsReady ? (taskCounts[subject.id]?.pending ?? 0) : undefined}
+                  actionLabel="Open"
+                  onClick={() => navigate(`/subjects/${subject.id}`)}
+                />
+              );
+            })
           )}
         </div>
       </div>

@@ -98,7 +98,6 @@ export default function AssignmentsSubjects() {
             subjects.map((subject) => (
               <SubjectCard
                 key={subject.id}
-                img={subject.image || "/images/default.png"}
                 subject={subject.name}
                 teacher={
                   subject.teachers?.length
@@ -106,7 +105,8 @@ export default function AssignmentsSubjects() {
                     : "No teacher assigned"
                 }
                 pendingCount={countsReady ? (counts[subject.id]?.pending ?? 0) : undefined}
-                completedCount={countsReady ? (counts[subject.id]?.completed ?? 0) : undefined}
+                taskCount={countsReady ? (counts[subject.id]?.completed ?? 0) : undefined}
+                taskLabel="completed"
                 onClick={() => navigate(`/subjects/${subject.id}/assignments`)}
               />
             ))

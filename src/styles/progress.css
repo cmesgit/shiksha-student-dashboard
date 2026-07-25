@@ -1,106 +1,107 @@
 /* PLACEMENT: src/styles/progress.css
-   Matches the student Academy look: white rounded panels, teal accent #425f7f,
-   headings #111827, muted #6b7280 (same tokens as subjects.css). */
+   Academy Progress screen — page scaffold (heading, spinner/empty/error
+   states) comes from academyCommon.css / shared/tokens.css; this file
+   styles what's specific to Progress: the batch/syllabus context tag, the
+   overall summary strip, and the per-subject progress cards.
 
-.progressPage {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+   Per the design handoff (README §14 "Progress / Batch Progress"), the
+   student view shows NO "Recent results" side rail — subject cards fill
+   the full content width in an evenly-distributed grid. */
 
 .progressBack {
   align-self: flex-start;
-  background: #425f7f;
-  color: #fff;
-  border: none;
+  background: transparent;
+  color: var(--academy, #425f7f);
+  border: 1px solid var(--card-border, #e5eaed);
   padding: 6px 14px;
-  border-radius: 6px;
+  border-radius: var(--radius-btn, 10px);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
-.progressBack:hover { background: #097a83; }
+.progressBack:hover { background: var(--academy-soft, #e6edee); border-color: #cfdbe6; }
+.progressBack:focus-visible { outline: none; box-shadow: var(--focus-ring, 0 0 0 3px rgba(66,95,127,.35)); }
 
-.progressHeaderBox {
-  width: 100%;
-  background: #fff;
-  border-radius: 18px 18px 0 0;
-  padding: 20px 24px;
-}
-.progressHeaderBox .pageHeader {
-  padding-bottom: 0;
-  margin-bottom: 0;
-  border-bottom: none;
-}
-
-.progressBodyBox {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  width: 100%;
-  background: #fff;
-  border-radius: 0 0 18px 18px;
-  padding: 24px;
-}
-
-.prog-muted { color: #6b7280; font-size: 13px; }
+.prog-muted { color: var(--ink-3, #6b7c83); font-size: 13px; }
 .prog-indent { padding-left: 4px; }
 
 /* Batch / syllabus context */
-.prog-context { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.prog-context { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .prog-tag {
   display: inline-flex; align-items: center;
-  background: #e6f3f4; color: #425f7f; border: 1px solid #c3e4e7;
-  padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700;
+  background: var(--academy-soft, #e6edee); color: var(--academy, #425f7f);
+  border: 1px solid #cfdbe6;
+  padding: 4px 12px; border-radius: var(--radius-pill, 999px); font-size: 13px; font-weight: 700;
 }
 .prog-tag--muted { background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
-.prog-context-note { font-size: 12.5px; color: #6b7280; }
+.prog-context-note { font-size: 12.5px; color: var(--ink-3, #6b7c83); }
 
-/* Overall summary */
+/* Overall summary strip — full width, sits above the subject card grid */
 .prog-overall {
   display: flex; align-items: center; gap: 20px;
-  background: #f7fbfb; border: 1px solid #e4eef0; border-radius: 16px;
-  padding: 18px 20px; margin-bottom: 22px;
+  background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e5eaed);
+  border-radius: var(--card-radius, 12px); box-shadow: var(--card-shadow, 0 1px 3px rgba(26,44,51,.06));
+  padding: 18px 20px; margin-bottom: 20px;
 }
 .prog-overall-ring {
   width: 74px; height: 74px; border-radius: 50%; flex: none;
   display: flex; align-items: center; justify-content: center;
   background:
     radial-gradient(closest-side, #fff 74%, transparent 75% 100%),
-    conic-gradient(#425f7f var(--pct, 0%), #e4eef0 0);
+    conic-gradient(var(--academy, #425f7f) var(--pct, 0%), var(--academy-soft, #e6edee) 0);
   /* Fallback solid ring if conic-gradient unsupported */
-  border: 1px solid #e4eef0;
+  border: 1px solid var(--card-border, #e5eaed);
 }
-.prog-overall-pct { font-size: 18px; font-weight: 800; color: #425f7f; }
+.prog-overall-pct { font-family: var(--font-display, "Montserrat", sans-serif); font-size: 18px; font-weight: 800; color: var(--academy, #425f7f); }
 .prog-overall-meta { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
-.prog-overall-meta strong { font-size: 15px; color: #111827; font-weight: 700; }
+.prog-overall-meta strong { font-family: var(--font-display, "Montserrat", sans-serif); font-size: 15px; color: var(--ink, #1a2c33); font-weight: 700; }
 
-/* Progress bar */
-.prog-bar { height: 8px; background: #e4eef0; border-radius: 999px; overflow: hidden; }
-.prog-bar__fill { height: 100%; background: linear-gradient(90deg, #425f7f, #425f7f); border-radius: 999px; transition: width 0.3s ease; }
+/* Progress bar (shared by the overall strip and each subject card) */
+.prog-bar { height: 8px; background: var(--academy-soft, #e6edee); border-radius: var(--radius-pill, 999px); overflow: hidden; }
+.prog-bar__fill { height: 100%; background: linear-gradient(90deg, var(--academy, #425f7f), var(--live, #13899b)); border-radius: var(--radius-pill, 999px); transition: width 0.3s ease; }
 
-/* Subjects + chapters */
-.prog-subjects { display: flex; flex-direction: column; gap: 20px; }
-.prog-subject-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 7px; gap: 12px; }
-.prog-subject-name { font-size: 15px; font-weight: 700; color: #0f172a; }
-
-.prog-chapters { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.prog-chapter {
-  display: flex; align-items: baseline; gap: 10px;
-  font-size: 14px; color: #6b7280; padding: 2px 0;
+/* ── Subject progress cards — evenly distributed across the full width ── */
+.prog-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  align-items: start;
 }
-.prog-chapter.covered { color: #111827; }
+
+.prog-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: var(--card-radius, 12px);
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(26,44,51,.06));
+  padding: 16px 18px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.prog-card:hover { border-color: #cfdbe6; box-shadow: 0 8px 22px rgba(66,95,127,.10); }
+
+.prog-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.prog-card__title { font-family: var(--font-display, "Montserrat", sans-serif); font-size: 15px; font-weight: 700; color: var(--ink, #1a2c33); }
+.prog-card__pct { font-family: var(--font-display, "Montserrat", sans-serif); font-size: 15px; font-weight: 800; color: var(--academy, #425f7f); flex-shrink: 0; }
+
+.prog-card__stats { margin-top: 8px; font-size: 12px; color: var(--ink-3, #6b7c83); display: flex; align-items: center; gap: 6px; }
+.prog-card__statsDot { color: var(--ink-4, #9ca3af); }
+
+/* Per-chapter breakdown — supporting detail inside each subject card */
+.prog-chapters { list-style: none; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px solid #f1f4f6; display: flex; flex-direction: column; gap: 6px; }
+.prog-chapter {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  font-size: 13px; color: var(--ink-3, #6b7c83); padding: 2px 0;
+}
+.prog-chapter.covered { color: var(--ink, #1a2c33); }
 .prog-tick { flex: none; font-weight: 800; color: #cbd5db; width: 16px; text-align: center; }
-.prog-chapter.covered .prog-tick { color: #425f7f; }
+.prog-chapter.covered .prog-tick { color: var(--academy, #425f7f); }
 .prog-chapter-title { flex: 1; min-width: 0; }
-.prog-date { flex: none; font-size: 11.5px; color: #9ca3af; }
-.prog-note { flex-basis: 100%; padding-left: 26px; font-size: 12.5px; font-style: italic; color: #8a6d00; }
+.prog-date { flex: none; font-size: 11px; color: var(--ink-4, #9ca3af); }
+.prog-note { flex-basis: 100%; padding-left: 26px; font-size: 12px; font-style: italic; color: #8a6d00; }
 
 @media (prefers-reduced-motion: reduce) {
   .prog-bar__fill { transition: none; }
+  .prog-card { transition: none; }
 }

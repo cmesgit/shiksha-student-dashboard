@@ -1,328 +1,172 @@
-/* ── Page Layout ── */
-.studyMaterialPage {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
+/* ═══════════════════════════════════════════════════════════════════════
+   studyMaterial.css — Academy "Study Material" (per-subject list).
+   Matches the design handoff's "Study Materials" screen: chip filter row +
+   Newest/Oldest sort, rows with a file-type badge, title, meta line, size,
+   date, and View + Download actions. Tokens from shared/tokens.css.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Toolbar: chapter chips + sort select ─────────────────────────────── */
+.sm-toolbar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.sm-chipRow {
+  display: flex;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
-.studyMaterialHeaderBox {
-  width: 100%;
-  background: white;
-  border-radius: 18px 18px 0 0;
-  padding: 20px 24px;
-}
-
-.studyMaterialHeaderBox .pageHeader {
-  padding-bottom: 0;
-  margin-bottom: 0;
-  border-bottom: none;
-}
-
-.studyMaterialBodyBox {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  width: 100%;
-  background: white;
-  border-radius: 0 0 18px 18px;
-  padding: 20px 24px;
-}
-
-/* ── Back Button ── */
-.studyMaterialBack {
-  background: #425f7f;
-  color: white;
-  border: none;
+.sm-chip {
+  border: 1px solid var(--card-border, #e5eaed);
+  cursor: pointer;
+  border-radius: var(--radius-pill, 999px);
   padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  align-self: flex-start;
-  transition: background 0.2s, transform 0.15s;
-}
-.studyMaterialBack:hover {
-  background: #097a83;
-  transform: translateX(-2px);
-}
-.studyMaterialBack:active {
-  transform: translateX(0) scale(0.97);
-}
-
-/* ── Content Area ── */
-.studyMaterialContent {
-  background: #e8f4f4;
-  border-radius: 12px;
-  padding: 24px;
-}
-
-/* ── Table ── */
-.studyMaterialTableWrap {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.studyMaterialTable {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 12px;
-}
-
-/* ── Sortable Headers ── */
-.studyMaterialTable th {
-  padding: 10px 16px;
-  text-align: left;
-  font-size: 12px;
-  font-weight: 600;
-  color: #4a8c72;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-  transition: color 0.15s;
-}
-.studyMaterialTable th:last-child {
-  cursor: default;
-}
-.studyMaterialTable th:hover:not(:last-child) {
-  color: #425f7f;
-}
-.studyMaterialTable th.sorted {
-  color: #425f7f;
-}
-
-.sortArrow {
-  display: inline-block;
-  margin-left: 4px;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
   font-size: 11px;
-  opacity: 0.4;
-  transition: opacity 0.2s;
+  font-weight: 600;
+  background: #fff;
+  color: var(--ink-3, #6b7c83);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-.studyMaterialTable th.sorted .sortArrow {
-  opacity: 1;
+.sm-chip:hover { border-color: var(--academy, #425f7f); color: var(--academy, #425f7f); }
+.sm-chip.is-active {
+  background: var(--academy, #425f7f);
+  border-color: var(--academy, #425f7f);
+  color: #fff;
+}
+.sm-chip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+.sm-sort {
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: var(--radius-btn, 10px);
+  padding: 7px 12px;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 11.5px;
+  color: var(--academy, #425f7f);
+  font-weight: 600;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+}
+.sm-sort:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* ── Row list card ─────────────────────────────────────────────────────── */
+.sm-list {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: var(--card-radius, 12px);
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(26, 44, 51, .06));
+  overflow: hidden;
 }
 
-/* ── Column Widths ── */
-.studyMaterialTable th:nth-child(1),
-.studyMaterialTable td:nth-child(1) { width: 28%; }
-
-.studyMaterialTable th:nth-child(2),
-.studyMaterialTable td:nth-child(2) { width: 30%; }
-
-.studyMaterialTable th:nth-child(3),
-.studyMaterialTable td:nth-child(3) { width: 16%; white-space: nowrap; }
-
-.studyMaterialTable th:nth-child(4),
-.studyMaterialTable td:nth-child(4) { width: 8%; text-align: center; }
-
-.studyMaterialTable th:nth-child(5),
-.studyMaterialTable td:nth-child(5) { width: 18%; text-align: right; }
-
-/* ── Row Animation ── */
-@keyframes rowFadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+@keyframes smRowIn {
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.studyMaterialRow {
-  background: white;
-  border-radius: 10px;
-  cursor: pointer;
-  animation: rowFadeIn 0.35s ease both;
-  transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+.sm-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f4f6;
+  animation: smRowIn 0.25s ease both;
+  transition: background 0.15s ease;
 }
-.studyMaterialRow:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(10, 128, 138, 0.12);
-}
-.studyMaterialRow.highlighted {
-  background: #f0fbf8;
-}
+.sm-row:last-child { border-bottom: none; }
+.sm-row:hover { background: #f8fafb; }
 
-.studyMaterialTable td {
-  padding: 14px 16px;
-  font-size: 13px;
-  color: #2d6b52;
-  vertical-align: middle;
-}
-.studyMaterialTable td:first-child {
-  border-radius: 10px 0 0 10px;
-  font-weight: 500;
-  color: #0a3d2b;
-}
-.studyMaterialTable td:last-child {
-  border-radius: 0 10px 10px 0;
-}
-
-/* ── NEW Badge ── */
-.newBadge {
-  display: inline-block;
-  background: #fff3cd;
-  color: #856404;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 6px;
-  vertical-align: middle;
-  letter-spacing: 0.03em;
-}
-
-/* ── Files Badge ── */
-.filesBadgeCell {
-  text-align: center;
-}
-.filesBadge {
-  display: inline-flex;
+/* ── File-type badge ──────────────────────────────────────────────────── */
+.sm-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-btn, 10px);
+  display: flex;
   align-items: center;
   justify-content: center;
-  background: #e8f4f4;
-  color: #0f6e56;
-  font-size: 12px;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  flex-shrink: 0;
+}
+.sm-badge--pdf { background: var(--danger-soft, #fef2f2); color: var(--danger, #dc2626); }
+.sm-badge--doc { background: #e8edfb; color: var(--info, #1d4ed8); }
+
+/* ── Title + meta ──────────────────────────────────────────────────────── */
+.sm-rowMain {
+  flex: 1;
+  min-width: 0;
+}
+.sm-rowTitle {
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 12.5px;
   font-weight: 600;
-  border-radius: 20px;
-  padding: 3px 10px;
-  min-width: 28px;
+  color: var(--ink, #1a2c33);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sm-newTag {
+  display: inline-block;
+  margin-left: 6px;
+  vertical-align: middle;
+  background: var(--warning-soft, #fef9ec);
+  color: var(--warning-ink, #b45309);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.sm-rowSub {
+  font-size: 10.5px;
+  color: var(--ink-3, #6b7c83);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ── Action Button ── */
-.studyMaterialActions {
-  display: flex;
-  justify-content: flex-end;
+.sm-rowMeta {
+  font-size: 10.5px;
+  color: var(--ink-4, #9ca3af);
+  width: 64px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
-.studyMaterialViewBtn {
-  background: #1d9e75;
-  color: white;
-  border: none;
-  padding: 6px 18px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+.sm-btn {
+  flex-shrink: 0;
   cursor: pointer;
-  transition: background 0.2s, transform 0.15s, opacity 0.2s;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: var(--radius-btn, 8px);
+  padding: 7px 14px;
+  border: 1px solid #cfdbe6;
+  background: #fff;
+  color: var(--academy, #425f7f);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: background 0.15s ease;
 }
-.studyMaterialViewBtn:hover {
-  background: #0f6e56;
-  transform: translateY(-1px);
-}
-.studyMaterialViewBtn:active {
-  transform: scale(0.96);
-}
-.studyMaterialViewBtn.loading {
-  background: #085041;
-  opacity: 0.8;
-  cursor: default;
-  transform: none;
-}
+.sm-btn svg { width: 12px; height: 12px; }
+.sm-btn:hover { background: #e6edee; }
+.sm-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.sm-btn.is-loading { opacity: 0.7; cursor: default; }
 
-/* ── Empty State ── */
-.emptyRow td {
-  background: transparent !important;
-}
-.emptyState {
-  text-align: center;
-  padding: 36px 0;
-  color: #4a8c72;
-}
-.emptyIcon {
-  font-size: 32px;
-  margin-bottom: 8px;
-  opacity: 0.5;
-}
-.emptyState p {
-  font-size: 14px;
-}
-
-/* ── Mobile ── */
-.studyMaterialMobile { display: none; }
-
-@media (max-width: 768px) {
-
-  .studyMaterialTableWrap { display: none; }
-  .studyMaterialMobile { display: block; }
-
-  .studyMaterialMobileHeader {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    font-weight: 600;
-    color: #4a8c72;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 0 4px 8px;
-  }
-
-  @keyframes cardFadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .studyMaterialCard {
-    background: #177e86;
-    color: white;
-    padding: 14px;
-    border-radius: 14px;
-    margin-bottom: 12px;
-    animation: cardFadeIn 0.35s ease both;
-  }
-
-  .studyMaterialCardTop {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-
-  .studyMaterialCardTitle {
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  .studyMaterialCardDate {
-    font-size: 12px;
-    opacity: 0.8;
-    white-space: nowrap;
-  }
-
-  .studyMaterialCardChapter {
-    font-size: 11px;
-    opacity: 0.7;
-    margin-bottom: 10px;
-  }
-
-  .studyMaterialCardActions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .filesBadgeMobile {
-    font-size: 11px;
-    opacity: 0.8;
-  }
-
-  .viewBtn {
-    background: #2ecc71;
-    border: none;
-    padding: 6px 16px;
-    border-radius: 14px;
-    color: white;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .viewBtn:active {
-    background: #27ae60;
-  }
-  .viewBtn.loading {
-    background: #1e8449;
-    cursor: default;
-  }
+/* ── Small screens: stack row content ─────────────────────────────────── */
+@media (max-width: 700px) {
+  .sm-row { flex-wrap: wrap; }
+  .sm-rowMeta { display: none; }
 }

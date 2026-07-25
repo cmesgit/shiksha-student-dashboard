@@ -1,0 +1,215 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   recordingsHub.css — Student "Recordings" screen (unified subject-filtered
+   grid). Tokens from shared/tokens.css (slate #425f7f, Montserrat/Poppins),
+   matching the Academy Dashboard design handoff, Recordings screen.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Subject filter pill navbar ──────────────────────────────────────── */
+.recFilters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.recChip {
+  border: 1px solid #e5eaed;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  background: #fff;
+  color: var(--academy, #425f7f);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+.recChip:hover { border-color: var(--academy, #425f7f); }
+.recChip.is-active {
+  background: var(--academy, #425f7f);
+  color: #fff;
+  border-color: var(--academy, #425f7f);
+}
+.recChip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring, 0 0 0 3px rgba(66, 95, 127, 0.35));
+}
+
+/* ── Grid ─────────────────────────────────────────────────────────────── */
+.recGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+@media (max-width: 1100px) { .recGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px)  { .recGrid { grid-template-columns: 1fr; } }
+
+/* ── Card ─────────────────────────────────────────────────────────────── */
+.recCard {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(26, 44, 51, 0.06));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.recCard:hover { border-color: #cfdbe6; box-shadow: 0 6px 16px rgba(26, 44, 51, 0.1); }
+.recCard:focus-visible { outline: none; box-shadow: var(--focus-ring, 0 0 0 3px rgba(66, 95, 127, 0.35)); }
+.recCard--pending { cursor: default; }
+.recCard--pending:hover { border-color: var(--card-border, #e5eaed); box-shadow: var(--card-shadow, 0 1px 3px rgba(26, 44, 51, 0.06)); }
+
+/* Thumbnail */
+.recCard__thumb {
+  position: relative;
+  height: 104px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #425f7f 0%, #13899b 100%);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.recCard__play {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(26, 44, 51, 0.25);
+}
+.recCard__duration {
+  position: absolute;
+  bottom: 8px;
+  right: 9px;
+  background: rgba(26, 44, 51, 0.75);
+  color: #fff;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 6px;
+}
+.recCard__pendingLabel {
+  color: rgba(255, 255, 255, 0.9);
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* Body */
+.recCard__body {
+  padding: 13px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+.recCard__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.recCard__chip {
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.recCard__chip--teal  { background: #e6f4f6; color: #13899b; }
+.recCard__chip--blue  { background: #e8edfb; color: #1d4ed8; }
+.recCard__chip--amber { background: #fef3ec; color: #c2701c; }
+.recCard__chip--green { background: #ecf8ee; color: #2f9d42; }
+
+.recCard__date {
+  font-size: 9.5px;
+  color: var(--ink-4, #9ca3af);
+  flex-shrink: 0;
+}
+
+.recCard__topic {
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink, #1a2c33);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.recCard__teacher {
+  font-size: 10.5px;
+  color: var(--ink-3, #6b7c83);
+  margin-top: 2px;
+}
+
+.recCard__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.recCard__progressWrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.recCard__progressBar {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: #e6edee;
+  overflow: hidden;
+}
+.recCard__progressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: #13899b;
+  transition: width 0.25s ease;
+}
+.recCard__progressLabel {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--ink-3, #6b7c83);
+  white-space: nowrap;
+}
+
+.recCard__actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.recCard__btn {
+  cursor: pointer;
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 6px 13px;
+  border: 1px solid #cfdbe6;
+  background: #fff;
+  color: var(--academy, #425f7f);
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+.recCard__btn:hover:not(:disabled) { background: #e6edee; }
+.recCard__btn:disabled { cursor: default; color: var(--ink-4, #9ca3af); border-color: var(--card-border, #e5eaed); }
+.recCard__btn:focus-visible { outline: none; box-shadow: var(--focus-ring, 0 0 0 3px rgba(66, 95, 127, 0.35)); }

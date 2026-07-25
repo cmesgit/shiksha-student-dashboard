@@ -9,12 +9,12 @@
 
 .subjectsHeaderBox {
   width: 100%;
-  background: white;
+  background: var(--card-bg, #fff);
   border-radius: 18px 18px 0 0;
   padding: 20px 24px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   flex-wrap: wrap;
 }
@@ -25,10 +25,22 @@
   border-bottom: none;
 }
 
+.subjectsHeaderBox .pageHeaderTitle {
+  font-size: 22px;
+  letter-spacing: -0.4px;
+}
+
+.subjectsSub {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-3, #6b7c83);
+}
+
 .subjectsFullProgressLink {
-  font-size: 13px;
+  margin-top: 4px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: #425f7f;
+  color: var(--academy, #425f7f);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -42,7 +54,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   width: 100%;
-  background: white;
+  background: var(--page-bg, #eef1f2);
   border-radius: 0 0 18px 18px;
   padding: 24px;
 }
@@ -50,10 +62,9 @@
 .subjectsGrid {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fill, 243px);
-  gap: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
   align-items: start;
-  justify-content: start;
 }
 
 /* ================= TABLET ================= */
@@ -64,9 +75,8 @@
   }
 
   .subjectsGrid {
-    grid-template-columns: repeat(auto-fill, 243px);
-    gap: 22px;
-    justify-content: center;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 }
 
@@ -84,16 +94,7 @@
   }
 
   .subjectsGrid {
-    grid-template-columns: 243px;
-    justify-content: center;
-    gap: 18px;
-  }
-}
-
-/* ================= VERY SMALL MOBILE ================= */
-
-@media (max-width: 300px) {
-  .subjectsGrid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 }

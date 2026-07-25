@@ -103,6 +103,47 @@
   border-radius: 20px;
 }
 
+/* ── SHARED CARD BASE + GRID ── */
+.tk-card {
+  background: #fff;
+  border: 1px solid #e5eaed;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(26, 44, 51, 0.06);
+}
+
+.smd-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .smd-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── FILES CARD (replaces the old dark .smd-files-panel look) ── */
+.smd-files {
+  display: flex;
+  flex-direction: column;
+}
+
+.smd-files-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e8edfb;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 /* ── NOTE ── */
 .smd-note {
   display: flex;
@@ -172,9 +213,12 @@
 
 /* ── FILES HEADER ── */
 .smd-files-header {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-weight: 600;
   font-size: 15px;
+  color: #1a2c33;
   margin-bottom: 14px;
   flex-shrink: 0;
 }

@@ -49,6 +49,8 @@ import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
 import useNotificationSocket from "../hooks/useNotificationSocket";
 import { PICK_PROFILE_URL } from "../config/urls";
+import { subjectChipPalette } from "../utils/subjectChips";
+import { fmtClockTime, dayLabel, startsInText } from "../utils/sessionTime";
 import "../styles/dashboard.css";
 
 const DATE_FORMAT = { day: "2-digit", month: "short", year: "numeric" };
@@ -108,6 +110,23 @@ function toDateKey(dateStr) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate()
   ).padStart(2, "0")}`;
+}
+
+// `live` is the backend's authoritative signal (LiveSession.status, or the
+// scheduled window as a fallback — see DashboardSessionSerializer.get_live)
+// — the SAME field LiveSessions.jsx's rows trust. Deriving "is this live"
+// from clock math here too would let this chip disagree with the rest of
+// the app for a session that's overdue but never actually started.
+function heroStatus(session) {
+  if (session.live) return { chip: "LIVE NOW", relative: "In progress" };
+  const start = new Date(session.dateTime);
+  if (Number.isNaN(start.getTime())) return { chip: "UP NEXT", relative: "" };
+  const diffMins = Math.round((start - new Date()) / 60000);
+  if (diffMins <= 0) return { chip: "UP NEXT", relative: "Starting soon" };
+  if (diffMins <= 30) return { chip: "STARTING SOON", relative: `Starts in ${diffMins}m` };
+  if (diffMins < 60) return { chip: "UP NEXT", relative: `Starts in ${diffMins}m` };
+  const hours = Math.floor(diffMins / 60);
+  return { chip: "UP NEXT", relative: hours < 24 ? `Starts in ${hours}h` : `Starts in ${Math.floor(hours / 24)}d` };
 }
 
 function isSameDay(a, b) {
@@ -200,6 +219,21 @@ export default function Dashboard() {
   const quizzes = data?.quizzes ?? [];
   const privateSessions = data?.private_sessions ?? [];
 
+  // Hero "next class" — the soonest upcoming/live session this week.
+  // `sessions` is only filtered server-side to "not before today", so it can
+  // still contain an already-finished same-day class — exclude anything
+  // that's neither live nor still ahead of its end_time before picking the
+  // earliest, or a finished morning class would win the sort and get shown
+  // as the hero with a dead join link.
+  const heroSession = useMemo(() => {
+    const now = new Date();
+    const candidates = sessions.filter(
+      (s) => s.live || !s.end_time || new Date(s.end_time) > now
+    );
+    if (!candidates.length) return null;
+    return [...candidates].sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime))[0];
+  }, [sessions]);
+
   const goToPrevMonth = () => {
     if (currMonth === 0) { setCurrMonth(11); setCurrYear((y) => y - 1); }
     else setCurrMonth((m) => m - 1);
@@ -212,22 +246,8 @@ export default function Dashboard() {
 
   const renderSessionCard = (s, idx) => {
     const sessionTime = new Date(s.dateTime);
-    const now = new Date();
-    const diffMs = sessionTime - now;
-    const diffMins = Math.round(diffMs / 60000);
-
-    let startsIn;
-    if (Number.isNaN(sessionTime.getTime())) startsIn = "";
-    else if (diffMs < 0) startsIn = "In progress";
-    else if (diffMins < 60) startsIn = `Starts in ${diffMins} min`;
-    else startsIn = `Starts in ${Math.floor(diffMins / 60)}h`;
-
-    const timing = Number.isNaN(sessionTime.getTime())
-      ? ""
-      : sessionTime.toLocaleString("en-GB", {
-          day: "2-digit", month: "short", year: "numeric",
-          hour: "2-digit", minute: "2-digit", hour12: true,
-        });
+    const validTime = !Number.isNaN(sessionTime.getTime());
+    const { bg: chipBg, ink: chipColor } = subjectChipPalette(s.subject);
 
     return (
       <SessionCard
@@ -236,8 +256,12 @@ export default function Dashboard() {
         subject={s.subject}
         topic={s.topic}
         teacher={s.teacher}
-        startsIn={startsIn}
-        timing={timing}
+        time={validTime ? fmtClockTime(sessionTime) : ""}
+        dayLabel={validTime ? dayLabel(sessionTime) : ""}
+        startsInText={validTime ? startsInText(sessionTime) : ""}
+        isLive={!!s.live}
+        chipBg={chipBg}
+        chipColor={chipColor}
       />
     );
   };
@@ -680,6 +704,29 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
+        {heroSession && (() => {
+          const { chip, relative } = heroStatus(heroSession);
+          return (
+            <section className="dashHero">
+              <div className="dashHero__main">
+                <span className={`dashHero__chip dashHero__chip--${chip === "LIVE NOW" ? "live" : chip === "STARTING SOON" ? "soon" : "next"}`}>
+                  {chip}
+                </span>
+                <span className="dashHero__relative">{relative}</span>
+                <h3 className="dashHero__topic">{heroSession.subject} — {heroSession.topic}</h3>
+                <p className="dashHero__teacher">with {heroSession.teacher}</p>
+              </div>
+              <button
+                type="button"
+                className="dashHero__cta"
+                onClick={() => navigate(`/live/${heroSession.id}`)}
+              >
+                {chip === "LIVE NOW" ? "Join class" : "Set reminder"}
+              </button>
+            </section>
+          );
+        })()}
+
         <div className="dashboardMain">
           <div className="dashboardLeft">
             <section className="dashboardCard dashboardCard--live">

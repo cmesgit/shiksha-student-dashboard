@@ -125,7 +125,6 @@ function SkillDevSidebar({ setMenuOpen }) {
 const ACAD_NAV = [
   { section: "LEARN" },
   { l: "Dashboard", i: "home", to: "/", end: true },
-  { l: "My Courses", i: "book", to: "/my-courses" },
   { l: "Subjects", i: "layers", to: "/subjects", end: true },
   { l: "Progress", i: "trend", to: "/progress" },
   { section: "LIVE" },
@@ -140,8 +139,6 @@ const ACAD_NAV = [
   { section: "CONNECT" },
   { l: "Teachers", i: "grad", to: "/teachers" },
   { l: "Messages", i: "msg", to: "/chat" },
-  { l: "Counselling", i: "help", to: "/counseling" },
-  { l: "Browse Courses", i: "book", to: "/browse-courses" },
 ];
 
 const initialsOf = (name) =>

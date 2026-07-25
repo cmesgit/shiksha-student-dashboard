@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useCourse } from "../contexts/CourseContext";
 import api from "../api/apiClient";
-import PageHeader from "../components/PageHeader";
 import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import "../styles/liveSessions.css";
 import useNotificationSocket from "../hooks/useNotificationSocket";
+import { subjectChipPalette } from "../utils/subjectChips";
+import { fmtClockTime, dayLabel, startsInText } from "../utils/sessionTime";
 
 function computeStatus(session) {
   const now = Date.now();
@@ -41,45 +42,54 @@ function computeCanJoin(session) {
   return now >= start - 15 * 60000;
 }
 
+// Statuses that still belong on the "Upcoming" tab (anything not finished/cancelled).
+const UPCOMING_STATUSES = new Set([
+  "LIVE",
+  "PAUSED",
+  "RECONNECTING",
+  "SCHEDULED",
+  "WAITING_FOR_TEACHER",
+]);
+
 const STATUS_CONFIG = {
   LIVE: {
-    label: "LIVE",
+    label: "Live now",
     color: "#fff",
     bg: "#ef4444",
   },
 
   PAUSED: {
-    label: "PAUSED",
+    label: "Paused",
     color: "#fff",
     bg: "#f59e0b",
   },
 
   RECONNECTING: {
-    label: "RECONNECTING",
+    label: "Reconnecting",
     color: "#fff",
     bg: "#f59e0b",
   },
 
   SCHEDULED: {
-    label: "UPCOMING",
+    label: "Upcoming",
     color: "#fff",
     bg: "#10b981",
   },
 
   WAITING_FOR_TEACHER: {
-    label: "STARTING",
+    label: "Starting soon",
     color: "#fff",
     bg: "#3b82f6",
   },
 
   COMPLETED: {
-    label: "COMPLETED",
+    label: "Completed",
     color: "#fff",
     bg: "#9ca3af",
   },
 
   CANCELLED: {
-    label: "CANCELLED",
+    label: "Cancelled",
     color: "#fff",
     bg: "#6b7280",
   },
@@ -101,100 +111,88 @@ function getLiveDuration(startTime) {
   return `${hours}h ${mins}m live`;
 }
 
-function LiveCard({ session, onClick, tick }) {
+function LiveSessionRow({ session, tick, onJoin, onOpenRecording }) {
   void tick;
 
   const status = computeStatus(session);
   const canJoin = computeCanJoin(session);
-
-
   const start = new Date(session.start_time);
-  const end = new Date(session.end_time);
+  // Hash by name (not id) so this matches the colour SubjectCard shows for
+  // the same subject elsewhere — SubjectCard hashes subject.name too.
+  const chip = subjectChipPalette(session.subject_name || session.subject_id);
+  const teacherName = session.teacher_name || session.teacher_full_name || session.teacher;
 
-  const timeStr = start.toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  let metaNode;
+  if (status === "SCHEDULED") {
+    metaNode = <span className="liveSessionRow__meta-text">starts {startsInText(start)}</span>;
+  } else if (status === "LIVE") {
+    metaNode = (
+      <span className="liveSessionRow__meta-text liveSessionRow__meta-text--live">
+        🔴 {getLiveDuration(session.start_time)}
+      </span>
+    );
+  } else if (status === "COMPLETED") {
+    metaNode = <span className="liveSessionRow__meta-text">ended</span>;
+  } else {
+    const cfg = STATUS_CONFIG[status];
+    metaNode = (
+      <span
+        className="liveSessionRow__statusPill"
+        style={{ background: cfg.bg, color: cfg.color }}
+      >
+        {cfg.label}
+      </span>
+    );
+  }
 
-  const endStr = end.toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  let btnText = "Join";
+  let btnVariant = "primary";
+  let disabled = false;
+  let handleClick = () => onJoin(session);
 
+  if (status === "COMPLETED") {
+    btnText = "Recording";
+    btnVariant = "outline";
+    handleClick = () => onOpenRecording(session);
+  } else if (status === "CANCELLED") {
+    btnText = "Cancelled";
+    btnVariant = "outline";
+    disabled = true;
+    handleClick = undefined;
+  } else {
+    disabled = !canJoin;
+  }
 
   return (
-  <div
-  className={`session-card ${
-    status === "COMPLETED"
-      ? "completed"
-      : status === "CANCELLED"
-      ? "cancelled"
-      : ""
-  }`}
-  onClick={() => {
-  if (status === "COMPLETED") {
-    onClick(session);
-    return;
-  }
-
-  if (canJoin) {
-    onClick(session);
-  }
-}}
->
-    <div
-      className="session-card-banner"
-      style={{
-        backgroundImage:
-          "url(https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600)",
-      }}
-    >
-      <div
-        className={`session-badge ${
-          status === "LIVE"
-            ? "live"
-            : status === "COMPLETED"
-            ? "completed"
-            : status === "CANCELLED"
-            ? "cancelled"
-            : "upcoming"
-        }`}
-      >
-        {status === "LIVE"
-          ? "LIVE"
-          : status === "COMPLETED"
-          ? "COMPLETED"
-          : status === "CANCELLED"
-          ? "CANCELLED"
-          : "UPCOMING"}
+    <div className="liveSessionRow">
+      <div className="liveSessionRow__time">
+        <strong>{fmtClockTime(start)}</strong>
+        <span className="liveSessionRow__day">{dayLabel(start)}</span>
       </div>
+      <div className="liveSessionRow__divider" />
+      <div className="liveSessionRow__body">
+        <div className="liveSessionRow__metaRow">
+          <span
+            className="liveSessionRow__chip"
+            style={{ background: chip.bg, color: chip.ink }}
+          >
+            {session.subject_name}
+          </span>
+          {metaNode}
+        </div>
+        <div className="liveSessionRow__topic">{session.title}</div>
+        <div className="liveSessionRow__teacher">{teacherName}</div>
+      </div>
+      <button
+        type="button"
+        className={`liveSessionRow__btn liveSessionRow__btn--${btnVariant}`}
+        disabled={disabled}
+        onClick={handleClick}
+      >
+        {btnText}
+      </button>
     </div>
-
-    <div className="session-card-content">
-      <h4 className="session-card-subject">
-        {session.subject_name}
-      </h4>
-
-      <p className="session-card-course">
-        {session.teacher_name ||
-          session.teacher_full_name ||
-          session.teacher}
-      </p>
-
-      <div className="session-card-time">
-  {status === "LIVE" ? (
-    <span className="live-duration">
-      🔴 {getLiveDuration(session.start_time)}
-    </span>
-  ) : (
-    `${timeStr} - ${endStr}`
-  )}
-</div>
-    </div>
-  </div>
-);
+  );
 }
 
 export default function LiveSessions() {
@@ -206,6 +204,9 @@ export default function LiveSessions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tick, setTick] = useState(0);
+  const [tab, setTab] = useState("upcoming");
+  const [pastSearch, setPastSearch] = useState("");
+  const [pastSort, setPastSort] = useState("newest");
   const wsRef = useRef(null);
   const { notifications } = useNotificationSocket();
 
@@ -261,41 +262,114 @@ export default function LiveSessions() {
   }, [activeCourse]);
 
   const statusPriority = {
-  LIVE: 1,
-  WAITING_FOR_TEACHER: 2,
-  RECONNECTING: 2,
-  PAUSED: 2,
-  SCHEDULED: 3,
-  COMPLETED: 4,
-  CANCELLED: 5,
-};
+    LIVE: 1,
+    WAITING_FOR_TEACHER: 2,
+    RECONNECTING: 2,
+    PAUSED: 2,
+    SCHEDULED: 3,
+    COMPLETED: 4,
+    CANCELLED: 5,
+  };
 
-const filtered = (
-  selectedSubject
-    ? sessions.filter(
-        (s) => String(s.subject_id) === String(selectedSubject)
-      )
-    : sessions
-).sort((a, b) => {
-  return (
-    statusPriority[computeStatus(a)] -
-    statusPriority[computeStatus(b)]
-  );
-});
+  const bySubject = selectedSubject
+    ? sessions.filter((s) => String(s.subject_id) === String(selectedSubject))
+    : sessions;
+
+  const upcomingRows = bySubject
+    .filter((s) => UPCOMING_STATUSES.has(computeStatus(s)))
+    .sort((a, b) => {
+      const diff = statusPriority[computeStatus(a)] - statusPriority[computeStatus(b)];
+      if (diff !== 0) return diff;
+      return new Date(a.start_time) - new Date(b.start_time);
+    });
+
+  const pastRows = bySubject
+    .filter((s) => !UPCOMING_STATUSES.has(computeStatus(s)))
+    .filter((s) => {
+      if (!pastSearch.trim()) return true;
+      const term = pastSearch.trim().toLowerCase();
+      const haystack = [s.title, s.subject_name, s.teacher_name || s.teacher_full_name || s.teacher]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(term);
+    })
+    .sort((a, b) => {
+      const diff = new Date(b.start_time) - new Date(a.start_time);
+      return pastSort === "newest" ? diff : -diff;
+    });
+
+  const rows = tab === "upcoming" ? upcomingRows : pastRows;
+
+  const handleJoin = (session) => {
+    navigate(`/live/${session.id}`);
+  };
+
+  const handleOpenRecording = (session) => {
+    navigate(`/subjects/recordings/${session.subject_id}`);
+  };
 
   if (loading) return <div className="liveSessionsPage"><LoadingState label="Loading live sessions" /></div>;
   if (error)   return <div className="liveSessionsPage"><ErrorState message={error} /></div>;
 
   return (
     <div className="liveSessionsPage">
-      <div className="liveSessionsHeaderBox">
-        <PageHeader title={activeCourse ? "Live Sessions" : "Live Sessions"} />
-        <select className="liveSubjectFilter" value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)}>
-          <option value="">All Subjects</option>
-          {subjects.map((sub) => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
-        </select>
+      <div className="liveSessionsPage__head">
+        <div>
+          <h1 className="liveSessionsPage__title">Live Sessions</h1>
+          <p className="liveSessionsPage__sub">All scheduled live classes for your batch.</p>
+        </div>
+        <div className="liveSessionsPage__controls">
+          {subjects.length > 0 && (
+            <select
+              className="liveSessionsPage__subjectFilter"
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+            >
+              <option value="">All Subjects</option>
+              {subjects.map((sub) => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
+            </select>
+          )}
+          <div className="liveSessionsTabs">
+            <button
+              type="button"
+              className={`liveSessionsTabs__btn${tab === "upcoming" ? " is-active" : ""}`}
+              onClick={() => setTab("upcoming")}
+            >
+              Upcoming
+            </button>
+            <button
+              type="button"
+              className={`liveSessionsTabs__btn${tab === "past" ? " is-active" : ""}`}
+              onClick={() => setTab("past")}
+            >
+              Past
+            </button>
+          </div>
+        </div>
       </div>
-      <div className="liveSessionsBodyBox">
+
+      {tab === "past" && (
+        <div className="liveSessionsSearchBar">
+          <input
+            type="text"
+            className="liveSessionsSearchBar__input"
+            placeholder="Search past sessions…"
+            value={pastSearch}
+            onChange={(e) => setPastSearch(e.target.value)}
+          />
+          <select
+            className="liveSessionsSearchBar__sort"
+            value={pastSort}
+            onChange={(e) => setPastSort(e.target.value)}
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </div>
+      )}
+
+      <section className="liveSessionsListCard">
         {!activeCourse ? (
           <EmptyState
             plain
@@ -304,34 +378,35 @@ const filtered = (
             message="Enrol in a course to see its live sessions."
             action={{ label: "Browse courses", to: "/browse-courses", icon: "search" }}
           />
-        ) : filtered.length === 0 ? (
+        ) : rows.length === 0 ? (
           <EmptyState
             plain
             icon="video"
-            title={selectedSubject ? "No live sessions for this subject" : "No live sessions scheduled"}
-            message="When your teacher schedules a class, it'll show up here with a join button."
+            title={
+              tab === "past"
+                ? pastSearch.trim() ? "No sessions match your search" : "No past sessions yet"
+                : selectedSubject ? "No live sessions for this subject" : "No live sessions scheduled"
+            }
+            message={
+              tab === "past"
+                ? "Completed and cancelled sessions will show up here."
+                : "When your teacher schedules a class, it'll show up here with a join button."
+            }
           />
         ) : (
-          <div className="liveGrid">
-            {filtered.map((s) => (
-<LiveCard
-  key={s.id}
-  session={s}
-  tick={tick}
-  onClick={(session) => {
-    const status = computeStatus(session);
-
-    if (status === "COMPLETED") {
-      navigate(`/subjects/recordings/${session.subject_id}`);
-      return;
-    }
-
-    navigate(`/live/${session.id}`);
-  }}
-/>            ))}
+          <div className="liveSessionsList">
+            {rows.map((s) => (
+              <LiveSessionRow
+                key={s.id}
+                session={s}
+                tick={tick}
+                onJoin={handleJoin}
+                onOpenRecording={handleOpenRecording}
+              />
+            ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

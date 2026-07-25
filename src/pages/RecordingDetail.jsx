@@ -1,8 +1,8 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
-import PageHeader from "../components/PageHeader";
+import { LoadingState, EmptyState } from "../components/StateViews";
 import api from "../api/apiClient";
-import { LoadingState } from "../components/StateViews";
+import "../styles/academyCommon.css";
 import "../styles/recordingDetail.css";
 
 const LIBRARY_ID = import.meta.env.VITE_BUNNY_LIBRARY_ID;
@@ -19,12 +19,14 @@ export default function RecordingDetail() {
 
   const progressIntervalRef = useRef(null);
   const currentPositionRef  = useRef(0);
+  const playerWrapRef       = useRef(null);
 
   // ── 1. load recording + saved progress ───────────────────────────────────
   useEffect(() => {
     if (!videoId) return;
 
     const fetchAll = async () => {
+      setLoading(true);
       try {
         const [recRes, progRes] = await Promise.all([
           api.get(`/courses/recordings/${videoId}/`),
@@ -43,6 +45,7 @@ export default function RecordingDetail() {
 
       } catch (err) {
         console.error("Failed to load recording", err);
+        setVideoData(null);
       } finally {
         setLoading(false);
       }
@@ -92,15 +95,16 @@ export default function RecordingDetail() {
     };
   }, [saveProgress]);
 
-  // ── render ────────────────────────────────────────────────────────────────
-  if (loading) return <LoadingState label="Loading video" />;
-  if (!videoData) return <div style={{ padding: 20 }}>Video not found.</div>;
-
-  const videoUrl =
-    `https://iframe.mediadelivery.net/embed/${LIBRARY_ID}/${videoData.bunny_video_id}` +
-    `?autoplay=false&start=${startTime}`;
-
-  const teacher = videoData.uploaded_by_name || "Teacher";
+  // ── 4. fullscreen toggle for the player ──────────────────────────────────
+  const handleFullscreen = () => {
+    const el = playerWrapRef.current;
+    if (!el) return;
+    const request =
+      el.requestFullscreen ||
+      el.webkitRequestFullscreen ||
+      el.msRequestFullscreen;
+    if (request) request.call(el);
+  };
 
   const formatDuration = (secs) => {
     if (!secs) return "N/A";
@@ -113,68 +117,82 @@ export default function RecordingDetail() {
   };
 
   return (
-    <div className="recordingDetailPage">
-
-      <button className="recordingDetailBack" onClick={() => navigate(-1)}>
-        &lt; Back
+    <div className="ac-page recDetail">
+      <button type="button" className="ac-linkbtn recDetail__back" onClick={() => navigate(-1)}>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Back to Recordings
       </button>
 
-      <div className="recordingDetailHeaderBox">
-        <PageHeader title={videoData.title} />
-      </div>
-
-      <div className="recordingDetailBodyBox">
-
-        <div className="recordingDetailPlayer">
-          <div className="recordingDetailVideo">
-            <iframe
-              src={videoUrl}
-              loading="lazy"
-              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-              allowFullScreen
-              className="recordingDetailVideoElement"
-              title={videoData.title}
-            />
+      {loading ? (
+        <LoadingState label="Loading video" />
+      ) : !videoData ? (
+        <EmptyState
+          icon="video"
+          title="Recording not found"
+          message="This recording may have been removed or you no longer have access to it."
+        />
+      ) : (
+        <>
+          <div className="ac-page__head">
+            <h1 className="ac-page__title">{videoData.title}</h1>
+            <p className="ac-page__sub">{videoData.uploaded_by_name || "Teacher"}</p>
           </div>
 
-          {/* Progress bar under video */}
-          {progressPct !== null && (
-            <div className="recordingDetailProgressWrap">
-              <div className="recordingDetailProgressBar">
-                <div
-                  className="recordingDetailProgressFill"
-                  style={{ width: `${Math.min(progressPct, 100)}%` }}
-                />
-              </div>
-              <span className="recordingDetailProgressLabel">
-                {progressPct >= 100 ? "✓ Completed" : `${progressPct}% watched`}
-              </span>
+          <div className="recDetail__player">
+            <div className="recDetail__video" ref={playerWrapRef}>
+              <iframe
+                src={`https://iframe.mediadelivery.net/embed/${LIBRARY_ID}/${videoData.bunny_video_id}?autoplay=false&start=${startTime}`}
+                loading="lazy"
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowFullScreen
+                className="recDetail__videoElement"
+                title={videoData.title}
+              />
+              <button
+                type="button"
+                className="recDetail__fullscreenBtn"
+                onClick={handleFullscreen}
+                aria-label="Fullscreen"
+                title="Fullscreen"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+                  <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+                  <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+                  <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+                </svg>
+              </button>
             </div>
-          )}
-        </div>
 
-        <div className="recordingDetailInfo">
-
-          <div className="recordingDetailInfoLeft">
-            <p className="recordingDetailInfoTitle">{videoData.title}</p>
-            <p className="recordingDetailInfoTeacher">{teacher}</p>
+            {progressPct !== null && (
+              <div className="recDetail__progressWrap">
+                <div className="recDetail__progressBar">
+                  <div
+                    className="recDetail__progressFill"
+                    style={{ width: `${Math.min(Math.max(progressPct, 0), 100)}%` }}
+                  />
+                </div>
+                <span className="recDetail__progressLabel">
+                  {progressPct >= 100 ? "Watched" : `${progressPct}% watched`}
+                </span>
+              </div>
+            )}
           </div>
 
-          <div className="recordingDetailInfoRight">
-            <p className="recordingDetailInfoDate">
-              Date Recorded:<br />
-              {videoData.session_date || "N/A"}
-            </p>
-            <p className="recordingDetailInfoDuration">
-              Duration:<br />
-              {formatDuration(videoData.duration_seconds)}
-            </p>
+          <div className="recDetail__meta">
+            <div className="recDetail__metaItem">
+              <span className="recDetail__metaLabel">Date recorded</span>
+              <span className="recDetail__metaValue">{videoData.session_date || "N/A"}</span>
+            </div>
+            <div className="recDetail__metaItem">
+              <span className="recDetail__metaLabel">Duration</span>
+              <span className="recDetail__metaValue">{formatDuration(videoData.duration_seconds)}</span>
+            </div>
           </div>
-
-        </div>
-
-      </div>
-
+        </>
+      )}
     </div>
   );
 }

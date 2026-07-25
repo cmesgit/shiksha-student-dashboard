@@ -214,74 +214,81 @@ export default function ChatPanel({ directTo, courseRoom, initialDraft = "" }) {
         })}
       </nav>
 
-      {showList && (
-        <ConversationList
-          conversations={listConversations}
-          loading={convLoading}
-          error={convError}
-          onRetry={loadConversations}
-          activeId={activeId}
-          category={category}
-          categories={presentCategories}
-          onSelectCategory={(cat) => { setCategory(cat); setShowThreadOnMobile(false); }}
-          onSelect={onSelect}
-          onChanged={onConversationChange}
-          onNewChat={() => setNewChatOpen(true)}
-          onStartDirect={startDirectWith}
-        />
-      )}
+      {/* The two-pane Messages card: 300px conversation list + flexible thread
+          pane, matching the design-system spec. It sits alongside (not
+          inside) the category rail above, which stays a separate slim
+          element so none of the extra views it switches to (Support,
+          Directory, Notifications, Settings) get lost or folded away. */}
+      <div className="cc-panes">
+        {showList && (
+          <ConversationList
+            conversations={listConversations}
+            loading={convLoading}
+            error={convError}
+            onRetry={loadConversations}
+            activeId={activeId}
+            category={category}
+            categories={presentCategories}
+            onSelectCategory={(cat) => { setCategory(cat); setShowThreadOnMobile(false); }}
+            onSelect={onSelect}
+            onChanged={onConversationChange}
+            onNewChat={() => setNewChatOpen(true)}
+            onStartDirect={startDirectWith}
+          />
+        )}
 
-      <main className="cc-main">
-        {view === "inbox" && category === "announcements" && !active && courseChips.length > 0 && (
-          <div className="cc-announcements-picker">
-            <EmptyState
-              icon={<FiRadio size={22} />}
-              title="Pick a course"
-              hint="Open a course's Announcements channel."
-            />
-            <div className="cc-cat-chips" style={{ justifyContent: "center" }}>
-              {courseChips.map((c) => (
-                <button key={c.id} className="cc-chip" onClick={() => openRoomLike({ ...c, kind: "BROADCAST" })}>
-                  {c.course?.title || c.title}
-                </button>
-              ))}
+        <main className="cc-main">
+          {view === "inbox" && category === "announcements" && !active && courseChips.length > 0 && (
+            <div className="cc-announcements-picker">
+              <EmptyState
+                icon={<FiRadio size={22} />}
+                title="Pick a course"
+                hint="Open a course's Announcements channel."
+              />
+              <div className="cc-cat-chips" style={{ justifyContent: "center" }}>
+                {courseChips.map((c) => (
+                  <button key={c.id} className="cc-chip" onClick={() => openRoomLike({ ...c, kind: "BROADCAST" })}>
+                    {c.course?.title || c.title}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {showThreadPane && view === "inbox" && category !== "announcements" && (
-          active ? (
-            <ConversationThread
-              key={active.id}
-              conversation={active}
-              onConversationChange={onConversationChange}
-              onBack={() => setShowThreadOnMobile(false)}
-              onOpenCourseHub={(courseId, courseTitle) => setCourseHub({ courseId, courseTitle, initialTab: "discussion" })}
-              onOpenMembers={() => active.course_id && setCourseHub({ courseId: active.course_id, courseTitle: active.course?.title, initialTab: "members" })}
-              onOpenProfile={(identity) => identity && setProfileIdentity(identity)}
-              onDmFromRoom={onDmFromRoom}
-              initialDraft={initialDraft}
-              compact={compact}
-            />
-          ) : (
-            <EmptyState
-              icon={<FiMessageSquare size={26} />}
-              title="Select a conversation"
-              hint="Pick a thread on the left, or start a new one."
-              action={<button className="cc-btn-primary" onClick={() => setNewChatOpen(true)}><FiPlus size={14} /> New message</button>}
-            />
-          )
-        )}
+          {showThreadPane && view === "inbox" && category !== "announcements" && (
+            active ? (
+              <ConversationThread
+                key={active.id}
+                conversation={active}
+                onConversationChange={onConversationChange}
+                onBack={() => setShowThreadOnMobile(false)}
+                onOpenCourseHub={(courseId, courseTitle) => setCourseHub({ courseId, courseTitle, initialTab: "discussion" })}
+                onOpenMembers={() => active.course_id && setCourseHub({ courseId: active.course_id, courseTitle: active.course?.title, initialTab: "members" })}
+                onOpenProfile={(identity) => identity && setProfileIdentity(identity)}
+                onDmFromRoom={onDmFromRoom}
+                initialDraft={initialDraft}
+                compact={compact}
+              />
+            ) : (
+              <EmptyState
+                icon={<FiMessageSquare size={26} />}
+                title="Select a conversation"
+                hint="Pick a thread on the left, or start a new one."
+                action={<button className="cc-btn-primary" onClick={() => setNewChatOpen(true)}><FiPlus size={14} /> New message</button>}
+              />
+            )
+          )}
 
-        {view === "notifications" && (
-          <NotificationsView onNavigate={() => setView("inbox")} />
-        )}
-        {view === "directory" && (
-          <PeopleDirectory mode="screen" onStart={startDirectWith} />
-        )}
-        {view === "settings" && <SettingsView />}
-        {view === "support" && <SupportView />}
-      </main>
+          {view === "notifications" && (
+            <NotificationsView onNavigate={() => setView("inbox")} />
+          )}
+          {view === "directory" && (
+            <PeopleDirectory mode="screen" onStart={startDirectWith} />
+          )}
+          {view === "settings" && <SettingsView />}
+          {view === "support" && <SupportView />}
+        </main>
+      </div>
 
       {newChatOpen && (
         <PeopleDirectory mode="picker" onClose={() => setNewChatOpen(false)} onStart={startDirectWith} />

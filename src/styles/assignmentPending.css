@@ -1,291 +1,176 @@
-/* ===== PAGE WRAPPER ===== */
-.assignmentPage {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
+/* ═══════════════════════════════════════════════════════════════════════
+   assignmentPending.css — Assignments list (student), per design handoff
+   "### 11. Assignments" — subject pill row (left) + status filter (right),
+   list rows: subject chip, title, meta, status chip, Open button.
+   Shares --academy / --card-* / --success / --danger / --info tokens with
+   shared/tokens.css.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Back link ─────────────────────────────────────────────────────────── */
+.asg-back {
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-4, #9ca3af);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 16px;
+  font-family: var(--font-body, "Poppins", sans-serif);
+}
+.asg-back:hover { color: var(--ink, #1a2c33); }
+
+/* ── Filter row: pills left, status select right ─────────────────────── */
+.asg-filterRow {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
-/* ===== BACK BUTTON (above the header box) ===== */
-.assignmentBack {
-  background: #425f7f;
-  color: white;
-  border: none;
+.asg-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.asg-pill {
+  border: 1px solid var(--card-border, #e5eaed);
+  cursor: pointer;
+  border-radius: 999px;
   padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  cursor: pointer;
-  align-self: flex-start;
-  margin-bottom: 4px;
+  background: #fff;
+  color: var(--academy, #425f7f);
+  font-family: var(--font-body, "Poppins", sans-serif);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.asg-pill:hover { border-color: var(--acc-border, #cfdbe6); }
+.asg-pill--active {
+  background: var(--academy, #425f7f);
+  color: #fff;
+  border-color: var(--academy, #425f7f);
 }
 
-.assignmentBack:hover {
-  background: #097a83;
-}
-
-/* ===== HEADER BOX (fixed, does not scroll) ===== */
-.assignmentHeaderBox {
-  width: 100%;
-  background: white;
-  border-radius: 18px 18px 0 0;
-  padding: 16px 24px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* Top row: title | search */
-.assignmentHeaderRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-/* Subject name */
-.assignmentSubjectTitle {
-  font-size: 14px;
-  font-weight: 800;
-  color: #222;
-  margin: 0;
-}
-
-/* ===== TABS ===== */
-.assignmentTabs {
-  display: flex;
-  gap: 8px;
-}
-
-.assignmentTab {
-  background: #7BBEC7;
-  border: none;
-  padding: 8px 20px;
-  border-radius: 20px 20px 0 0;
-  font-size: 13px;
+.asg-statusSelect {
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 11.5px;
+  color: var(--academy, #425f7f);
   font-weight: 600;
+  background: #fff;
   cursor: pointer;
-  color: white;
-  transition: background 0.2s ease;
-}
-
-.assignmentTab--active {
-  background: #015865;
-  color: white;
-  z-index: 2;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
-}
-
-.assignmentTab:hover:not(.assignmentTab--active) {
-  background: #6ab3bc;
-}
-
-/* ===== SEARCH ===== */
-.assignmentSearch {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #f2f2f2;
-  padding: 8px 12px;
-  border-radius: 8px;
-  width: 200px;
-  flex-shrink: 0;
-}
-
-.assignmentSearch input {
-  border: none;
   outline: none;
-  background: transparent;
-  flex: 1;
-  font-size: 12px;
+  flex-shrink: 0;
+  font-family: var(--font-body, "Poppins", sans-serif);
+}
+.asg-statusSelect:focus-visible { box-shadow: var(--focus-ring, 0 0 0 3px rgba(66,95,127,.35)); }
+
+/* ── List card ─────────────────────────────────────────────────────────── */
+.asg-listCard {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: var(--card-radius, 12px);
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(26, 44, 51, .06));
+  padding: 16px;
 }
 
-.assignmentSearchIcon {
-  font-size: 14px;
-  opacity: 0.6;
-}
-
-/* ===== BODY BOX (scrolls) ===== */
-.assignmentBodyBox {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  width: 100%;
-  background: white;
-  border-radius: 0 0 18px 18px;
-  padding: 20px 24px;
-}
-
-/* ===== ASSIGNMENT CARDS GRID ===== */
-.assignmentGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-}
-
-@media (max-width: 1200px) {
-  .assignmentGrid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .assignmentGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 600px) {
-  .assignmentGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ===== MOBILE HEADER ===== */
-@media (max-width: 768px) {
-  .assignmentHeaderRow {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .assignmentSubjectTitle {
-    text-align: center;
-  }
-
-  .assignmentSearch {
-    width: 100%;
-  }
-
-  .assignmentTabs {
-    width: 100%;
-  }
-
-  .assignmentTab {
-    flex: 1;
-    text-align: center;
-  }
-}
-
-/* ===== ASSIGNMENT PENDING CARD ===== */
-.assignmentPendingCard {
-  background: #425f7f;
-  border-radius: 10px;
-  color: white;
-  cursor: pointer;
-  padding: 14px 16px;
-  height: 145px;
+.asg-list {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  transition: opacity 0.18s;
+  gap: 8px;
 }
 
-.assignmentPendingCard:hover {
-  opacity: 0.88;
-}
-
-.assignmentPendingCard__top {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.assignmentPendingCard__title {
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 0;
-}
-
-.assignmentPendingCard__teacher {
-  font-size: 11px;
-  font-weight: 500;
-  margin: 0;
-}
-
-.assignmentPendingCard__bottom {
-  text-align: right;
-}
-
-.assignmentPendingCard__deadline {
-  font-size: 10px;
-  font-weight: 500;
-  margin: 0;
-}
-
-/* Empty State */
-.assignmentEmpty {
-  grid-column: 1 / -1;
-  text-align: center;
-  color: #888;
-  font-size: 14px;
-  padding: 40px;
-}
-
-/* ===== ASSIGNMENT COMPLETED CARD ===== */
-.assignmentCompletedCard {
-  background: #425f7f;
-  border-radius: 10px;
-  color: white;
-  cursor: pointer;
-  padding: 14px 16px;
-  height: 145px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: opacity 0.18s;
-  position: relative;
-}
-
-.assignmentCompletedCard:hover {
-  opacity: 0.88;
-}
-
-.assignmentCompletedCard__badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(255, 255, 255, 0.25);
-  color: white;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+.asg-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: bold;
+  gap: 14px;
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.asg-row:hover {
+  border-color: var(--acc-border, #cfdbe6);
+  background: var(--card-hover, #f8fafb);
 }
 
-.assignmentCompletedCard__top {
+.asg-row__main { flex: 1; min-width: 0; }
+
+.asg-row__tags {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
 }
 
-.assignmentCompletedCard__title {
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 0;
-  padding-right: 22px;
+.asg-row__title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink, #1a2c33);
+  margin-top: 5px;
 }
 
-.assignmentCompletedCard__teacher {
+.asg-row__meta {
+  font-size: 10.5px;
+  color: var(--ink-3, #6b7c83);
+  margin-top: 1px;
+}
+
+.asg-openBtn {
+  flex-shrink: 0;
+  white-space: nowrap;
+  cursor: pointer;
   font-size: 11px;
-  font-weight: 500;
-  margin: 0;
+  font-weight: 700;
+  border-radius: 9px;
+  padding: 8px 15px;
+  border: 1px solid var(--acc-border, #cfdbe6);
+  background: #fff;
+  color: var(--academy, #425f7f);
+  font-family: var(--font-body, "Poppins", sans-serif);
+  transition: background 0.15s ease;
 }
+.asg-openBtn:hover { background: #e6edee; }
 
-.assignmentCompletedCard__bottom {
-  text-align: right;
+/* ── Chips ────────────────────────────────────────────────────────────── */
+.asg-chip {
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
 }
+/* Deterministic subject colour slots — see src/utils/subjectChips.js */
+.asg-chip--0 { background: var(--success-soft, #ecf8ee); color: var(--success, #2f9d42); }
+.asg-chip--1 { background: #e8edfb; color: var(--info, #1d4ed8); }
+.asg-chip--2 { background: var(--warning-soft, #fef9ec); color: var(--warning-ink, #b45309); }
+.asg-chip--3 { background: #e6f4f6; color: var(--live, #13899b); }
 
-.assignmentCompletedCard__date {
-  font-size: 10px;
-  font-weight: 500;
-  margin: 0;
+.asg-statusChip {
+  white-space: nowrap;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.asg-statusChip--due       { background: var(--success-soft, #ecf8ee); color: var(--success, #2f9d42); }
+.asg-statusChip--overdue   { background: var(--danger-soft, #fef2f2); color: var(--danger, #dc2626); }
+.asg-statusChip--submitted { background: #e8edfb; color: var(--info, #1d4ed8); }
+
+/* ── Mobile ───────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .asg-filterRow { flex-direction: column; align-items: stretch; }
+  .asg-statusSelect { width: 100%; }
+  .asg-row { flex-wrap: wrap; }
+  .asg-openBtn { width: 100%; }
 }

@@ -364,3 +364,80 @@
     align-items: stretch;
   }
 }
+
+/* ============================================================
+   TEACHERS — cards-grid rewrite (matches Subjects page layout)
+   ============================================================ */
+
+.teachersPage {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.teachersHeaderBox {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.teachersSub {
+  margin: 4px 0 0;
+  color: #6b7c83;
+  font-size: 12.5px;
+}
+
+.teachersSearch {
+  min-width: 260px;
+  padding: 9px 14px;
+  border: 1px solid #e5eaed;
+  border-radius: 9px;
+  font-size: 12.5px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.teachersSearch:focus {
+  border-color: #425f7f;
+}
+
+.teachersBodyBox {
+  display: flex;
+  flex-direction: column;
+}
+
+.teachersGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .teachersGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .teachersGrid {
+    grid-template-columns: 1fr;
+  }
+  .teachersHeaderBox {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .teachersSearch {
+    min-width: 0;
+  }
+}
+
+.teacherCard__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fef3ec;
+  color: #c2701c;
+  font-size: 10.5px;
+  font-weight: 700;
+}

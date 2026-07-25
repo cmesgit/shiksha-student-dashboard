@@ -1,7 +1,28 @@
+// src/pages/StudyMaterialDetail.jsx
+// ──────────────────────────────────────────────────────────────────────────
+// Academy "Study Material" detail — the files that belong to one material.
+// The design handoff's "Study Materials" screen treats each material as a
+// single file (one row, one badge, one size); this app's backend allows a
+// material to carry several files, so this page is the drill-down that
+// lists them individually. Restyled to reuse the same row pattern, badge
+// colours, and button style as the list screen (sm-badge / sm-row / sm-btn
+// from studyMaterial.css) so the two screens read as one system. Students
+// only get View + Download here — Manage/Delete is teacher-only and isn't
+// part of this page.
+// ──────────────────────────────────────────────────────────────────────────
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
+import { LoadingState, EmptyState } from "../components/StateViews";
+import "../styles/academyCommon.css";
+import "../styles/studyMaterial.css";
 import "../styles/studyMaterialDetail.css";
+
+function getFileExt(name = "") {
+  const ext = name.split(".").pop();
+  return ext ? ext.toUpperCase() : "FILE";
+}
 
 export default function StudyMaterialDetail() {
 
@@ -10,35 +31,28 @@ export default function StudyMaterialDetail() {
 
   const [material, setMaterial] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [downloadingId, setDownloadingId] = useState(null);
+  const [error, setError] = useState(false);
   const [viewingId, setViewingId] = useState(null);
   const [copiedNote, setCopiedNote] = useState(false);
-  const [activeFile, setActiveFile] = useState(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(false);
     api.get(`/materials/materials/${id}/`)
-      .then((res) => {
-        setMaterial(res.data);
-        setLoading(false);
-      })
+      .then((res) => setMaterial(res.data))
       .catch((err) => {
         console.error(err);
-        setLoading(false);
-      });
+        setError(true);
+      })
+      .finally(() => setLoading(false));
   }, [id]);
 
   const handleView = (file) => {
     setViewingId(file.id);
-    setActiveFile(file.id);
     setTimeout(() => {
       setViewingId(null);
-      window.open(file.file_url);
-    }, 400);
-  };
-
-  const handleDownload = (file) => {
-    setDownloadingId(file.id);
-    setTimeout(() => setDownloadingId(null), 1200);
+      window.open(file.file_url, "_blank", "noopener,noreferrer");
+    }, 300);
   };
 
   const handleCopyNote = () => {
@@ -49,156 +63,128 @@ export default function StudyMaterialDetail() {
     });
   };
 
-  const getFileExt = (name = "") => name.split(".").pop().toUpperCase() || "FILE";
+  if (loading) {
+    return (
+      <div className="ac-page">
+        <LoadingState label="Loading study material" />
+      </div>
+    );
+  }
 
-  const getExtColor = (ext) => {
-    const map = { PDF: "#e74c3c", DOC: "#2980b9", DOCX: "#2980b9", PPT: "#e67e22", PPTX: "#e67e22", XLS: "#27ae60", XLSX: "#27ae60" };
-    return map[ext] || "#7f8c8d";
-  };
+  if (error || !material) {
+    return (
+      <div className="ac-page">
+        <button type="button" className="ac-linkbtn" onClick={() => navigate(-1)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back
+        </button>
+        <EmptyState icon="alert" title="Couldn't load this material" message="Please try again in a moment." />
+      </div>
+    );
+  }
 
-  if (loading) return (
-    <div className="smd-page">
-      <div className="smd-skeleton-header" />
-      <div className="smd-skeleton-body" />
-    </div>
-  );
-
-  if (!material) return (
-    <div className="smd-page">
-      <button className="smd-back" onClick={() => navigate(-1)}>&lt; Back</button>
-      <div className="smd-error">Could not load material.</div>
-    </div>
-  );
-
-  const fileCount = material.files?.length || 0;
+  const files = material.files || [];
+  const dateLabel = new Date(material.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
   return (
-    <div className="smd-page">
+    <div className="ac-page">
 
-      <button className="smd-back" onClick={() => navigate(-1)}>
-        &lt; Back
-      </button>
-
-      <div className="smd-header">
-        <h2>{material.subject_name || "Subject"}</h2>
+      <div className="ac-page__head">
+        <div className="ac-page__headRow">
+          <div>
+            <h1 className="ac-page__title">{material.title}</h1>
+            <p className="ac-page__sub">
+              {material.chapter_title || "No chapter"} · added {dateLabel} · {files.length} file{files.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <button type="button" className="ac-linkbtn" onClick={() => navigate(-1)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back
+          </button>
+        </div>
       </div>
 
-      <div className="smd-wrapper">
+      <div className="smd-grid">
 
-        {/* LEFT */}
-        <div className="smd-left">
-
-          <div className="smd-topic-row">
-            <h3 className="smd-topic">{material.title}</h3>
-            {material.chapter_title && (
-              <span className="smd-chapter-badge">{material.chapter_title}</span>
-            )}
+        <div className="smd-note tk-card">
+          <div className="smd-note-label-row">
+            <p className="smd-note-label">Note</p>
+            <button
+              type="button"
+              className={`smd-copy-btn${copiedNote ? " copied" : ""}`}
+              onClick={handleCopyNote}
+              title="Copy note"
+              disabled={!material.description}
+            >
+              {copiedNote ? (
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                  Copy
+                </>
+              )}
+            </button>
           </div>
-
-          <div className="smd-meta-row">
-            <span className="smd-meta-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              {new Date(material.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-            </span>
-            <span className="smd-meta-pill">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" strokeWidth="2"/><path d="M14 2v6h6" stroke="currentColor" strokeWidth="2"/></svg>
-              {fileCount} file{fileCount !== 1 ? "s" : ""}
-            </span>
-          </div>
-
-          <div className="smd-note">
-            <div className="smd-note-label-row">
-              <p className="smd-note-label">Note:</p>
-              <button
-                className={`smd-copy-btn ${copiedNote ? "copied" : ""}`}
-                onClick={handleCopyNote}
-                title="Copy note"
-              >
-                {copiedNote ? (
-                  <>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" strokeWidth="2"/></svg>
-                    Copy
-                  </>
-                )}
-              </button>
-            </div>
-            <div className="smd-note-box">
-              {material.description || "No note provided"}
-            </div>
-          </div>
-
+          <div className="smd-note-box">{material.description || "No note provided"}</div>
         </div>
 
-        {/* RIGHT */}
-        <div className="smd-files-panel">
-
+        <div className="smd-files tk-card">
           <div className="smd-files-header">
             <span>Files</span>
-            <span className="smd-files-count">{fileCount}</span>
+            <span className="smd-files-count">{files.length}</span>
           </div>
 
-          <div className="smd-files-list">
-
-            {fileCount === 0 ? (
-              <div className="smd-no-files">No files attached</div>
-            ) : (
-              material.files.map((file, i) => {
+          {files.length === 0 ? (
+            <EmptyState plain icon="file" title="No files attached" />
+          ) : (
+            <div className="sm-list">
+              {files.map((file) => {
                 const ext = getFileExt(file.file_name);
-                const isActive = activeFile === file.id;
+                const isPdf = ext === "PDF";
                 return (
-                  <div
-                    key={file.id}
-                    className={`smd-file-card ${isActive ? "active" : ""}`}
-                    style={{ animationDelay: `${i * 80}ms` }}
-                    onClick={() => setActiveFile(isActive ? null : file.id)}
-                  >
-                    <div className="smd-file-info">
+                  <div key={file.id} className="sm-row">
+                    <div className={`sm-badge${isPdf ? " sm-badge--pdf" : " sm-badge--doc"}`}>{ext}</div>
 
-                      <div className="smd-file-icon-wrap" style={{ background: getExtColor(ext) + "22" }}>
-                        <span className="smd-file-ext" style={{ color: getExtColor(ext) }}>{ext}</span>
-                      </div>
-
-                      <div className="smd-file-text">
-                        <p className="smd-file-name" title={file.file_name}>{file.file_name}</p>
-                        <span className="smd-file-size">{file.file_size || "—"}</span>
-                      </div>
+                    <div className="sm-rowMain">
+                      <div className="sm-rowTitle" title={file.file_name}>{file.file_name}</div>
                     </div>
 
-                    <div className="smd-file-actions" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className={`smd-view-btn ${viewingId === file.id ? "loading" : ""}`}
-                        onClick={() => handleView(file)}
-                      >
-                        {viewingId === file.id ? "Opening..." : "View"}
-                      </button>
+                    <span className="sm-rowMeta">{file.file_size || "—"}</span>
 
-                      <a
-                        href={file.file_url}
-                        download={file.file_name}
-                        className={`smd-download-btn ${downloadingId === file.id ? "downloading" : ""}`}
-                        onClick={() => handleDownload(file)}
-                        title="Download"
-                      >
-                        {downloadingId === file.id ? (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        ) : (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v13M7 12l5 5 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 20h14" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
-                        )}
-                      </a>
-                    </div>
+                    <button
+                      type="button"
+                      className={`sm-btn${viewingId === file.id ? " is-loading" : ""}`}
+                      onClick={() => handleView(file)}
+                    >
+                      {viewingId === file.id ? "Opening…" : "View"}
+                    </button>
 
+                    <a
+                      href={file.file_url}
+                      download={file.file_name}
+                      className="sm-btn"
+                      title="Download"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      Download
+                    </a>
                   </div>
                 );
-              })
-            )}
-
-          </div>
-
+              })}
+            </div>
+          )}
         </div>
 
       </div>
