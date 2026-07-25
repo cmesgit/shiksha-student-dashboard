@@ -5,6 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import privateSession from "../api/privateSessionService";
 import PrivateClassroomUI from "../components/live/PrivateClassroomUI";
 import ReconnectingBanner from "../components/live/ReconnectingBanner";
+import ReviewModal from "../components/live/ReviewModal";
 import "../styles/privateSessions.css";
 
 const fullscreenWrap = {
@@ -46,6 +47,7 @@ export default function PrivateSessionLive() {
   const [livekitData, setLivekitData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showReview, setShowReview] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +78,12 @@ export default function PrivateSessionLive() {
   }, [id]);
 
   const handleLeave = () => navigate("/private-sessions");
+
+  // Both the explicit Leave button and an unexpected room disconnect route
+  // through the review prompt first (spec: live/private sessions show a
+  // review modal on leave, group sessions never do) — handleLeave itself
+  // does the actual navigation once the modal is done.
+  const handleControlBarLeave = () => setShowReview(true);
 
   if (loading) {
     return (
@@ -136,16 +144,17 @@ export default function PrivateSessionLive() {
         video={true}
         audio={true}
         style={liveKitWrap}
-        onDisconnected={() => navigate("/private-sessions")}
+        onDisconnected={handleControlBarLeave}
       >
         <ReconnectingBanner />
         <PrivateClassroomUI
           role="STUDENT"
           sessionId={id}
-          onLeave={handleLeave}
+          onLeave={handleControlBarLeave}
         />
         <RoomAudioRenderer />
       </LiveKitRoom>
+      {showReview && <ReviewModal sessionId={id} onDone={handleLeave} sessionType="private" />}
     </div>
   );
 }

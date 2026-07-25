@@ -231,9 +231,15 @@
   color: #9ca3af;
 }
 
-.liveSessionRow__meta-text--live {
-  color: #dc2626;
-  font-weight: 700;
+.liveSessionRow__statusPill--live {
+  background: #e6f4f6;
+  color: #13899b;
+  animation: livePulse 1.6s ease-out infinite;
+}
+
+@keyframes livePulse {
+  0% { box-shadow: 0 0 0 0 rgba(19, 137, 155, 0.45); }
+  100% { box-shadow: 0 0 0 8px rgba(19, 137, 155, 0); }
 }
 
 .liveSessionRow__statusPill {
@@ -263,6 +269,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.liveSessionRow__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .liveSessionRow__btn {

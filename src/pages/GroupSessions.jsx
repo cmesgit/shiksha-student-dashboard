@@ -937,9 +937,47 @@ function SessionDetailsDialog({
 
 /* ═══════════════════════════════════════════════════════════
    NOTES DIALOG (Past tab card action)
+   Private per-user scratchpad for a since-ended group session —
+   /sessions/group-sessions/:id/notes/ (GET/PATCH), autosaved.
 ═══════════════════════════════════════════════════════════ */
 function NotesDialog({ session, open, onClose }) {
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved
+  const saveTimer = useRef(null);
+
+  useEffect(() => {
+    if (!open || !session) return undefined;
+    let cancelled = false;
+    api
+      .get(`/sessions/group-sessions/${session.id}/notes/`)
+      .then((res) => {
+        if (!cancelled) setContent(res.data?.content || "");
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(saveTimer.current);
+    };
+  }, [open, session]);
+
   if (!open || !session) return null;
+
+  const handleChange = (e) => {
+    const value = e.target.value;
+    setContent(value);
+    setSaveStatus("saving");
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      api
+        .patch(`/sessions/group-sessions/${session.id}/notes/`, { content: value })
+        .then(() => setSaveStatus("saved"))
+        .catch(() => setSaveStatus("idle"));
+    }, 800);
+  };
 
   return (
     <div className="sg__modalOverlay" onClick={onClose}>
@@ -953,17 +991,24 @@ function NotesDialog({ session, open, onClose }) {
           {session.topic || "Group session"} · {formatDate(session.date)}
         </p>
 
-        {/*
-          TODO(backend): Group sessions don't have a notes field/endpoint yet —
-          only PrivateSession.notes exists server-side (see sessions_app/models.py).
-          Once the backend adds per-class notes for group sessions, fetch and
-          render the real content here instead of this placeholder.
-        */}
         <div className="sg__notesBody">
-          <p className="sg__hint">
-            Notes for this session aren&apos;t available yet. Check back once your
-            teacher publishes a summary for this class.
-          </p>
+          {loading ? (
+            <p className="sg__hint">Loading…</p>
+          ) : (
+            <>
+              <textarea
+                className="sg__input"
+                style={{ width: "100%", minHeight: 140, resize: "vertical", boxSizing: "border-box" }}
+                value={content}
+                onChange={handleChange}
+                placeholder="No notes taken for this session yet — only you can see these."
+              />
+              <p className="sg__hint" style={{ textAlign: "right", marginTop: 4, minHeight: 16 }}>
+                {saveStatus === "saving" && "Saving…"}
+                {saveStatus === "saved" && "Saved"}
+              </p>
+            </>
+          )}
         </div>
 
         <div className="sg__dialogFootEnd">
@@ -1546,6 +1591,7 @@ export default function GroupSessions() {
       />
 
       <NotesDialog
+        key={notesSession?.id}
         session={notesSession}
         open={Boolean(notesSession)}
         onClose={() => setNotesSession(null)}

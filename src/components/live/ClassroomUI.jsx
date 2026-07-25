@@ -1,7 +1,7 @@
 import { useTracks, VideoTrack, useRoomContext } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import LiveChatPanel from "./LiveChatPanel";
-import RaiseHandButton from "./RaiseHandButton";
+import NotesPanel from "./NotesPanel";
 import ControlBar from "./ControlBar";
 import React, { useState, useRef, useEffect } from "react";
 import "../../styles/live.css";
@@ -231,20 +231,16 @@ export default function ClassroomUI({
 
           {/* CHAT */}
           {activePanel === "chat" && (
-            <>
-              <LiveChatPanel
-                role={role}
-                messages={chatMessages}
-                onSendMessage={sendMessage}
-                participants={peopleList}
-              />
-              {!isPresenter && (
-                <div className="chat-raise-hand-wrap">
-                  <RaiseHandButton />
-                </div>
-              )}
-            </>
+            <LiveChatPanel
+              role={role}
+              messages={chatMessages}
+              onSendMessage={sendMessage}
+              participants={peopleList}
+            />
           )}
+
+          {/* NOTES */}
+          {activePanel === "notes" && <NotesPanel sessionId={sessionId} />}
 
           {/* PEOPLE */}
           {activePanel === "people" && (

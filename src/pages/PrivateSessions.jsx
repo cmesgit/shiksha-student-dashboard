@@ -9,6 +9,7 @@ import privateSession from "../api/privateSessionService";
 import PrivateSessionCard from "../components/PrivateSessionCard";
 import PageHeader from "../components/PageHeader";
 import { LoadingState } from "../components/StateViews";
+import NotesViewModal from "../components/live/NotesViewModal";
 import "../styles/privateSessions.css";
 
 /* ═══════════════════════════════════════════════════════════
@@ -300,6 +301,8 @@ function RequestDetail({ session, onBack, onCancel, onConfirmReschedule, onDecli
    HISTORY DETAIL VIEW
 ═══════════════════════════════════════════════════════════ */
 function HistoryDetail({ session, onBack }) {
+  const [showNotes, setShowNotes] = useState(false);
+
   return (
     <div className="ps__detail">
       <div className="ps__sidebarBack">
@@ -307,7 +310,15 @@ function HistoryDetail({ session, onBack }) {
       </div>
       <div className={`ps__statusBar ps__statusBar--${statusCls(session.status)}`}>
         <span>STATUS: {statusLabel(session.status).toUpperCase()}</span>
+        {session.status === "completed" && (
+          <button className="ps__joinBtn" style={{ background: "#425f7f" }} onClick={() => setShowNotes(true)}>
+            My Notes
+          </button>
+        )}
       </div>
+      {showNotes && (
+        <NotesViewModal sessionId={session.id} sessionType="private" onClose={() => setShowNotes(false)} />
+      )}
       <div className="ps__detailLabel">Session Summary:</div>
       <div className="ps__detailBody">
         <div className="ps__detailLeft">

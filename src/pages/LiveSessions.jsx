@@ -8,6 +8,7 @@ import "../styles/liveSessions.css";
 import useNotificationSocket from "../hooks/useNotificationSocket";
 import { subjectChipPalette } from "../utils/subjectChips";
 import { fmtClockTime, dayLabel, startsInText } from "../utils/sessionTime";
+import NotesViewModal from "../components/live/NotesViewModal";
 
 function computeStatus(session) {
   const now = Date.now();
@@ -51,47 +52,33 @@ const UPCOMING_STATUSES = new Set([
   "WAITING_FOR_TEACHER",
 ]);
 
+// Only covers the statuses actually rendered through the pill branch below
+// (PAUSED / RECONNECTING / WAITING_FOR_TEACHER / CANCELLED — SCHEDULED, LIVE,
+// and COMPLETED each render their own plain-text treatment). Colors are the
+// design spec's semantic tokens, not ad-hoc hex.
 const STATUS_CONFIG = {
-  LIVE: {
-    label: "Live now",
-    color: "#fff",
-    bg: "#ef4444",
-  },
-
   PAUSED: {
     label: "Paused",
-    color: "#fff",
-    bg: "#f59e0b",
+    color: "#c2701c",
+    bg: "#fef3ec",
   },
 
   RECONNECTING: {
     label: "Reconnecting",
-    color: "#fff",
-    bg: "#f59e0b",
-  },
-
-  SCHEDULED: {
-    label: "Upcoming",
-    color: "#fff",
-    bg: "#10b981",
+    color: "#c2701c",
+    bg: "#fef3ec",
   },
 
   WAITING_FOR_TEACHER: {
     label: "Starting soon",
-    color: "#fff",
-    bg: "#3b82f6",
-  },
-
-  COMPLETED: {
-    label: "Completed",
-    color: "#fff",
-    bg: "#9ca3af",
+    color: "#1d4ed8",
+    bg: "#e8edfb",
   },
 
   CANCELLED: {
     label: "Cancelled",
-    color: "#fff",
-    bg: "#6b7280",
+    color: "#dc2626",
+    bg: "#fef2f2",
   },
 };
 
@@ -111,7 +98,7 @@ function getLiveDuration(startTime) {
   return `${hours}h ${mins}m live`;
 }
 
-function LiveSessionRow({ session, tick, onJoin, onOpenRecording }) {
+function LiveSessionRow({ session, tick, onJoin, onOpenRecording, onOpenNotes }) {
   void tick;
 
   const status = computeStatus(session);
@@ -127,8 +114,8 @@ function LiveSessionRow({ session, tick, onJoin, onOpenRecording }) {
     metaNode = <span className="liveSessionRow__meta-text">starts {startsInText(start)}</span>;
   } else if (status === "LIVE") {
     metaNode = (
-      <span className="liveSessionRow__meta-text liveSessionRow__meta-text--live">
-        🔴 {getLiveDuration(session.start_time)}
+      <span className="liveSessionRow__statusPill liveSessionRow__statusPill--live">
+        Live now · {getLiveDuration(session.start_time)}
       </span>
     );
   } else if (status === "COMPLETED") {
@@ -145,21 +132,17 @@ function LiveSessionRow({ session, tick, onJoin, onOpenRecording }) {
     );
   }
 
-  let btnText = "Join";
-  let btnVariant = "primary";
   let disabled = false;
   let handleClick = () => onJoin(session);
+  let btnText = "Join";
+  let btnVariant = "primary";
 
-  if (status === "COMPLETED") {
-    btnText = "Recording";
-    btnVariant = "outline";
-    handleClick = () => onOpenRecording(session);
-  } else if (status === "CANCELLED") {
+  if (status === "CANCELLED") {
     btnText = "Cancelled";
     btnVariant = "outline";
     disabled = true;
     handleClick = undefined;
-  } else {
+  } else if (status !== "COMPLETED") {
     disabled = !canJoin;
   }
 
@@ -183,14 +166,33 @@ function LiveSessionRow({ session, tick, onJoin, onOpenRecording }) {
         <div className="liveSessionRow__topic">{session.title}</div>
         <div className="liveSessionRow__teacher">{teacherName}</div>
       </div>
-      <button
-        type="button"
-        className={`liveSessionRow__btn liveSessionRow__btn--${btnVariant}`}
-        disabled={disabled}
-        onClick={handleClick}
-      >
-        {btnText}
-      </button>
+      {status === "COMPLETED" ? (
+        <div className="liveSessionRow__actions">
+          <button
+            type="button"
+            className="liveSessionRow__btn liveSessionRow__btn--outline"
+            onClick={() => onOpenNotes(session)}
+          >
+            Notes
+          </button>
+          <button
+            type="button"
+            className="liveSessionRow__btn liveSessionRow__btn--outline"
+            onClick={() => onOpenRecording(session)}
+          >
+            Recording
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className={`liveSessionRow__btn liveSessionRow__btn--${btnVariant}`}
+          disabled={disabled}
+          onClick={handleClick}
+        >
+          {btnText}
+        </button>
+      )}
     </div>
   );
 }
@@ -207,6 +209,7 @@ export default function LiveSessions() {
   const [tab, setTab] = useState("upcoming");
   const [pastSearch, setPastSearch] = useState("");
   const [pastSort, setPastSort] = useState("newest");
+  const [notesSession, setNotesSession] = useState(null);
   const wsRef = useRef(null);
   const { notifications } = useNotificationSocket();
 
@@ -309,6 +312,10 @@ export default function LiveSessions() {
     navigate(`/subjects/recordings/${session.subject_id}`);
   };
 
+  const handleOpenNotes = (session) => {
+    setNotesSession(session);
+  };
+
   if (loading) return <div className="liveSessionsPage"><LoadingState label="Loading live sessions" /></div>;
   if (error)   return <div className="liveSessionsPage"><ErrorState message={error} /></div>;
 
@@ -402,11 +409,19 @@ export default function LiveSessions() {
                 tick={tick}
                 onJoin={handleJoin}
                 onOpenRecording={handleOpenRecording}
+                onOpenNotes={handleOpenNotes}
               />
             ))}
           </div>
         )}
       </section>
+
+      {notesSession && (
+        <NotesViewModal
+          sessionId={notesSession.id}
+          onClose={() => setNotesSession(null)}
+        />
+      )}
     </div>
   );
 }
