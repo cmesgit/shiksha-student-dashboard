@@ -109,11 +109,24 @@
   }
 }
 
-.sd-main,
-.sd-side {
+.sd-detailMain,
+.sd-detailSide {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* The right rail is often much shorter than the left column (a subject with
+   no teacher bio / no upcoming classes collapses to two one-line empty
+   states) — pin it near the top instead of leaving it to end early and
+   expose a tall stretch of bare page background below it while the left
+   column keeps scrolling. */
+@media (min-width: 901px) {
+  .sd-detailSide {
+    position: sticky;
+    top: 20px;
+    align-self: start;
+  }
 }
 
 .sd-card {

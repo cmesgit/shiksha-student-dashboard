@@ -183,7 +183,7 @@ export default function SubjectDetails() {
 
       <div className="sd-grid">
         {/* Left column */}
-        <div className="sd-main">
+        <div className="sd-detailMain">
           <div className="sd-card">
             <div className="sd-card__headRow">
               <h3 className="sd-card__heading">Chapters</h3>
@@ -304,7 +304,7 @@ export default function SubjectDetails() {
         </div>
 
         {/* Right rail */}
-        <div className="sd-side">
+        <div className="sd-detailSide">
           <div className="sd-card">
             <h3 className="sd-card__heading">About this subject</h3>
             {primaryTeacher ? (
