@@ -4,11 +4,30 @@ import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
 import { LoadingState, EmptyState } from "../components/StateViews";
 import { subjectChipPalette, subjectInitials } from "../utils/subjectChips";
+import AssignmentCard from "../components/AssignmentCard";
+import { fmtClockTime, dayLabel, startsInText } from "../utils/sessionTime";
 import "../styles/academyCommon.css";
 import "../styles/subjectDetails.css";
 
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "";
+
+function getFileExt(name = "") {
+  const ext = name.split(".").pop();
+  return ext ? ext.toUpperCase() : "FILE";
+}
+
+function triggerDownload(file) {
+  if (!file?.file_url) return;
+  const a = document.createElement("a");
+  a.href = file.file_url;
+  a.download = file.file_name || "";
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
 
 export default function SubjectDetails() {
   const navigate = useNavigate();
@@ -18,6 +37,8 @@ export default function SubjectDetails() {
   const [subjectDetails, setSubjectDetails] = useState(null);
   const [chapterProgress, setChapterProgress] = useState(null); // { chaptersTotal, chaptersDone, percent, chapters }
   const [recordings, setRecordings] = useState([]);
+  const [materials, setMaterials] = useState([]);
+  const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errStatus, setErrStatus] = useState(null);
 
@@ -66,6 +87,20 @@ export default function SubjectDetails() {
         if (alive) setRecordings((rec.data || []).slice(0, 4));
       } catch {
         if (alive) setRecordings([]);
+      }
+
+      try {
+        const mat = await api.get(`/materials/subjects/${subjectId}/materials/`);
+        if (alive) setMaterials((mat.data || []).slice(0, 4));
+      } catch {
+        if (alive) setMaterials([]);
+      }
+
+      try {
+        const asn = await api.get(`/assignments/subject/${subjectId}/`);
+        if (alive) setAssignments((asn.data || []).slice(0, 4));
+      } catch {
+        if (alive) setAssignments([]);
       }
     })();
 
@@ -121,15 +156,28 @@ export default function SubjectDetails() {
             {subjectDetails.studentsCount != null ? ` · ${subjectDetails.studentsCount} students` : ""}
           </p>
         </div>
-        <div className="sd-hero__stats">
-          <button type="button" className="sd-hero__stat" onClick={() => navigate(`/subjects/${subjectId}/assignments`)}>
-            <strong>{subjectDetails.assignments?.pending ?? 0}</strong>
-            <span>Assignments due</span>
-          </button>
-          <button type="button" className="sd-hero__stat" onClick={() => navigate(`/subjects/quiz/${subjectId}`)}>
-            <strong>{subjectDetails.quizzes?.pending ?? 0}</strong>
-            <span>Quizzes due</span>
-          </button>
+      </div>
+
+      <div className="sd-statRow">
+        <div className="sd-stat">
+          <strong>{chapterProgress ? `${chapterProgress.percent}%` : "—"}</strong>
+          <span>Syllabus covered</span>
+        </div>
+        <div className="sd-stat">
+          <strong>{chapterProgress ? chapterProgress.chaptersDone : "—"}</strong>
+          <span>Chapters done</span>
+        </div>
+        <div className="sd-stat">
+          <strong>{subjectDetails.quizAvgPct != null ? `${subjectDetails.quizAvgPct}%` : "—"}</strong>
+          <span>Avg quiz score</span>
+        </div>
+        <div className="sd-stat">
+          <strong>
+            {subjectDetails.upcomingSessions?.length
+              ? dayLabel(new Date(subjectDetails.upcomingSessions[0].start_time))
+              : "—"}
+          </strong>
+          <span>Next class</span>
         </div>
       </div>
 
@@ -153,11 +201,14 @@ export default function SubjectDetails() {
               <ul className="sd-chapterList">
                 {chapterProgress.chapters.map((c) => (
                   <li key={c.id} className={`sd-chapterRow${c.is_covered ? " sd-chapterRow--done" : ""}`}>
-                    <span className="sd-chapterRow__tick" aria-hidden="true">{c.is_covered ? "✓" : "○"}</span>
-                    <span className="sd-chapterRow__title">{c.title}</span>
-                    {c.is_covered && c.covered_at && (
-                      <span className="sd-chapterRow__date">{fmtDate(c.covered_at)}</span>
-                    )}
+                    <div className="sd-chapterRow__main">
+                      <span className="sd-chapterRow__tick" aria-hidden="true">{c.is_covered ? "✓" : "○"}</span>
+                      <span className="sd-chapterRow__title">{c.title}</span>
+                      {c.is_covered && c.covered_at && (
+                        <span className="sd-chapterRow__date">{fmtDate(c.covered_at)}</span>
+                      )}
+                    </div>
+                    {c.note && <p className="sd-chapterRow__note">“{c.note}”</p>}
                   </li>
                 ))}
               </ul>
@@ -188,6 +239,68 @@ export default function SubjectDetails() {
               </ul>
             )}
           </div>
+
+          <div className="sd-card">
+            <div className="sd-card__headRow">
+              <h3 className="sd-card__heading">Study Material</h3>
+              <button type="button" className="sd-card__link" onClick={() => navigate(`/study-material/list/${subjectId}`)}>
+                View all ({subjectDetails.studyMaterialsCount ?? 0})
+              </button>
+            </div>
+            {materials.length === 0 ? (
+              <p className="sd-empty">No study material for this subject yet.</p>
+            ) : (
+              <ul className="sd-materialList">
+                {materials.map((m) => {
+                  const file = m.files?.[0];
+                  return (
+                    <li key={m.id} className="sd-materialRow">
+                      <span className="sd-materialRow__ext">{getFileExt(file?.file_name)}</span>
+                      <div className="sd-materialRow__main">
+                        <span className="sd-materialRow__title">{m.title}</span>
+                        <span className="sd-materialRow__meta">
+                          {file?.file_size ? `${file.file_size} · ` : ""}added {fmtDate(m.created_at)}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="sd-materialRow__btn"
+                        disabled={!file}
+                        onClick={() => triggerDownload(file)}
+                      >
+                        Download
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          <div className="sd-card">
+            <div className="sd-card__headRow">
+              <h3 className="sd-card__heading">Assignments</h3>
+              <button type="button" className="sd-card__link" onClick={() => navigate(`/subjects/${subjectId}/assignments`)}>
+                View all ({subjectDetails.assignments?.total ?? 0})
+              </button>
+            </div>
+            {assignments.length === 0 ? (
+              <p className="sd-empty">No assignments for this subject yet.</p>
+            ) : (
+              <div className="sd-assignmentList">
+                {assignments.map((a) => (
+                  <AssignmentCard
+                    key={a.id}
+                    id={a.id}
+                    subjectId={subjectId}
+                    title={a.title}
+                    teacher={a.teacher || "—"}
+                    due={a.due_date}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right rail */}
@@ -209,16 +322,27 @@ export default function SubjectDetails() {
             <h3 className="sd-card__heading">Upcoming classes</h3>
             {subjectDetails.upcomingSessions?.length > 0 ? (
               <ul className="sd-upcomingList">
-                {subjectDetails.upcomingSessions.map((session) => (
-                  <li key={session.id} className="sd-upcomingRow" onClick={() => navigate(`/live/${session.id}`)}>
-                    <span className="sd-upcomingRow__title">{session.title}</span>
-                    <span className="sd-upcomingRow__time">
-                      {new Date(session.start_time).toLocaleString("en-GB", {
-                        day: "numeric", month: "short", hour: "numeric", minute: "2-digit",
-                      })}
-                    </span>
-                  </li>
-                ))}
+                {subjectDetails.upcomingSessions.map((session) => {
+                  const dt = new Date(session.start_time);
+                  const isLive = session.status === "LIVE";
+                  return (
+                    <li key={session.id} className={`sd-upcomingRow${isLive ? " sd-upcomingRow--live" : ""}`}>
+                      <div className="sd-upcomingRow__main">
+                        <span className="sd-upcomingRow__title">{session.title}</span>
+                        <span className="sd-upcomingRow__time">
+                          {isLive ? "Live now" : `${dayLabel(dt)} · ${fmtClockTime(dt)} · ${startsInText(dt)}`}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="sd-upcomingRow__btn"
+                        onClick={() => navigate(`/live/${session.id}`)}
+                      >
+                        {isLive ? "Join" : "Details"}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="sd-empty">No upcoming live classes scheduled.</p>
