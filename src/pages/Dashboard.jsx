@@ -120,13 +120,12 @@ function toDateKey(dateStr) {
 function heroStatus(session) {
   if (session.live) return { chip: "LIVE NOW", relative: "In progress" };
   const start = new Date(session.dateTime);
-  if (Number.isNaN(start.getTime())) return { chip: "UP NEXT", relative: "" };
+  if (Number.isNaN(start.getTime())) return { chip: "NEXT CLASS", relative: "" };
   const diffMins = Math.round((start - new Date()) / 60000);
-  if (diffMins <= 0) return { chip: "UP NEXT", relative: "Starting soon" };
-  if (diffMins <= 30) return { chip: "STARTING SOON", relative: `Starts in ${diffMins}m` };
-  if (diffMins < 60) return { chip: "UP NEXT", relative: `Starts in ${diffMins}m` };
+  if (diffMins <= 0) return { chip: "NEXT CLASS", relative: "Starting soon" };
+  if (diffMins < 60) return { chip: "NEXT CLASS", relative: `Starts in ${diffMins}m` };
   const hours = Math.floor(diffMins / 60);
-  return { chip: "UP NEXT", relative: hours < 24 ? `Starts in ${hours}h` : `Starts in ${Math.floor(hours / 24)}d` };
+  return { chip: "NEXT CLASS", relative: hours < 24 ? `Starts in ${hours}h` : `Starts in ${Math.floor(hours / 24)}d` };
 }
 
 function isSameDay(a, b) {
@@ -146,6 +145,8 @@ export default function Dashboard() {
   const [notificationFilter, setNotificationFilter] = useState("All");
   const [scheduleFilter, setScheduleFilter] = useState("All");
   const [activeMobileTab, setActiveMobileTab] = useState("sessions");
+  // Desktop right-rail tab: which list the merged Assignments/Quizzes card shows.
+  const [rightRailTab, setRightRailTab] = useState("assignments");
 
   const today = new Date();
   const [currMonth, setCurrMonth] = useState(today.getMonth());
@@ -352,6 +353,19 @@ export default function Dashboard() {
       return assignmentFilter === "due" ? dueDate >= now : dueDate < now;
     });
   }, [assignments, assignmentFilter]);
+
+  // Same due/overdue toggle pattern as assignments, applied to quizzes — feeds
+  // the "Quizzes" tab of the merged right-rail card.
+  const filteredQuizzes = useMemo(() => {
+    const now = new Date();
+    return quizzes.filter((q) => {
+      const raw = q.dueDate || q.due;
+      if (!raw) return assignmentFilter === "due";
+      const dueDate = new Date(raw);
+      if (Number.isNaN(dueDate.getTime())) return assignmentFilter === "due";
+      return assignmentFilter === "due" ? dueDate >= now : dueDate < now;
+    });
+  }, [quizzes, assignmentFilter]);
 
   const filteredSchedule = scheduleItems.filter((item) => {
     if (selectedDate) {
@@ -681,11 +695,18 @@ export default function Dashboard() {
     const d = a.dueDate || a.due ? new Date(a.dueDate || a.due) : null;
     return !d || Number.isNaN(d.getTime()) || d >= _now;
   }).length;
+  const _pendingQuizzes = quizzes.filter((q) => {
+    const d = q.dueDate || q.due ? new Date(q.dueDate || q.due) : null;
+    return !d || Number.isNaN(d.getTime()) || d >= _now;
+  }).length;
+  // Backend may not have landed quiz_avg_pct yet on every deploy — default to
+  // null (renders as "—") rather than throwing on a transitional response.
+  const quizAvgPct = data?.quiz_avg_pct ?? null;
   const statCards = [
-    { icon: "video", iconBg: "#e6f4f6", iconColor: "#13899b", value: sessions.length,        label: "Classes this week" },
-    { icon: "file",  iconBg: "#ecf8ee", iconColor: "#2f9d42", value: _pendingAssignments,     label: "Assignments due" },
-    { icon: "help",  iconBg: "#e8edfb", iconColor: "#1d4ed8", value: quizzes.length,          label: "Quizzes" },
-    { icon: "lock",  iconBg: "#fff8f0", iconColor: "#d97706", value: privateSessions.length,  label: "1-on-1 sessions" },
+    { icon: "video", iconBg: "#e6f4f6", iconColor: "#13899b", value: sessions.length,               label: "Classes this week" },
+    { icon: "file",  iconBg: "#ecf8ee", iconColor: "#2f9d42", value: _pendingAssignments,            label: "Assignments due" },
+    { icon: "trend", iconBg: "#e8edfb", iconColor: "#1d4ed8", value: quizAvgPct != null ? `${quizAvgPct}%` : "—", label: "Average quiz score" },
+    { icon: "help",  iconBg: "#f3e8ff", iconColor: "#7c3aed", value: _pendingQuizzes,                 label: "Quizzes due" },
   ];
 
   return (
@@ -709,7 +730,7 @@ export default function Dashboard() {
           return (
             <section className="dashHero">
               <div className="dashHero__main">
-                <span className={`dashHero__chip dashHero__chip--${chip === "LIVE NOW" ? "live" : chip === "STARTING SOON" ? "soon" : "next"}`}>
+                <span className={`dashHero__chip dashHero__chip--${chip === "LIVE NOW" ? "live" : "next"}`}>
                   {chip}
                 </span>
                 <span className="dashHero__relative">{relative}</span>
@@ -762,100 +783,107 @@ export default function Dashboard() {
                 </div>
               )}
             </section>
-
-            <div className="dashboardLeftBottom">
-              <section className="dashboardCard dashboardCard--assignments">
-                <div className="cardHeader">
-                  <h3>Assignments</h3>
-
-                  <div className="assignmentToggle">
-                    <button
-                      type="button"
-                      className={`assignmentToggle__btn ${
-                        assignmentFilter === "due" ? "assignmentToggle__btn--active" : ""
-                      }`}
-                      onClick={() => setAssignmentFilter("due")}
-                    >
-                      Due
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`assignmentToggle__btn ${
-                        assignmentFilter === "overdue" ? "assignmentToggle__btn--active" : ""
-                      }`}
-                      onClick={() => setAssignmentFilter("overdue")}
-                    >
-                      Over Due
-                    </button>
-                  </div>
-                </div>
-
-                <div className="cardBodyScroll">
-                  {filteredAssignments.map((a, idx) => (
-                    <AssignmentCard key={a.id || idx} {...a} />
-                  ))}
-
-                  {filteredAssignments.length === 0 && (
-                    <div className="emptyState">
-                      {assignmentFilter === "due" ? "No due assignments" : "No overdue assignments"}
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              <section className="dashboardCard dashboardCard--notifications">
-                <div className="cardHeader">
-                  <h3>Notifications</h3>
-                  <DropdownMenu
-                    value={notificationFilter}
-                    onChange={setNotificationFilter}
-                    options={NOTIF_OPTIONS}
-                  />
-                </div>
-
-                <div className="cardBodyScroll">
-                  {filteredNotifications.map((n) => (
-                    <NotificationCard key={n.id} notification={n} onRead={markOneRead} />
-                  ))}
-                  {filteredNotifications.length === 0 && (
-                    <div className="emptyState">No notifications</div>
-                  )}
-                </div>
-              </section>
-            </div>
           </div>
 
           <div className="dashboardRight">
-            <section className="dashboardCard dashboardCard--calendar">{renderCalendarGrid()}</section>
-
-            <section className="dashboardCard dashboardCard--schedule">
+            <section className="dashboardCard dashboardCard--assignments">
               <div className="cardHeader">
-                <h3>
-                  Schedule
-                  {selectedDate && (
-                    <span className="selectedDateText">
-                      —{" "}
-                      {new Date(
-                        selectedDate.year,
-                        selectedDate.month,
-                        selectedDate.day
-                      ).toLocaleDateString("en-GB", DATE_FORMAT)}
-                    </span>
-                  )}
-                </h3>
-                <DropdownMenu
-                  value={scheduleFilter}
-                  onChange={setScheduleFilter}
-                  options={SCHEDULE_OPTIONS}
-                />
+                <div className="assignmentToggle" role="tablist" aria-label="Assignments or Quizzes">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={rightRailTab === "assignments"}
+                    className={`assignmentToggle__btn ${
+                      rightRailTab === "assignments" ? "assignmentToggle__btn--active" : ""
+                    }`}
+                    onClick={() => setRightRailTab("assignments")}
+                  >
+                    Assignments
+                  </button>
+
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={rightRailTab === "quizzes"}
+                    className={`assignmentToggle__btn ${
+                      rightRailTab === "quizzes" ? "assignmentToggle__btn--active" : ""
+                    }`}
+                    onClick={() => setRightRailTab("quizzes")}
+                  >
+                    Quizzes
+                  </button>
+                </div>
+
+                <div className="assignmentToggle">
+                  <button
+                    type="button"
+                    className={`assignmentToggle__btn ${
+                      assignmentFilter === "due" ? "assignmentToggle__btn--active" : ""
+                    }`}
+                    onClick={() => setAssignmentFilter("due")}
+                  >
+                    Due
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`assignmentToggle__btn ${
+                      assignmentFilter === "overdue" ? "assignmentToggle__btn--active" : ""
+                    }`}
+                    onClick={() => setAssignmentFilter("overdue")}
+                  >
+                    Over Due
+                  </button>
+                </div>
               </div>
 
               <div className="cardBodyScroll">
-                {filteredSchedule.map((item, idx) => renderScheduleItem(item, idx))}
-                {filteredSchedule.length === 0 && <div className="emptyState">No schedule</div>}
+                {rightRailTab === "assignments" ? (
+                  <>
+                    {filteredAssignments.map((a, idx) => (
+                      <AssignmentCard key={a.id || idx} {...a} />
+                    ))}
+
+                    {filteredAssignments.length === 0 && (
+                      <div className="emptyState">
+                        {assignmentFilter === "due" ? "No assignments due" : "No overdue assignments"}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {filteredQuizzes.map((q, idx) => (
+                      <QuizCard
+                        key={q.id || idx}
+                        title={q.title}
+                        teacher={q.teacher}
+                        deadline={
+                          q.due
+                            ? new Date(q.due).toLocaleDateString("en-GB", {
+                                day: "2-digit", month: "short", year: "numeric",
+                                hour: "2-digit", minute: "2-digit", hour12: true,
+                              })
+                            : "No due date"
+                        }
+                        isCompleted={false}
+                        inProgress={false}
+                        onClick={() =>
+                          navigate(q.subject_id ? `/subjects/quiz/${q.subject_id}` : "/subjects/quiz")
+                        }
+                      />
+                    ))}
+
+                    {filteredQuizzes.length === 0 && (
+                      <div className="emptyState">
+                        {assignmentFilter === "due" ? "No quizzes due" : "No overdue quizzes"}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </section>
+
+            <section className="dashboardCard dashboardCard--calendar">{renderCalendarGrid()}</section>
           </div>
         </div>
       </div>

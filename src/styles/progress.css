@@ -1,107 +1,97 @@
 /* PLACEMENT: src/styles/progress.css
    Academy Progress screen — page scaffold (heading, spinner/empty/error
    states) comes from academyCommon.css / shared/tokens.css; this file
-   styles what's specific to Progress: the batch/syllabus context tag, the
-   overall summary strip, and the per-subject progress cards.
+   styles what's specific to Progress: the 4-up stat-card row and the single
+   full-width "Syllabus Progress" card listing one row per subject.
 
-   Per the design handoff (README §14 "Progress / Batch Progress"), the
-   student view shows NO "Recent results" side rail — subject cards fill
-   the full content width in an evenly-distributed grid. */
+   Per the design handoff, this screen has no batch/syllabus context banner,
+   no overall ring/donut summary, and no expandable per-chapter checklist —
+   just the stat row and the subject list below it. Values mirror the
+   dashboard's stat-card sizing (see .dashStat in dashboard.css) so the two
+   screens read as the same design language. */
 
-.progressBack {
-  align-self: flex-start;
-  background: transparent;
-  color: var(--academy, #425f7f);
-  border: 1px solid var(--card-border, #e5eaed);
-  padding: 6px 14px;
-  border-radius: var(--radius-btn, 10px);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-bottom: 14px;
-}
-.progressBack:hover { background: var(--academy-soft, #e6edee); border-color: #cfdbe6; }
-.progressBack:focus-visible { outline: none; box-shadow: var(--focus-ring, 0 0 0 3px rgba(66,95,127,.35)); }
-
-.prog-muted { color: var(--ink-3, #6b7c83); font-size: 13px; }
-.prog-indent { padding-left: 4px; }
-
-/* Batch / syllabus context */
-.prog-context { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
-.prog-tag {
-  display: inline-flex; align-items: center;
-  background: var(--academy-soft, #e6edee); color: var(--academy, #425f7f);
-  border: 1px solid #cfdbe6;
-  padding: 4px 12px; border-radius: var(--radius-pill, 999px); font-size: 13px; font-weight: 700;
-}
-.prog-tag--muted { background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
-.prog-context-note { font-size: 12.5px; color: var(--ink-3, #6b7c83); }
-
-/* Overall summary strip — full width, sits above the subject card grid */
-.prog-overall {
-  display: flex; align-items: center; gap: 20px;
-  background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e5eaed);
-  border-radius: var(--card-radius, 12px); box-shadow: var(--card-shadow, 0 1px 3px rgba(26,44,51,.06));
-  padding: 18px 20px; margin-bottom: 20px;
-}
-.prog-overall-ring {
-  width: 74px; height: 74px; border-radius: 50%; flex: none;
-  display: flex; align-items: center; justify-content: center;
-  background:
-    radial-gradient(closest-side, #fff 74%, transparent 75% 100%),
-    conic-gradient(var(--academy, #425f7f) var(--pct, 0%), var(--academy-soft, #e6edee) 0);
-  /* Fallback solid ring if conic-gradient unsupported */
-  border: 1px solid var(--card-border, #e5eaed);
-}
-.prog-overall-pct { font-family: var(--font-display, "Montserrat", sans-serif); font-size: 18px; font-weight: 800; color: var(--academy, #425f7f); }
-.prog-overall-meta { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
-.prog-overall-meta strong { font-family: var(--font-display, "Montserrat", sans-serif); font-size: 15px; color: var(--ink, #1a2c33); font-weight: 700; }
-
-/* Progress bar (shared by the overall strip and each subject card) */
-.prog-bar { height: 8px; background: var(--academy-soft, #e6edee); border-radius: var(--radius-pill, 999px); overflow: hidden; }
-.prog-bar__fill { height: 100%; background: linear-gradient(90deg, var(--academy, #425f7f), var(--live, #13899b)); border-radius: var(--radius-pill, 999px); transition: width 0.3s ease; }
-
-/* ── Subject progress cards — evenly distributed across the full width ── */
-.prog-cards {
+/* ── Stat row ── */
+.progStatRow {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
 }
-
-.prog-card {
-  display: flex;
-  flex-direction: column;
+.progStat {
   background: var(--card-bg, #fff);
   border: 1px solid var(--card-border, #e5eaed);
-  border-radius: var(--card-radius, 12px);
-  box-shadow: var(--card-shadow, 0 1px 3px rgba(26,44,51,.06));
-  padding: 16px 18px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(26, 44, 51, .06));
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.prog-card:hover { border-color: #cfdbe6; box-shadow: 0 8px 22px rgba(66,95,127,.10); }
-
-.prog-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-.prog-card__title { font-family: var(--font-display, "Montserrat", sans-serif); font-size: 15px; font-weight: 700; color: var(--ink, #1a2c33); }
-.prog-card__pct { font-family: var(--font-display, "Montserrat", sans-serif); font-size: 15px; font-weight: 800; color: var(--academy, #425f7f); flex-shrink: 0; }
-
-.prog-card__stats { margin-top: 8px; font-size: 12px; color: var(--ink-3, #6b7c83); display: flex; align-items: center; gap: 6px; }
-.prog-card__statsDot { color: var(--ink-4, #9ca3af); }
-
-/* Per-chapter breakdown — supporting detail inside each subject card */
-.prog-chapters { list-style: none; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px solid #f1f4f6; display: flex; flex-direction: column; gap: 6px; }
-.prog-chapter {
-  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
-  font-size: 13px; color: var(--ink-3, #6b7c83); padding: 2px 0;
+.progStat__icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.prog-chapter.covered { color: var(--ink, #1a2c33); }
-.prog-tick { flex: none; font-weight: 800; color: #cbd5db; width: 16px; text-align: center; }
-.prog-chapter.covered .prog-tick { color: var(--academy, #425f7f); }
-.prog-chapter-title { flex: 1; min-width: 0; }
-.prog-date { flex: none; font-size: 11px; color: var(--ink-4, #9ca3af); }
-.prog-note { flex-basis: 100%; padding-left: 26px; font-size: 12px; font-style: italic; color: #8a6d00; }
+.progStat__value {
+  font-family: var(--font-display, "Montserrat", system-ui, sans-serif);
+  font-weight: 800; font-size: 19px; line-height: 1; color: var(--ink, #1a2c33);
+}
+.progStat__label { font-size: 10.5px; color: var(--ink-3, #6b7c83); margin-top: 3px; }
+
+/* ── Syllabus Progress card ── */
+.progSyllabusCard {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(26, 44, 51, .06));
+  padding: 16px;
+}
+.progSyllabusCard__title {
+  font-family: var(--font-display, "Montserrat", system-ui, sans-serif);
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--ink, #1a2c33);
+  margin: 0 0 14px;
+}
+
+.progSubjectList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.progSubjectRow__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+.progSubjectRow__name { font-size: 11.5px; font-weight: 600; color: var(--ink, #1a2c33); }
+.progSubjectRow__pct {
+  font-family: var(--font-display, "Montserrat", system-ui, sans-serif);
+  font-weight: 800;
+  font-size: 11.5px;
+  color: var(--academy, #425f7f);
+}
+
+.progSubjectRow__track {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--academy-soft, #e6edee);
+  overflow: hidden;
+}
+.progSubjectRow__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--academy, #425f7f), var(--live, #13899b));
+  transition: width 0.3s ease;
+}
+
+.progSubjectRow__meta {
+  font-size: 9.5px;
+  color: var(--ink-4, #9ca3af);
+  margin-top: 4px;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .prog-bar__fill { transition: none; }
-  .prog-card { transition: none; }
+  .progSubjectRow__fill { transition: none; }
 }

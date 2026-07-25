@@ -436,7 +436,10 @@
 
 .dashboardRight {
   display: grid;
-  grid-template-rows: 281px minmax(0, 1fr);
+  /* Right rail order is now [Assignments/Quizzes toggle card, Month Calendar] —
+     the toggle card gets the flexible track, the calendar keeps the fixed
+     track it always had (same two values, swapped to match child order). */
+  grid-template-rows: minmax(0, 1fr) 281px;
   gap: 14px;
   min-height: 0;
 }
