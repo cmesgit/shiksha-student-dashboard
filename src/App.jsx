@@ -41,7 +41,6 @@ import QuizAttempts from "./pages/QuizAttempts";
 import SubjectsRecordings from "./pages/SubjectsRecordings";
 import RecordingsList from "./pages/RecordingsList";
 import RecordingDetail from "./pages/RecordingDetail";
-import SubjectsStudyMaterial from "./pages/SubjectsStudyMaterial";
 import StudyMaterialList from "./pages/StudyMaterialList";
 import StudyMaterialDetail from "./pages/StudyMaterialDetail";
 import LiveSessionDetail from "./pages/LiveSessionDetail";
@@ -55,7 +54,6 @@ import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
 import Progress from "./pages/Progress";
-import AssignmentsSubjects from "./pages/AssignmentsSubjects";
 import MyCourses from "./pages/MyCourses";
 import BrowseCourses from "./pages/BrowseCourses";
 import MyCounselling from "./pages/counselling/MyCounselling";
@@ -117,9 +115,12 @@ export default function App() {
                   the active course when no :courseId is present. */}
               <Route path="progress" element={<Progress />} />
 
-              {/* Top-level Assignments landing (subject picker). Replaces the
-                  old redirect to /subjects so the nav item is a real page. */}
-              <Route path="assignments" element={<AssignmentsSubjects />} />
+              {/* Assignments is one flat, subject-filterable list (design
+                  screen 11) — no subject-picker step. The :subjectId variant
+                  is kept so existing deep links (and the dashboard's
+                  per-assignment links) still resolve; it renders the same
+                  screen with that subject's pill preselected. */}
+              <Route path="assignments" element={<SubjectsAssignments />} />
               <Route path="subjects/:subjectId/assignments" element={<SubjectsAssignments />} />
               <Route path="subjects/:subjectId/assignments/:assignmentId" element={<AssignmentDetail />} />
 
@@ -134,7 +135,10 @@ export default function App() {
               <Route path="subjects/recordings/:subjectId" element={<RecordingsList />} />
               <Route path="subjects/recordings/:subjectId/video/:videoId" element={<RecordingDetail />} />
 
-              <Route path="study-material" element={<SubjectsStudyMaterial />} />
+              {/* Study Material is one flat, subject-filterable list (design
+                  screen 13) — no subject-picker step. The /list/:subjectId
+                  variant is kept so existing deep links still resolve. */}
+              <Route path="study-material" element={<StudyMaterialList />} />
               <Route path="study-material/list/:subjectId" element={<StudyMaterialList />} />
               <Route path="study-material/view/:id" element={<StudyMaterialDetail />} />
 

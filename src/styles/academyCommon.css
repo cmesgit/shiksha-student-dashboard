@@ -235,3 +235,16 @@
   color: #991b1b;
 }
 .ac-banner svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+
+/* ── Subject chip — legacy class alias ──────────────────────────────── */
+/* The canonical `.subj-chip--0…5` colour slots live in shared/tokens.css.
+   `.asg-chip--N` is the older name still used by the assignments screens; it
+   maps onto the same slots rather than redeclaring colours (the two files that
+   used to declare it had drifted apart, so one subject could render green on
+   the list and teal on the detail page). */
+.asg-chip--0 { background: var(--subj-1-bg); color: var(--subj-1-ink); }
+.asg-chip--1 { background: var(--subj-2-bg); color: var(--subj-2-ink); }
+.asg-chip--2 { background: var(--subj-3-bg); color: var(--subj-3-ink); }
+.asg-chip--3 { background: var(--subj-4-bg); color: var(--subj-4-ink); }
+.asg-chip--4 { background: var(--subj-5-bg); color: var(--subj-5-ink); }
+.asg-chip--5 { background: var(--subj-6-bg); color: var(--subj-6-ink); }

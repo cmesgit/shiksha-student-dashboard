@@ -1,3 +1,30 @@
+// src/pages/SubjectsAssignments.jsx
+// ──────────────────────────────────────────────────────────────────────────
+// Academy "Assignments" — one flat, filterable list of every assignment
+// across the learner's subjects. Matches the design handoff's Assignments
+// screen (Academy Dashboard.dc.html lines 1731–1774): a subject-pill filter
+// row on the left, a status select (All / Due / Overdue / Submitted) pushed to
+// the right margin, then one list card of rows.
+//
+// There is deliberately NO subject-picker step any more. The design shows this
+// screen reached straight from the nav, so `pages/AssignmentsSubjects.jsx` (the
+// picker) is gone and `/assignments` lands here.
+//
+// Data: ONE request — GET /assignments/courses/:courseId/ returns every
+// assignment across the course's subjects. That endpoint is also stricter than
+// the per-subject one this screen used to fan out over: it enforces the active
+// subscription AND batch isolation (course-wide assignments plus this learner's
+// own batch), so the fan-out was showing other batches' work.
+//
+// It needs `subject_id` on each row to build the pills and the row links; that
+// field is a recent addition to AssignmentListSerializer. Until the backend
+// carrying it is deployed we fall back to the old per-subject fan-out, so this
+// screen works against both old and new API builds.
+//
+// The route still accepts an optional :subjectId so older deep links keep
+// working — it just preselects that subject's pill instead of scoping the fetch.
+// ──────────────────────────────────────────────────────────────────────────
+
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/apiClient";
@@ -5,9 +32,13 @@ import { useCourse } from "../contexts/CourseContext";
 import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import { subjectChipSlot } from "../utils/subjectChips";
 import "../styles/academyCommon.css";
+import "../styles/academyScreens.css";
 import "../styles/assignmentPending.css";
 
 const STATUS_FILTERS = ["All", "Due", "Overdue", "Submitted"];
+
+// Status → shared .ac-tag--* variant.
+const STATUS_TONE = { due: "success", overdue: "danger", submitted: "info" };
 
 const fmtDue = (d) =>
   d
@@ -17,102 +48,161 @@ const fmtDue = (d) =>
 export default function SubjectsAssignments() {
   const navigate = useNavigate();
   const { subjectId } = useParams();
-  const { subjects } = useCourse();
+  const { activeCourse, subjects } = useCourse();
 
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState("All");
+  // "" = All subjects. Seeded from the route so a deep link preselects.
+  const [subjectFilter, setSubjectFilter] = useState(subjectId ? String(subjectId) : "");
 
   useEffect(() => {
-    if (!subjectId) return;
+    setSubjectFilter(subjectId ? String(subjectId) : "");
+  }, [subjectId]);
 
-    async function fetchAssignments() {
+  useEffect(() => {
+    const list = subjects || [];
+    if (!activeCourse || list.length === 0) {
+      setAssignments([]);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    // Legacy path: one request per subject, flattened client-side. Only used
+    // when the batched endpoint isn't available yet (see below).
+    async function fetchPerSubject() {
+      const perSubject = await Promise.all(
+        list.map((s) =>
+          api
+            .get(`/assignments/subject/${s.id}/`)
+            .then((res) =>
+              (res.data || []).map((a) => ({
+                ...a,
+                subjectId: s.id,
+                subjectName: a.subject || s.name,
+              }))
+            )
+            // A subject that fails degrades to empty rather than rejecting the
+            // whole screen.
+            .catch(() => [])
+        )
+      );
+      return perSubject.flat();
+    }
+
+    async function fetchAll() {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-        setError(null);
-
-        const res = await api.get(`/assignments/subject/${subjectId}/`);
-        setAssignments(res.data || []);
+        // This route already exists on every backend, so an HTTP error from it
+        // is REAL (403 = subscription expired) and must surface — falling back
+        // to the per-subject fan-out on a 403 would quietly bypass the
+        // subscription gate, since that endpoint doesn't check it. The only
+        // fallback case is an older build that answers without subject_id.
+        const res = await api.get(`/assignments/courses/${activeCourse.id}/`);
+        const data = res.data || [];
+        const rows =
+          data.length && data.every((a) => !a.subject_id)
+            ? await fetchPerSubject()
+            : data.map((a) => ({
+                ...a,
+                subjectId: a.subject_id,
+                subjectName: a.subject_name,
+              }));
+        if (cancelled) return;
+        setAssignments(rows);
       } catch (err) {
+        if (cancelled) return;
         console.error("Assignment fetch error:", err);
         setError("Failed to load assignments.");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
-    fetchAssignments();
-  }, [subjectId]);
-
-  // Reset the status filter whenever the student jumps to a different
-  // subject's assignment list.
-  useEffect(() => {
-    setStatusFilter("All");
-  }, [subjectId]);
+    fetchAll();
+    return () => { cancelled = true; };
+  }, [activeCourse, subjects]);
 
   const now = Date.now();
 
-  const rows = useMemo(() => {
-    return assignments
-      .map((a) => {
+  // Decorate once: status key, chip label, and the design's meta line.
+  const decorated = useMemo(
+    () =>
+      assignments.map((a) => {
         const isSubmitted = a.status === "SUBMITTED";
-        const isOverdue = !isSubmitted && a.due_date && new Date(a.due_date).getTime() < now;
+        const isOverdue =
+          !isSubmitted && a.due_date && new Date(a.due_date).getTime() < now;
         const stKey = isSubmitted ? "submitted" : isOverdue ? "overdue" : "due";
+        // "Due 12 Aug · 20 marks" per the design; each part only when known.
+        const marks = a.max_marks ?? a.marks ?? a.total_marks;
+        const meta = [
+          a.due_date ? `Due ${fmtDue(a.due_date)}` : null,
+          marks != null ? `${marks} marks` : null,
+          a.teacher || null,
+        ]
+          .filter(Boolean)
+          .join(" · ");
         return {
           ...a,
           stKey,
-          stLabel:
-            stKey === "submitted"
-              ? "Submitted"
-              : stKey === "overdue"
-              ? "Overdue"
-              : `Due ${fmtDue(a.due_date)}`,
+          stLabel: stKey === "submitted" ? "Submitted" : stKey === "overdue" ? "Overdue" : "Due",
+          meta,
         };
-      })
-      .filter((a) => statusFilter === "All" || a.stKey === statusFilter.toLowerCase());
-  }, [assignments, statusFilter, now]);
+      }),
+    [assignments, now]
+  );
 
-  const currentSubjectName =
-    subjects?.find((s) => String(s.id) === String(subjectId))?.name ||
-    assignments[0]?.subject ||
-    "";
+  // Only offer a pill for subjects that actually have an assignment.
+  const subjectsWithWork = useMemo(() => {
+    const ids = new Set(decorated.map((a) => String(a.subjectId)));
+    return (subjects || []).filter((s) => ids.has(String(s.id)));
+  }, [subjects, decorated]);
 
-  if (loading) return <LoadingState label="Loading assignments" />;
-  if (error) return <ErrorState message={error} />;
+  const rows = useMemo(
+    () =>
+      decorated
+        .filter((a) => !subjectFilter || String(a.subjectId) === subjectFilter)
+        .filter((a) => statusFilter === "All" || a.stKey === statusFilter.toLowerCase())
+        .sort((a, b) => {
+          // Soonest due first; undated last.
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return new Date(a.due_date) - new Date(b.due_date);
+        }),
+    [decorated, subjectFilter, statusFilter]
+  );
+
+  if (loading) return <div className="ac-screen"><LoadingState label="Loading assignments" /></div>;
+  if (error) return <div className="ac-screen"><ErrorState message={error} /></div>;
 
   return (
-    <div className="ac-page">
-      <button type="button" className="asg-back" onClick={() => navigate("/assignments")}>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        Back to Assignments
-      </button>
-
-      <div className="ac-page__head">
-        <h1 className="ac-page__title">Assignments</h1>
-        <p className="ac-page__sub">
-          {currentSubjectName ? `${currentSubjectName} · ` : ""}
-          Everything due, overdue and already submitted.
-        </p>
+    <div className="ac-screen">
+      <div className="ac-head">
+        <div>
+          <h1 className="ac-head__title">Assignments</h1>
+          <p className="ac-head__sub">Everything due, overdue and already submitted.</p>
+        </div>
       </div>
 
-      <div className="asg-filterRow">
-        <div className="asg-pills">
+      <div className="ac-filterBar">
+        <div className="ac-pills">
           <button
             type="button"
-            className="asg-pill"
-            onClick={() => navigate("/assignments")}
+            className={`ac-pill${subjectFilter === "" ? " is-active" : ""}`}
+            onClick={() => setSubjectFilter("")}
           >
             All
           </button>
-          {(subjects || []).map((s) => (
+          {subjectsWithWork.map((s) => (
             <button
               key={s.id}
               type="button"
-              className={`asg-pill ${String(s.id) === String(subjectId) ? "asg-pill--active" : ""}`}
-              onClick={() => navigate(`/subjects/${s.id}/assignments`)}
+              className={`ac-pill${subjectFilter === String(s.id) ? " is-active" : ""}`}
+              onClick={() => setSubjectFilter(String(s.id))}
             >
               {s.name}
             </button>
@@ -120,7 +210,7 @@ export default function SubjectsAssignments() {
         </div>
 
         <select
-          className="asg-statusSelect"
+          className="ac-select"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           aria-label="Filter by status"
@@ -131,9 +221,9 @@ export default function SubjectsAssignments() {
         </select>
       </div>
 
-      <section className="asg-listCard">
-        <div className="asg-list">
-          {rows.length === 0 && (
+      <section className="ac-listCard">
+        <div className="ac-list">
+          {rows.length === 0 ? (
             <EmptyState
               plain
               icon="file"
@@ -144,31 +234,31 @@ export default function SubjectsAssignments() {
                   : `No ${statusFilter.toLowerCase()} assignments right now.`
               }
             />
-          )}
-
-          {rows.map((a) => (
-            <div key={a.id} className="asg-row">
-              <div className="asg-row__main">
-                <div className="asg-row__tags">
-                  <span className={`asg-chip asg-chip--${subjectChipSlot(a.subject)}`}>
-                    {a.subject}
-                  </span>
-                  <span className={`asg-statusChip asg-statusChip--${a.stKey}`}>
-                    {a.stLabel}
-                  </span>
+          ) : (
+            rows.map((a) => (
+              <div key={a.id} className="ac-row ac-row--tall">
+                <div className="ac-row__body">
+                  <div className="ac-row__meta">
+                    <span className={`subj-chip subj-chip--${subjectChipSlot(a.subjectName)}`}>
+                      {a.subjectName}
+                    </span>
+                    <span className={`ac-tag ac-tag--${STATUS_TONE[a.stKey]}`}>
+                      {a.stLabel}
+                    </span>
+                  </div>
+                  <div className="ac-row__topic">{a.title}</div>
+                  {a.meta && <div className="ac-row__sub">{a.meta}</div>}
                 </div>
-                <div className="asg-row__title">{a.title}</div>
-                {a.teacher && <div className="asg-row__meta">{a.teacher}</div>}
+                <button
+                  type="button"
+                  className="ac-btn"
+                  onClick={() => navigate(`/subjects/${a.subjectId}/assignments/${a.id}`)}
+                >
+                  Open
+                </button>
               </div>
-              <button
-                type="button"
-                className="asg-openBtn"
-                onClick={() => navigate(`/subjects/${subjectId}/assignments/${a.id}`)}
-              >
-                Open
-              </button>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </section>
     </div>

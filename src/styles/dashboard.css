@@ -2,26 +2,48 @@
    DASHBOARD SHELL
 ========================= */
 
+/* The content column already supplies the design's 20px 24px 28px padding
+   (studentLayout.css), and the design gives the dashboard no max-width — it
+   fills the column. */
 .dashboardShell {
-  min-height: calc(100vh - 64px);
   width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 14px 16px 18px;
   box-sizing: border-box;
-  overflow-y: auto;
+  animation: fadeUp .28s ease both;
 }
 
 .desktopOnly {
   min-height: 0;
 }
 
-/* ── Stat row (mockup) ── */
+/* ── Page heading (design dc.html lines 2121–2126) ── */
+.dashGreet {
+  margin-bottom: 16px;
+}
+.dashGreet__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-page-title);
+  letter-spacing: -.4px;
+  color: var(--ink);
+}
+.dashGreet__sub {
+  margin: 3px 0 0;
+  font-size: var(--fs-body);
+  color: var(--ink-muted);
+}
+.dashGreet__sub strong {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ── Stat row (design dc.html line 2127) ── */
 .dashStatRow {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+  width: 100%;
 }
 .dashStat {
   background: #fff;

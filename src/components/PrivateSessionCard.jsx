@@ -1,18 +1,18 @@
 /**
  * FILE: STUDENT_DASHBOARD/src/components/PrivateSessionCard.jsx
- * No changes needed — this component already receives
- * individual props (subject, teacher, date, time, status)
- * which PrivateSessions.jsx now passes correctly.
+ *
+ * One private-session row, in the design's shared row shape (Academy
+ * Dashboard.dc.html lines 1636–1652): time/day block · divider · subject chip +
+ * status tag, topic, teacher · trailing action.
+ *
+ * This used to be a vertical tile with its own emoji status badge. The status
+ * vocabulary now lives in utils/sessionStatus.js so this and PrivateSessions.jsx
+ * can't drift apart.
  */
 
-import "../styles/privateSessions.css";
-
-const STATUS_LABEL = {
-  approved:             "✅ Approved",
-  pending:              "⏳ Pending",
-  ongoing:              "🔴 On Going",
-  needs_reconfirmation: "⚠️ Needs Confirmation",
-};
+import { subjectChipSlot } from "../utils/subjectChips";
+import { statusLabel, statusTone } from "../utils/sessionStatus";
+import "../styles/academyScreens.css";
 
 export default function PrivateSessionCard({
   subject,
@@ -24,27 +24,54 @@ export default function PrivateSessionCard({
   onEnterRoom,
   onClick,
 }) {
+  const canEnter = status === "approved" || status === "ongoing";
+
+  const activate = () => onClick && onClick();
+
   return (
-    <div className="psCard" onClick={onClick} role="button" tabIndex={0}>
-      <span className={`psCard__badge psCard__badge--${status}`}>
-        {STATUS_LABEL[status] ?? status}
-      </span>
-      <h4 className="psCard__subject">{subject}</h4>
-      <p className="psCard__topic">{topic}</p>
-      <p className="psCard__teacher">👤 {teacher}</p>
-      <div className="psCard__footer">
-        <span>{date}</span>
-        <span>{time}</span>
+    <div
+      className="ac-row"
+      onClick={activate}
+      role="button"
+      tabIndex={0}
+      // Was focusable via tabIndex but had no key handler, so keyboard users
+      // could reach the row and not open it.
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          activate();
+        }
+      }}
+    >
+      <div className="ac-row__when">
+        <div className="ac-row__time">{time}</div>
+        <div className="ac-row__day">{date}</div>
       </div>
-      {(status === "approved" || status === "ongoing") && (
+      <div className="ac-row__divider" />
+      <div className="ac-row__body">
+        <div className="ac-row__meta">
+          {subject && (
+            <span className={`subj-chip subj-chip--${subjectChipSlot(subject)}`}>
+              {subject}
+            </span>
+          )}
+          <span className={`ac-tag ac-tag--${statusTone(status)}`}>
+            {statusLabel(status)}
+          </span>
+        </div>
+        {topic && <div className="ac-row__topic">{topic}</div>}
+        {teacher && <div className="ac-row__sub">{teacher}</div>}
+      </div>
+      {canEnter && (
         <button
-          className={`psCard__enterBtn ${status === "ongoing" ? "psCard__enterBtn--live" : ""}`}
+          type="button"
+          className="ac-btn ac-btn--primary"
           onClick={(e) => {
             e.stopPropagation();
             onEnterRoom && onEnterRoom();
           }}
         >
-          {status === "ongoing" ? "🔴 Join Now" : "▶ Enter Room"}
+          {status === "ongoing" ? "Join now" : "Enter room"}
         </button>
       )}
     </div>

@@ -1,10 +1,30 @@
-// Deterministic subject -> colour-slot mapping so the same subject always
-// gets the same chip colour everywhere it appears (Assignments list,
-// Assignment detail, …), without needing a per-subject config table.
-// Slot classes are defined in CSS (e.g. `.asg-chip--0` … `.asg-chip--3`),
-// keeping colour values out of inline styles per the app's CSS-file convention.
+// Deterministic subject -> colour-slot mapping so the same subject always gets
+// the same chip colour everywhere it appears (Assignments list, Assignment
+// detail, Recordings, Dashboard, Live Sessions, …). The design handoff calls
+// for exactly this: "Keep one palette entry per subject and reuse it
+// everywhere that subject appears."
+//
+// ONE palette, ONE modulus. Both accessors below index the same array, so the
+// CSS-class route (subjectChipSlot -> .subj-chip--N) and the inline-style route
+// (subjectChipPalette -> {bg, ink}) always agree.
+//
+// This used to be three different mappings — a 4-slot class variant, a 6-entry
+// inline palette, and a 4-entry CHIP_TONES list in SubjectsRecordings — which
+// is why a subject could appear teal on one screen and green on the next.
 
-const SLOT_COUNT = 4;
+// Mirrors --subj-1..6-{bg,ink} in shared/tokens.css. Kept here as literals only
+// because inline styles can't read a CSS custom property; prefer the
+// .subj-chip--N classes (which do use the tokens) wherever a class will do.
+const SUBJECT_PALETTE = [
+  { bg: "#e6f4f6", ink: "#13899b" }, // 0 teal
+  { bg: "#e8edfb", ink: "#1d4ed8" }, // 1 info / blue
+  { bg: "#fef3ec", ink: "#c2701c" }, // 2 warning / amber
+  { bg: "#ecf8ee", ink: "#2f9d42" }, // 3 success / green
+  { bg: "#f4e6e6", ink: "#7a1c1c" }, // 4 maroon
+  { bg: "#f1e9fb", ink: "#7c3aed" }, // 5 violet
+];
+
+export const SUBJECT_SLOT_COUNT = SUBJECT_PALETTE.length;
 
 function hashString(name) {
   const str = name || "";
@@ -15,27 +35,15 @@ function hashString(name) {
   return hash;
 }
 
+/** Slot index 0..5 — pair with the `.subj-chip--N` classes in academyCommon.css. */
 export function subjectChipSlot(name) {
   if (!name) return 0;
-  return hashString(name) % SLOT_COUNT;
+  return hashString(name) % SUBJECT_SLOT_COUNT;
 }
 
-// Canonical {bg, ink} palette — the single source of truth for "same subject
-// (or teacher name), same colour everywhere it appears". Anything that needs
-// an inline-style colour pair (as opposed to the .asg-chip--N CSS classes
-// subjectChipSlot backs) should import subjectChipPalette rather than
-// hashing its own copy of this array.
-const SUBJECT_PALETTE = [
-  { bg: "#e6f4f6", ink: "#13899b" }, // teal
-  { bg: "#e8edfb", ink: "#1d4ed8" }, // info / blue
-  { bg: "#fef3ec", ink: "#c2701c" }, // warning / amber
-  { bg: "#ecf8ee", ink: "#2f9d42" }, // success / green
-  { bg: "#f4e6e6", ink: "#7a1c1c" }, // maroon
-  { bg: "#f1e9fb", ink: "#7c3aed" }, // violet
-];
-
+/** The same slot as an inline-style `{bg, ink}` pair. */
 export function subjectChipPalette(name) {
-  return SUBJECT_PALETTE[hashString(name) % SUBJECT_PALETTE.length];
+  return SUBJECT_PALETTE[subjectChipSlot(name)];
 }
 
 export function subjectInitials(name) {

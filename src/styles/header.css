@@ -1,31 +1,46 @@
+/* Academy Dashboard.dc.html line 598: 60px tall, white, 1px #e5eaed bottom
+   border, 0 24px padding, contents pushed to the two ends. */
 .header {
-  height: 72px;
+  height: var(--header-h);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 24px;
+  padding: 0 24px;
   position: relative;
-  background: #ffffff;
-  border-bottom: 1px solid #e5eaed;
+  z-index: 30;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
 
 .header__left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  min-width: 0;
 }
 
+/* Page title — Montserrat 800 15px (design line 600). */
 .header__title {
-  font-family: "Montserrat", system-ui, sans-serif;
-  font-size: 18px;
+  font-family: var(--font-display);
+  font-size: var(--fs-header);
   font-weight: 800;
-  letter-spacing: -0.3px;
-  color: #1a2c33;
+  color: var(--ink);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/* Today's date — 10.5px #6b7c83 (design line 601). */
 .header__subtitle {
-  font-size: 12px;
-  color: #6b7c83;
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+  line-height: 1.3;
+}
+
+.header__right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
 }
 
 .header__courseWrap {
@@ -243,38 +258,29 @@
   cursor: pointer;
 }
 
+/* Mobile keeps the design's white header — it used to be repainted a dark
+   #015865 with white text and an absolutely-centred title, which was a third
+   teal unrelated to either the old slate chrome or the new #0f6b78 sidebar.
+   The only mobile-specific need is the drawer hamburger. */
 @media (max-width: 768px) {
-  .header__left{
-    position: absolute;
-left: 50%;
-transform: translateX(-50%);
-display: flex;
-flex-direction: column;
-align-items: center;
-text-align: center;
-  }
   .header {
-    background-color: #015865;
-    color: #ffffff;
-  }
-
-  .header__title {
-    color: #ffffff;
-  }
-
-  .header__subtitle {
-    color: rgba(255, 255, 255, 0.88);
+    padding: 0 16px;
+    gap: 12px;
   }
 
   .header__hamburger {
     display: block;
-    color: #ffffff;
+    color: var(--ink);
+    flex-shrink: 0;
   }
 
-  .header__hamburger svg {
-    color: #ffffff;
-    fill: #ffffff;
-    stroke: #ffffff;
+  /* The date sub-line is the first thing to go when space is tight. */
+  .header__subtitle {
+    display: none;
+  }
+
+  .header__right {
+    gap: 10px;
   }
 
   .header__courseWrap {

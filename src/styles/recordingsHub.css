@@ -118,20 +118,20 @@
   justify-content: space-between;
   gap: 8px;
 }
+/* Colours come from the shared `.subj-chip--N` slots in academyCommon.css —
+   this class only carries the chip's shape. */
 .recCard__chip {
-  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
-  font-size: 9px;
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: var(--fs-chip);
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   white-space: nowrap;
 }
-.recCard__chip--teal  { background: #e6f4f6; color: #13899b; }
-.recCard__chip--blue  { background: #e8edfb; color: #1d4ed8; }
-.recCard__chip--amber { background: #fef3ec; color: #c2701c; }
-.recCard__chip--green { background: #ecf8ee; color: #2f9d42; }
 
 .recCard__date {
   font-size: 9.5px;

@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { useCourse } from "../contexts/CourseContext";
 import api from "../api/apiClient";
 import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
-import "../styles/liveSessions.css";
+import "../styles/academyScreens.css";
 import useNotificationSocket from "../hooks/useNotificationSocket";
-import { subjectChipPalette } from "../utils/subjectChips";
+import { subjectChipSlot } from "../utils/subjectChips";
 import { fmtClockTime, dayLabel, startsInText } from "../utils/sessionTime";
 import NotesViewModal from "../components/live/NotesViewModal";
 
@@ -52,34 +52,15 @@ const UPCOMING_STATUSES = new Set([
   "WAITING_FOR_TEACHER",
 ]);
 
-// Only covers the statuses actually rendered through the pill branch below
+// Only covers the statuses actually rendered through the tag branch below
 // (PAUSED / RECONNECTING / WAITING_FOR_TEACHER / CANCELLED — SCHEDULED, LIVE,
-// and COMPLETED each render their own plain-text treatment). Colors are the
-// design spec's semantic tokens, not ad-hoc hex.
+// and COMPLETED each render their own treatment). `tone` picks an .ac-tag--*
+// variant from the shared vocabulary, so the colours stay in tokens.css.
 const STATUS_CONFIG = {
-  PAUSED: {
-    label: "Paused",
-    color: "#c2701c",
-    bg: "#fef3ec",
-  },
-
-  RECONNECTING: {
-    label: "Reconnecting",
-    color: "#c2701c",
-    bg: "#fef3ec",
-  },
-
-  WAITING_FOR_TEACHER: {
-    label: "Starting soon",
-    color: "#1d4ed8",
-    bg: "#e8edfb",
-  },
-
-  CANCELLED: {
-    label: "Cancelled",
-    color: "#dc2626",
-    bg: "#fef2f2",
-  },
+  PAUSED:              { label: "Paused",        tone: "warning" },
+  RECONNECTING:        { label: "Reconnecting",  tone: "warning" },
+  WAITING_FOR_TEACHER: { label: "Starting soon", tone: "info" },
+  CANCELLED:           { label: "Cancelled",     tone: "danger" },
 };
 
 function getLiveDuration(startTime) {
@@ -106,30 +87,23 @@ function LiveSessionRow({ session, tick, onJoin, onOpenRecording, onOpenNotes })
   const start = new Date(session.start_time);
   // Hash by name (not id) so this matches the colour SubjectCard shows for
   // the same subject elsewhere — SubjectCard hashes subject.name too.
-  const chip = subjectChipPalette(session.subject_name || session.subject_id);
+  const chipSlot = subjectChipSlot(session.subject_name || session.subject_id);
   const teacherName = session.teacher_name || session.teacher_full_name || session.teacher;
 
   let metaNode;
   if (status === "SCHEDULED") {
-    metaNode = <span className="liveSessionRow__meta-text">starts {startsInText(start)}</span>;
+    metaNode = <span className="ac-when">starts {startsInText(start)}</span>;
   } else if (status === "LIVE") {
     metaNode = (
-      <span className="liveSessionRow__statusPill liveSessionRow__statusPill--live">
+      <span className="ac-tag ac-tag--live">
         Live now · {getLiveDuration(session.start_time)}
       </span>
     );
   } else if (status === "COMPLETED") {
-    metaNode = <span className="liveSessionRow__meta-text">ended</span>;
+    metaNode = <span className="ac-when">ended</span>;
   } else {
     const cfg = STATUS_CONFIG[status];
-    metaNode = (
-      <span
-        className="liveSessionRow__statusPill"
-        style={{ background: cfg.bg, color: cfg.color }}
-      >
-        {cfg.label}
-      </span>
-    );
+    metaNode = <span className={`ac-tag ac-tag--${cfg.tone}`}>{cfg.label}</span>;
   }
 
   let disabled = false;
@@ -147,46 +121,43 @@ function LiveSessionRow({ session, tick, onJoin, onOpenRecording, onOpenNotes })
   }
 
   return (
-    <div className="liveSessionRow">
-      <div className="liveSessionRow__time">
-        <strong>{fmtClockTime(start)}</strong>
-        <span className="liveSessionRow__day">{dayLabel(start)}</span>
+    <div className="ac-row">
+      <div className="ac-row__when">
+        <div className="ac-row__time">{fmtClockTime(start)}</div>
+        <div className="ac-row__day">{dayLabel(start)}</div>
       </div>
-      <div className="liveSessionRow__divider" />
-      <div className="liveSessionRow__body">
-        <div className="liveSessionRow__metaRow">
-          <span
-            className="liveSessionRow__chip"
-            style={{ background: chip.bg, color: chip.ink }}
-          >
+      <div className="ac-row__divider" />
+      <div className="ac-row__body">
+        <div className="ac-row__meta">
+          <span className={`subj-chip subj-chip--${chipSlot}`}>
             {session.subject_name}
           </span>
           {metaNode}
         </div>
-        <div className="liveSessionRow__topic">{session.title}</div>
-        <div className="liveSessionRow__teacher">{teacherName}</div>
+        <div className="ac-row__topic">{session.title}</div>
+        <div className="ac-row__sub">{teacherName}</div>
       </div>
       {status === "COMPLETED" ? (
-        <div className="liveSessionRow__actions">
+        <div className="ac-row__actions">
           <button
             type="button"
-            className="liveSessionRow__btn liveSessionRow__btn--outline"
-            onClick={() => onOpenNotes(session)}
-          >
-            Notes
-          </button>
-          <button
-            type="button"
-            className="liveSessionRow__btn liveSessionRow__btn--outline"
+            className="ac-btn"
             onClick={() => onOpenRecording(session)}
           >
             Recording
+          </button>
+          <button
+            type="button"
+            className="ac-btn"
+            onClick={() => onOpenNotes(session)}
+          >
+            Notes
           </button>
         </div>
       ) : (
         <button
           type="button"
-          className={`liveSessionRow__btn liveSessionRow__btn--${btnVariant}`}
+          className={btnVariant === "primary" ? "ac-btn ac-btn--primary" : "ac-btn"}
           disabled={disabled}
           onClick={handleClick}
         >
@@ -201,8 +172,6 @@ export default function LiveSessions() {
   const navigate = useNavigate();
   const { activeCourse } = useCourse();
   const [sessions, setSessions] = useState([]);
-  const [subjects, setSubjects] = useState([]);
-  const [selectedSubject, setSelectedSubject] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tick, setTick] = useState(0);
@@ -228,16 +197,16 @@ export default function LiveSessions() {
   }, [notifications, activeCourse]);
 
   useEffect(() => {
-    if (!activeCourse) { setSessions([]); setSubjects([]); setLoading(false); return; }
+    if (!activeCourse) { setSessions([]); setLoading(false); return; }
     const fetchData = async () => {
       setLoading(true); setError(null);
       try {
-        const [sRes, subRes] = await Promise.all([
-          api.get("/livestream/student/sessions/?course_id=" + activeCourse.id),
-          api.get("/courses/" + activeCourse.id + "/subjects/"),
-        ]);
+        // Sessions only — the design's Sessions screen carries no subject
+        // filter, so the /subjects/ call this used to make had no consumer.
+        const sRes = await api.get(
+          "/livestream/student/sessions/?course_id=" + activeCourse.id
+        );
         setSessions(sRes.data.sort((a, b) => new Date(a.start_time) - new Date(b.start_time)));
-        setSubjects(subRes.data);
       } catch { setError("Unable to load sessions."); }
       finally { setLoading(false); }
     };
@@ -274,11 +243,7 @@ export default function LiveSessions() {
     CANCELLED: 5,
   };
 
-  const bySubject = selectedSubject
-    ? sessions.filter((s) => String(s.subject_id) === String(selectedSubject))
-    : sessions;
-
-  const upcomingRows = bySubject
+  const upcomingRows = sessions
     .filter((s) => UPCOMING_STATUSES.has(computeStatus(s)))
     .sort((a, b) => {
       const diff = statusPriority[computeStatus(a)] - statusPriority[computeStatus(b)];
@@ -286,7 +251,7 @@ export default function LiveSessions() {
       return new Date(a.start_time) - new Date(b.start_time);
     });
 
-  const pastRows = bySubject
+  const pastRows = sessions
     .filter((s) => !UPCOMING_STATUSES.has(computeStatus(s)))
     .filter((s) => {
       if (!pastSearch.trim()) return true;
@@ -316,38 +281,30 @@ export default function LiveSessions() {
     setNotesSession(session);
   };
 
-  if (loading) return <div className="liveSessionsPage"><LoadingState label="Loading live sessions" /></div>;
-  if (error)   return <div className="liveSessionsPage"><ErrorState message={error} /></div>;
+  if (loading) return <div className="ac-screen"><LoadingState label="Loading live sessions" /></div>;
+  if (error)   return <div className="ac-screen"><ErrorState message={error} /></div>;
 
   return (
-    <div className="liveSessionsPage">
-      <div className="liveSessionsPage__head">
+    <div className="ac-screen">
+      <div className="ac-head">
         <div>
-          <h1 className="liveSessionsPage__title">Live Sessions</h1>
-          <p className="liveSessionsPage__sub">All scheduled live classes for your batch.</p>
+          <h1 className="ac-head__title">Live Sessions</h1>
+          <p className="ac-head__sub">All scheduled live classes for your batch.</p>
         </div>
-        <div className="liveSessionsPage__controls">
-          {subjects.length > 0 && (
-            <select
-              className="liveSessionsPage__subjectFilter"
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-            >
-              <option value="">All Subjects</option>
-              {subjects.map((sub) => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
-            </select>
-          )}
-          <div className="liveSessionsTabs">
+        <div className="ac-head__actions">
+          {/* Upcoming/Past is the segmented pill toggle here — Private and
+              Group Sessions use the underline tab bar instead. */}
+          <div className="ac-seg">
             <button
               type="button"
-              className={`liveSessionsTabs__btn${tab === "upcoming" ? " is-active" : ""}`}
+              className={`ac-seg__btn${tab === "upcoming" ? " is-active" : ""}`}
               onClick={() => setTab("upcoming")}
             >
               Upcoming
             </button>
             <button
               type="button"
-              className={`liveSessionsTabs__btn${tab === "past" ? " is-active" : ""}`}
+              className={`ac-seg__btn${tab === "past" ? " is-active" : ""}`}
               onClick={() => setTab("past")}
             >
               Past
@@ -357,18 +314,19 @@ export default function LiveSessions() {
       </div>
 
       {tab === "past" && (
-        <div className="liveSessionsSearchBar">
+        <div className="ac-searchRow">
           <input
             type="text"
-            className="liveSessionsSearchBar__input"
+            className="ac-searchInput"
             placeholder="Search past sessions…"
             value={pastSearch}
             onChange={(e) => setPastSearch(e.target.value)}
           />
           <select
-            className="liveSessionsSearchBar__sort"
+            className="ac-select"
             value={pastSort}
             onChange={(e) => setPastSort(e.target.value)}
+            aria-label="Sort past sessions"
           >
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
@@ -376,7 +334,7 @@ export default function LiveSessions() {
         </div>
       )}
 
-      <section className="liveSessionsListCard">
+      <section className="ac-listCard">
         {!activeCourse ? (
           <EmptyState
             plain
@@ -392,7 +350,7 @@ export default function LiveSessions() {
             title={
               tab === "past"
                 ? pastSearch.trim() ? "No sessions match your search" : "No past sessions yet"
-                : selectedSubject ? "No live sessions for this subject" : "No live sessions scheduled"
+                : "No live sessions scheduled"
             }
             message={
               tab === "past"
@@ -401,7 +359,7 @@ export default function LiveSessions() {
             }
           />
         ) : (
-          <div className="liveSessionsList">
+          <div className="ac-list">
             {rows.map((s) => (
               <LiveSessionRow
                 key={s.id}

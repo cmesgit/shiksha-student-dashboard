@@ -1,23 +1,34 @@
 /**
  * FILE: src/pages/GroupSessions.jsx
  *
- * Figma-style Group Sessions page.
+ * Group Sessions — the design's shared Academy list screen (Academy
+ * Dashboard.dc.html, `data-screen-label="Group Sessions"`, lines 1319–1360):
+ * head + Join/Host buttons, an underline Upcoming/Past tab bar, and one list
+ * card of standard rows. The shapes all come from styles/academyScreens.css.
+ *
  * Flow included:
- *   - Main Group Sessions cards page
+ *   - Main Group Sessions list screen
  *   - Join Session dialog
  *   - Host Session dialog
  *   - Scheduled Session create dialog: Details → Participants → Summary
  *   - Scheduled Session details dialog for Host / Participant
  *   - Edit Session dialog for Host: Details → Participants → Summary
+ *
+ * The design specifies the list screen only. The dialogs below keep their
+ * existing structure and step logic; they've been re-pointed at the shared
+ * tokens (surface / border / radius / ink / .ac-btn) so they stop clashing
+ * with the screen behind them.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import PageHeader from "../components/PageHeader";
 import { LoadingState } from "../components/StateViews";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../api/apiClient";
 import groupSessionService, { extractApiError } from "../api/groupSessionService";
+// Group sessions carry no subject, so no subject chip here — see GroupSessionRow.
+import { fmtClockTime, dayLabel, startsInText } from "../utils/sessionTime";
+import "../styles/academyScreens.css";
 import "../styles/groupSessions.css";
 
 /* ═══════════════════════════════════════════════════════════
@@ -129,26 +140,10 @@ function shortId(id) {
   return s.length > 12 ? `${s.slice(0, 10)}…` : s;
 }
 
-function getUserInitial(user) {
-  return (
-    user?.full_name ||
-    user?.name ||
-    user?.username ||
-    user?.email ||
-    "U"
-  ).charAt(0).toUpperCase();
-}
-
-function getHostPhoto(group) {
-  return (
-    group?.hostPhoto ||
-    group?.host_photo ||
-    group?.host_profile_photo ||
-    group?.hostAvatar ||
-    group?.host_avatar ||
-    ""
-  );
-}
+/* getUserInitial() and getHostPhoto() lived here to feed the old card's avatar
+   and the page's header initial. The design's row carries no avatar (it uses
+   the time/day block in that slot), so both are gone rather than left as dead
+   code. */
 
 function isEndedNow(g) {
   if (!g) return false;
@@ -230,104 +225,99 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 /* ═══════════════════════════════════════════════════════════
    SESSION CARD
 ═══════════════════════════════════════════════════════════ */
-function GroupSessionCard({ group, onOpen }) {
-  const status = isEndedNow(group) ? "completed" : (group.status || "scheduled");
+/* The design's row wants a Date for its time/day block. Group sessions store
+   date and time as separate strings, so combine them — and fall back to the
+   existing string formatters if the result isn't a valid Date, rather than
+   rendering "Invalid Date". */
+function groupStartDate(group) {
+  if (!group?.date) return null;
+  const d = new Date(`${group.date}T${group.time || "00:00"}`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// Group-session status → shared .ac-tag--* variant.
+const GROUP_STATUS_TONE = {
+  scheduled: "info",
+  live: "live",
+  completed: "success",
+  cancelled: "danger",
+  expired: "neutral",
+};
+
+/* One row, shared by the Upcoming and Past tabs — the design uses the same row
+   shape for both, differing only in the trailing action. Group sessions carry
+   no subject, so there's no subject chip here (the status tag takes that slot);
+   inventing one would give a colour that means nothing. */
+function GroupSessionRow({ group, status, actionLabel, onAction }) {
+  const start = groupStartDate(group);
+  const tone = GROUP_STATUS_TONE[status] || "neutral";
   const isLive = status === "live";
-  const isScheduled = status === "scheduled";
-  const hostPhoto = getHostPhoto(group);
-  const startedAt = group.roomStartedAt ? new Date(group.roomStartedAt) : null;
-  const startTime = startedAt && !Number.isNaN(startedAt.getTime())
-    ? startedAt.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })
-    : formatTime(group.time);
   const participantCount = Math.max(1, 1 + Number(group.acceptedCount || 0));
 
   return (
-    <button
-      type="button"
-      className={`sg__sessionCard sg__sessionCard--${status}`}
-      onClick={() => onOpen(group)}
-    >
-      <div className="sg__sessionCardTop">
-        <div className="sg__sessionHostBlock">
-          <span className="sg__sessionAvatar">
-            {hostPhoto ? (
-              <img src={hostPhoto} alt={group.hostName || "Host"} />
-            ) : (
-              <span>{(group.hostName || "H").charAt(0).toUpperCase()}</span>
-            )}
-          </span>
-
-          <div className="sg__sessionHostText">
-            <span className="sg__sessionHostName">{group.hostName || "Host Name"}</span>
-            <span className="sg__sessionTitle">{group.topic || "Title (Only If Entered)"}</span>
-          </div>
+    <div className="ac-row">
+      <div className="ac-row__when">
+        <div className="ac-row__time">
+          {start ? fmtClockTime(start) : formatTime(group.time)}
         </div>
-
-        <span className={`sg__figmaStatus sg__figmaStatus--${status}`}>
-          {isLive ? "LIVE" : isScheduled ? "Scheduled" : statusLabel(status)}
-        </span>
+        <div className="ac-row__day">
+          {start ? dayLabel(start) : formatDate(group.date)}
+        </div>
       </div>
-
-      <div className="sg__sessionCardBottom">
-        {isLive ? (
-          <>
-            <span><strong>Duration</strong> {group.durationMinutes ? `${group.durationMinutes} min` : "—"}</span>
-            <span><strong>Start Time</strong> {startTime}</span>
-            <span><strong>Participants</strong> {participantCount}</span>
-          </>
-        ) : (
-          <>
-            <span><strong>Date</strong> {formatDate(group.date)}</span>
-            <span><strong>Session Timing</strong> {formatTiming(group.time, group.durationMinutes)}</span>
-          </>
-        )}
+      <div className="ac-row__divider" />
+      <div className="ac-row__body">
+        <div className="ac-row__meta">
+          <span className={`ac-tag ac-tag--${tone}`}>{statusLabel(status)}</span>
+          {isLive ? (
+            <span className="ac-when">{participantCount} in the room</span>
+          ) : start && status === "scheduled" ? (
+            <span className="ac-when">starts {startsInText(start)}</span>
+          ) : (
+            <span className="ac-when">{formatTiming(group.time, group.durationMinutes)}</span>
+          )}
+        </div>
+        <div className="ac-row__topic">{group.topic || "Untitled session"}</div>
+        <div className="ac-row__sub">
+          {group.hostName ? `Hosted by ${group.hostName}` : "Host unknown"}
+        </div>
       </div>
-    </button>
+      <button
+        type="button"
+        className="ac-btn ac-btn--primary"
+        onClick={() => onAction(group)}
+      >
+        {actionLabel}
+      </button>
+    </div>
+  );
+}
+
+function GroupSessionCard({ group, onOpen }) {
+  const status = isEndedNow(group) ? "completed" : (group.status || "scheduled");
+  return (
+    <GroupSessionRow
+      group={group}
+      status={status}
+      actionLabel={status === "live" ? "Join" : "Open"}
+      onAction={onOpen}
+    />
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PAST SESSION CARD (History tab)
-   Same tile as GroupSessionCard, but the card's action is "Notes"
-   rather than opening the live/scheduled details dialog.
+   PAST SESSION ROW (History tab)
+   Same row as GroupSessionCard, but the action is "Notes" rather than
+   opening the live/scheduled details dialog — per the design, past group
+   sessions expose Notes, not Recording.
 ═══════════════════════════════════════════════════════════ */
 function PastSessionCard({ group, onNotes }) {
-  const hostPhoto = getHostPhoto(group);
-
   return (
-    <button
-      type="button"
-      className="sg__sessionCard sg__sessionCard--completed"
-      onClick={() => onNotes(group)}
-    >
-      <div className="sg__sessionCardTop">
-        <div className="sg__sessionHostBlock">
-          <span className="sg__sessionAvatar">
-            {hostPhoto ? (
-              <img src={hostPhoto} alt={group.hostName || "Host"} />
-            ) : (
-              <span>{(group.hostName || "H").charAt(0).toUpperCase()}</span>
-            )}
-          </span>
-
-          <div className="sg__sessionHostText">
-            <span className="sg__sessionHostName">{group.hostName || "Host Name"}</span>
-            <span className="sg__sessionTitle">{group.topic || "Title (Only If Entered)"}</span>
-          </div>
-        </div>
-
-        <span className="sg__figmaStatus sg__figmaStatus--completed">
-          {statusLabel(group.status === "cancelled" ? "cancelled" : "completed")}
-        </span>
-      </div>
-
-      <div className="sg__sessionCardBottom">
-        <span><strong>Date</strong> {formatDate(group.date)}</span>
-        <span><strong>Session Timing</strong> {formatTiming(group.time, group.durationMinutes)}</span>
-      </div>
-
-      <span className="sg__notesPill">Notes</span>
-    </button>
+    <GroupSessionRow
+      group={group}
+      status={group.status === "cancelled" ? "cancelled" : "completed"}
+      actionLabel="Notes"
+      onAction={onNotes}
+    />
   );
 }
 
@@ -1191,8 +1181,6 @@ export default function GroupSessions() {
   const [pastGroups, setPastGroups] = useState([]);
   const [pastLoading, setPastLoading] = useState(false);
   const [pastLoaded, setPastLoaded] = useState(false);
-  const [pastSearch, setPastSearch] = useState("");
-  const [pastSort, setPastSort] = useState("newest"); // "newest" | "oldest"
 
   // Small ticker so ended scheduled/live cards update without page reload.
   const [_tick, setTick] = useState(0);
@@ -1324,22 +1312,16 @@ export default function GroupSessions() {
              String(g.courseTitle) === String(selectedCourse?.course_label);
     });
 
-    const q = pastSearch.trim().toLowerCase();
-    if (q) {
-      list = list.filter((g) =>
-        String(g.topic || "").toLowerCase().includes(q) ||
-        String(g.hostName || "").toLowerCase().includes(q)
-      );
-    }
-
     return [...list].sort((a, b) => {
       const aTime = new Date(`${a.date || "1970-01-01"}T${a.time || "00:00"}`).getTime();
       const bTime = new Date(`${b.date || "1970-01-01"}T${b.time || "00:00"}`).getTime();
       const aVal = Number.isNaN(aTime) ? 0 : aTime;
       const bVal = Number.isNaN(bTime) ? 0 : bTime;
-      return pastSort === "oldest" ? aVal - bVal : bVal - aVal;
+      // Newest first, always: the design gives this screen no sort control
+      // (unlike Live Sessions, whose Past tab does have one).
+      return bVal - aVal;
     });
-  }, [pastGroups, selectedCourseId, selectedCourse, pastSearch, pastSort]);
+  }, [pastGroups, selectedCourseId, selectedCourse]);
 
   const refreshOne = async (sessionId) => {
     try {
@@ -1474,99 +1456,88 @@ export default function GroupSessions() {
     loadGroups();
   };
 
-  const userInitial = getUserInitial(user);
-
   return (
-    <div className="sg__page sg__page--figma">
-
-      <div className="sg__figmaPanel">
-        <div className="sg__figmaPanelHeader">
-          <h2>Group Sessions</h2>
-          <div className="sg__figmaActions">
-            <button
-              type="button"
-              className="sg__figmaActionBtn"
-              onClick={() => { setJoinError(""); setShowJoinDialog(true); }}
-            >
-              Join Session
-            </button>
-            <button
-              type="button"
-              className="sg__figmaActionBtn"
-              onClick={() => { setHostError(""); setInstantReveal(null); setShowHostDialog(true); }}
-            >
-              Host Session
-            </button>
-          </div>
+    <div className="ac-screen">
+      {/* Head — the design pulls this tight against the tab bar (mb 4px). */}
+      <div className="ac-head ac-head--tight">
+        <div>
+          <h1 className="ac-head__title">Group Sessions</h1>
+          <p className="ac-head__sub">Study groups and doubt-clearing circles.</p>
         </div>
-
-        <div className="sg__pillTabs" role="tablist" aria-label="Session view">
+        <div className="ac-head__actions">
           <button
             type="button"
-            role="tab"
-            aria-selected={sessTab === "upcoming"}
-            className={`sg__pillTab${sessTab === "upcoming" ? " sg__pillTab--active" : ""}`}
-            onClick={() => setSessTab("upcoming")}
+            className="ac-headBtn ac-headBtn--outline"
+            onClick={() => { setJoinError(""); setShowJoinDialog(true); }}
           >
-            Upcoming
+            Join session
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={sessTab === "past"}
-            className={`sg__pillTab${sessTab === "past" ? " sg__pillTab--active" : ""}`}
-            onClick={() => setSessTab("past")}
+            className="ac-headBtn ac-headBtn--success"
+            onClick={() => { setHostError(""); setInstantReveal(null); setShowHostDialog(true); }}
           >
-            Past
+            Host session
           </button>
         </div>
+      </div>
 
-        {sessTab === "upcoming" ? (
-          loading ? (
+      {/* Underline tab bar. The README claims a pill toggle here, but the
+          .dc.html (line 1330) shows a 2px-underline tab bar — same control as
+          Private Sessions, not the segmented pill Live Sessions uses. */}
+      <div className="ac-tabs ac-tabs--tight" role="tablist" aria-label="Session view">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={sessTab === "upcoming"}
+          className={`ac-tab${sessTab === "upcoming" ? " is-active" : ""}`}
+          onClick={() => setSessTab("upcoming")}
+        >
+          Upcoming
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={sessTab === "past"}
+          className={`ac-tab${sessTab === "past" ? " is-active" : ""}`}
+          onClick={() => setSessTab("past")}
+        >
+          Past
+        </button>
+      </div>
+
+      {sessTab === "upcoming" ? (
+        <section className="ac-listCard">
+          {loading ? (
             <LoadingState plain label="Loading group sessions" />
           ) : visibleGroups.length > 0 ? (
-            <div className="sg__figmaGrid">
+            <div className="ac-list">
               {visibleGroups.map((g) => (
                 <GroupSessionCard key={g.id} group={g} onOpen={openCard} />
               ))}
             </div>
           ) : (
-            <div className="sg__figmaEmpty">Nothing here yet</div>
-          )
-        ) : (
-          <>
-            <div className="sg__pastToolbar">
-              <input
-                type="text"
-                className="sg__input sg__pastSearchInput"
-                placeholder="Search past sessions…"
-                value={pastSearch}
-                onChange={(e) => setPastSearch(e.target.value)}
-              />
-              <select
-                className="sg__pastSortSelect"
-                value={pastSort}
-                onChange={(e) => setPastSort(e.target.value)}
-              >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-              </select>
-            </div>
+            <div className="ac-emptyRow">Nothing here yet</div>
+          )}
+        </section>
+      ) : (
+        <>
 
+          <section className="ac-listCard">
             {pastLoading ? (
               <LoadingState plain label="Loading past sessions" />
             ) : visiblePastGroups.length > 0 ? (
-              <div className="sg__figmaGrid">
+              <div className="ac-list">
                 {visiblePastGroups.map((g) => (
                   <PastSessionCard key={g.id} group={g} onNotes={setNotesSession} />
                 ))}
               </div>
             ) : (
-              <div className="sg__figmaEmpty">Nothing here yet</div>
+              <div className="ac-emptyRow">Nothing here yet</div>
             )}
-          </>
-        )}
-      </div>
+          </section>
+        </>
+      )}
 
       <JoinSessionDialog
         open={showJoinDialog}

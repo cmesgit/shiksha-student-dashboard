@@ -17,10 +17,9 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
 import { LoadingState, EmptyState } from "../components/StateViews";
+import { subjectChipSlot } from "../utils/subjectChips";
 import "../styles/academyCommon.css";
 import "../styles/recordingsHub.css";
-
-const CHIP_TONES = ["teal", "blue", "amber", "green"];
 
 const DATE_FMT = { day: "2-digit", month: "short" };
 function formatDate(d) {
@@ -130,10 +129,9 @@ export default function SubjectsRecordings() {
     return subjects.filter((s) => ids.has(s.id));
   }, [subjects, recordings]);
 
-  const chipToneFor = (subjectId) => {
-    const idx = subjectsWithRecordings.findIndex((s) => s.id === subjectId);
-    return CHIP_TONES[idx >= 0 ? idx % CHIP_TONES.length : 0];
-  };
+  // Colour comes from the subject NAME, not its position in the list — keying
+  // off the index meant a subject changed colour whenever another subject
+  // gained or lost a recording, and disagreed with every other screen.
 
   const filtered = useMemo(() => {
     if (activeFilter === "all") return recordings;
@@ -204,7 +202,7 @@ export default function SubjectsRecordings() {
                 const ready = rec.status === RECORDING_STATUS_FINISHED;
                 const state = watchState(progressMap[rec.id]);
                 const duration = formatDuration(rec.duration_seconds);
-                const tone = chipToneFor(rec.subjectId);
+                const slot = subjectChipSlot(rec.subjectName);
 
                 return (
                   <div
@@ -237,7 +235,7 @@ export default function SubjectsRecordings() {
 
                     <div className="recCard__body">
                       <div className="recCard__top">
-                        <span className={`recCard__chip recCard__chip--${tone}`}>{rec.subjectName}</span>
+                        <span className={`recCard__chip subj-chip--${slot}`}>{rec.subjectName}</span>
                         <span className="recCard__date">{formatDate(rec.session_date)}</span>
                       </div>
 

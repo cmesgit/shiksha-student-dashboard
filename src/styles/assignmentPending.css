@@ -1,9 +1,20 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   assignmentPending.css — Assignments list (student), per design handoff
-   "### 11. Assignments" — subject pill row (left) + status filter (right),
-   list rows: subject chip, title, meta, status chip, Open button.
-   Shares --academy / --card-* / --success / --danger / --info tokens with
-   shared/tokens.css.
+   assignmentPending.css — what the assignment screens need BEYOND the shared
+   vocabulary in academyScreens.css.
+
+   The Assignments list (pages/SubjectsAssignments.jsx) is now built from the
+   shared shapes — .ac-head, .ac-filterBar, .ac-pills/.ac-pill, .ac-select,
+   .ac-listCard, .ac-list, .ac-row--tall, .ac-tag, .ac-btn. This file used to
+   carry its own bespoke copy of every one of those (.asg-filterRow, .asg-pills,
+   .asg-pill, .asg-statusSelect, .asg-listCard, .asg-list, .asg-row,
+   .asg-row__main, .asg-row__title, .asg-row__meta, .asg-openBtn); the
+   conversion orphaned them all, so they're gone rather than left to drift.
+
+   (One of those had actually drifted already: .asg-pill's inactive colour was
+   --academy, but the design's inactive subject pill is --ink-muted. The shared
+   .ac-pill has it right.)
+
+   What remains is what pages/AssignmentDetail.jsx still uses.
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── Back link ─────────────────────────────────────────────────────────── */
@@ -14,96 +25,16 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--ink-4, #9ca3af);
-  font-size: 11.5px;
+  color: var(--ink-faint);
+  font-size: var(--fs-meta);
   font-weight: 600;
   padding: 0;
   margin-bottom: 16px;
-  font-family: var(--font-body, "Poppins", sans-serif);
+  font-family: var(--font-body);
 }
-.asg-back:hover { color: var(--ink, #1a2c33); }
+.asg-back:hover { color: var(--ink); }
 
-/* ── Filter row: pills left, status select right ─────────────────────── */
-.asg-filterRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.asg-pills {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.asg-pill {
-  border: 1px solid var(--card-border, #e5eaed);
-  cursor: pointer;
-  border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 11px;
-  font-weight: 600;
-  background: #fff;
-  color: var(--academy, #425f7f);
-  font-family: var(--font-body, "Poppins", sans-serif);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-.asg-pill:hover { border-color: var(--acc-border, #cfdbe6); }
-.asg-pill--active {
-  background: var(--academy, #425f7f);
-  color: #fff;
-  border-color: var(--academy, #425f7f);
-}
-
-.asg-statusSelect {
-  border: 1px solid var(--card-border, #e5eaed);
-  border-radius: 10px;
-  padding: 7px 12px;
-  font-size: 11.5px;
-  color: var(--academy, #425f7f);
-  font-weight: 600;
-  background: #fff;
-  cursor: pointer;
-  outline: none;
-  flex-shrink: 0;
-  font-family: var(--font-body, "Poppins", sans-serif);
-}
-.asg-statusSelect:focus-visible { box-shadow: var(--focus-ring, 0 0 0 3px rgba(66,95,127,.35)); }
-
-/* ── List card ─────────────────────────────────────────────────────────── */
-.asg-listCard {
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--card-border, #e5eaed);
-  border-radius: var(--card-radius, 12px);
-  box-shadow: var(--card-shadow, 0 1px 3px rgba(26, 44, 51, .06));
-  padding: 16px;
-}
-
-.asg-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.asg-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  border: 1px solid var(--card-border, #e5eaed);
-  border-radius: 10px;
-  padding: 12px 14px;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-.asg-row:hover {
-  border-color: var(--acc-border, #cfdbe6);
-  background: var(--card-hover, #f8fafb);
-}
-
-.asg-row__main { flex: 1; min-width: 0; }
-
+/* ── Chip row (assignment detail hero) ────────────────────────────────── */
 .asg-row__tags {
   display: flex;
   align-items: center;
@@ -111,66 +42,30 @@
   flex-wrap: wrap;
 }
 
-.asg-row__title {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--ink, #1a2c33);
-  margin-top: 5px;
-}
-
-.asg-row__meta {
-  font-size: 10.5px;
-  color: var(--ink-3, #6b7c83);
-  margin-top: 1px;
-}
-
-.asg-openBtn {
-  flex-shrink: 0;
-  white-space: nowrap;
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 9px;
-  padding: 8px 15px;
-  border: 1px solid var(--acc-border, #cfdbe6);
-  background: #fff;
-  color: var(--academy, #425f7f);
-  font-family: var(--font-body, "Poppins", sans-serif);
-  transition: background 0.15s ease;
-}
-.asg-openBtn:hover { background: #e6edee; }
-
 /* ── Chips ────────────────────────────────────────────────────────────── */
+/* Shape only. The subject colour slots (.asg-chip--0…5) are declared once in
+   academyCommon.css — see src/utils/subjectChips.js. Never redeclare them. */
 .asg-chip {
+  display: inline-flex;
+  align-items: center;
   white-space: nowrap;
-  font-size: 9px;
+  font-family: var(--font-body);
+  font-size: var(--fs-chip);
   font-weight: 700;
   letter-spacing: .4px;
   text-transform: uppercase;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
-/* Deterministic subject colour slots — see src/utils/subjectChips.js */
-.asg-chip--0 { background: var(--success-soft, #ecf8ee); color: var(--success, #2f9d42); }
-.asg-chip--1 { background: #e8edfb; color: var(--info, #1d4ed8); }
-.asg-chip--2 { background: var(--warning-soft, #fef9ec); color: var(--warning-ink, #b45309); }
-.asg-chip--3 { background: #e6f4f6; color: var(--live, #13899b); }
 
 .asg-statusChip {
   white-space: nowrap;
-  font-size: 9.5px;
+  font-family: var(--font-body);
+  font-size: var(--fs-tag);
   font-weight: 700;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
-.asg-statusChip--due       { background: var(--success-soft, #ecf8ee); color: var(--success, #2f9d42); }
-.asg-statusChip--overdue   { background: var(--danger-soft, #fef2f2); color: var(--danger, #dc2626); }
-.asg-statusChip--submitted { background: #e8edfb; color: var(--info, #1d4ed8); }
-
-/* ── Mobile ───────────────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .asg-filterRow { flex-direction: column; align-items: stretch; }
-  .asg-statusSelect { width: 100%; }
-  .asg-row { flex-wrap: wrap; }
-  .asg-openBtn { width: 100%; }
-}
+.asg-statusChip--due       { background: var(--success-soft); color: var(--success); }
+.asg-statusChip--overdue   { background: var(--danger-soft);  color: var(--danger); }
+.asg-statusChip--submitted { background: var(--info-soft);    color: var(--info); }

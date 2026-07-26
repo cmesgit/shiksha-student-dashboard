@@ -47,6 +47,7 @@ import AcademyEmptyState from "../components/AcademyEmptyState";
 import { LoadingState } from "../components/StateViews";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
+import { useAuth } from "../contexts/AuthContext";
 import useNotificationSocket from "../hooks/useNotificationSocket";
 import { PICK_PROFILE_URL } from "../config/urls";
 import { subjectChipPalette } from "../utils/subjectChips";
@@ -137,8 +138,31 @@ function isSameDay(a, b) {
 }
 
 export default function Dashboard() {
-  const { activeCourse, activeTrack } = useCourse();
+  const { activeCourse, activeTrack, subjects } = useCourse();
+  const { user, activeProfile } = useAuth();
   const navigate = useNavigate();
+
+  // Page heading (design dc.html lines 2123–2124): a time-derived greeting
+  // plus a line naming the course and its subjects.
+  const greetName =
+    activeProfile?.display_name || user?.name || user?.full_name || user?.username ||
+    (user?.email ? user.email.split("@")[0] : "") || "";
+  const hour = new Date().getHours();
+  const timeGreeting =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const courseLabel = useMemo(() => {
+    if (!activeCourse?.title) return "";
+    const names = (subjects || []).map((s) => s.name || s.title).filter(Boolean);
+    // "Class 10 · Science & Maths" — list subjects only when it stays readable.
+    if (names.length && names.length <= 3) {
+      const list =
+        names.length === 1
+          ? names[0]
+          : `${names.slice(0, -1).join(", ")} & ${names[names.length - 1]}`;
+      return `${activeCourse.title} · ${list}`;
+    }
+    return activeCourse.title;
+  }, [activeCourse, subjects]);
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [assignmentFilter, setAssignmentFilter] = useState("due");
@@ -711,6 +735,22 @@ export default function Dashboard() {
 
   return (
     <div className="dashboardShell">
+      {/* Page heading — the design's H1 (dc.html line 2123). This used to be a
+          greeting in the header; the header now shows the page title + date on
+          every page, so the greeting lives here where the design puts it. */}
+      <header className="dashGreet">
+        <h1 className="dashGreet__title">
+          {greetName ? `${timeGreeting}, ${greetName}` : timeGreeting} 👋
+        </h1>
+        <p className="dashGreet__sub">
+          {courseLabel ? (
+            <>Here's what's happening in <strong>{courseLabel}</strong> this week.</>
+          ) : (
+            <>Here's what's happening this week.</>
+          )}
+        </p>
+      </header>
+
       <div className="desktopOnly">
         <div className="dashStatRow">
           {statCards.map((st) => (

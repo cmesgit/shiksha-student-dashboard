@@ -540,17 +540,16 @@
 .asg-chip {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 9.5px;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-body);
+  font-size: var(--fs-chip);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
 }
-.asg-chip--0 { background: #e6f4f6; color: #13899b; }
-.asg-chip--1 { background: #e8edfb; color: #1d4ed8; }
-.asg-chip--2 { background: #fef3ec; color: #c2701c; }
-.asg-chip--3 { background: #ecf8ee; color: #2f9d42; }
+/* Subject colour slots (.asg-chip--0…5) are defined once in academyCommon.css
+   — see src/utils/subjectChips.js. Do not redeclare them here. */
 
 .asg-statusChip {
   display: inline-flex;

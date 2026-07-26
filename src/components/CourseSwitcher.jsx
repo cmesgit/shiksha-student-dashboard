@@ -15,10 +15,22 @@
 import { useEffect, useRef, useState } from "react";
 import { useCourse } from "../contexts/CourseContext";
 
-const CapIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-    <path d="M6 12v5c3 3 9 3 12 0v-5" />
+/* The design's selector caret is a double chevron (up + down), 13px,
+   stroke-width 2.4 — Academy Dashboard.dc.html line 576. */
+const SwitchCaret = () => (
+  <svg
+    className="acad-side__wellCaret"
+    width="13"
+    height="13"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="rgba(255,255,255,.6)"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M8 9l4-4 4 4M8 15l4 4 4-4" />
   </svg>
 );
 
@@ -51,33 +63,31 @@ export default function CourseSwitcher({ setMenuOpen }) {
   };
 
   return (
-    <div className="switch-class" ref={ref}>
+    <div className="acad-side__selector" ref={ref}>
       <button
         type="button"
-        className={`switch-class-btn${multiple ? "" : " switch-class-btn--static"}`}
+        className={`acad-side__well${multiple ? " acad-side__well--interactive" : ""}`}
         onClick={() => multiple && setOpen((o) => !o)}
         aria-haspopup={multiple ? "listbox" : undefined}
         aria-expanded={multiple ? open : undefined}
         title={activeCourse.title}
       >
-        <CapIcon />
-        <span className="switch-class-btn__label">{activeCourse.title}</span>
-        {multiple && (
-          <svg className={`switch-class-btn__caret${open ? " is-open" : ""}`} viewBox="0 0 24 24" aria-hidden="true">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        )}
+        <span className="acad-side__wellText">
+          <span className="acad-side__wellLabel">Active course</span>
+          <span className="acad-side__wellValue">{activeCourse.title}</span>
+        </span>
+        {multiple && <SwitchCaret />}
       </button>
 
-      {multiple && (
-        <div className={`class-dropdown${open ? " open" : ""}`} role="listbox" aria-label="Switch course">
+      {multiple && open && (
+        <div className="acad-side__menu" role="listbox" aria-label="Switch course">
           {list.map((c) => (
             <button
               key={c.id}
               type="button"
               role="option"
               aria-selected={c.id === activeCourse.id}
-              className={`class-option${c.id === activeCourse.id ? " active" : ""}`}
+              className={`acad-side__menuItem${c.id === activeCourse.id ? " is-active" : ""}`}
               onClick={() => pick(c)}
             >
               {c.title}
