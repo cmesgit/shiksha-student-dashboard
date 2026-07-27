@@ -14,6 +14,8 @@ export default function ControlBar({
   isHost = false,
   onHostEndSession = null,
   unrestricted = false,   // 1-on-1 skill call: no teacher-permission gating
+  hideTimer = false,      // new conference redesign moves the timer into the sidebar
+  hideRailToggle = false, // new conference redesign folds Info/People/Chat/Notes into sidebar tabs
 }) {
   const isStudent = role !== "PRESENTER";
   const gated = isStudent && !unrestricted;   // only group-class students are gated
@@ -185,7 +187,9 @@ export default function ControlBar({
           localParticipant.setCameraEnabled(false);
           setVideoOn(false);
         }
-      } catch {}
+      } catch {
+        /* ignore malformed data-channel payloads */
+      }
     };
 
     room.on("dataReceived", handleData);
@@ -225,22 +229,23 @@ export default function ControlBar({
   };
 
   return (
-    <div className="control-bar">
+    <div className={`control-bar${hideTimer && hideRailToggle ? "" : " control-bar--legacy"}`}>
 
-      {/* LEFT — TIMER */}
-      <div className="cb-timer">{formatTime(elapsed)}</div>
+      {/* LEFT — TIMER (legacy callers only — the new conference redesign
+          shows duration in the sidebar instead, see ClassroomUI.jsx) */}
+      {!hideTimer && <div className="cb-timer">{formatTime(elapsed)}</div>}
 
       {/* CENTER — MAIN ACTIONS */}
       <div className="cb-center">
 
         {/* Mute */}
         <button
-          className="cb-btn"
+          className={`cb-btn ${micOn ? "" : "cb-btn--off"}`}
           onClick={toggleMic}
           disabled={micBusy}
           title={micError || (micOn ? "Mute" : "Unmute")}
         >
-          <div className={`cb-icon ${micOn ? "" : "cb-icon--off"}`}>
+          <span className="cb-icon">
             {micOn ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -257,18 +262,18 @@ export default function ControlBar({
                 <line x1="8" y1="23" x2="16" y2="23"/>
               </svg>
             )}
-          </div>
+          </span>
           <span className="cb-label">{micError || (micOn ? "Mute" : "Unmute")}</span>
         </button>
 
         {/* Video */}
         <button
-          className="cb-btn"
+          className={`cb-btn ${videoOn ? "" : "cb-btn--off"}`}
           onClick={toggleVideo}
           disabled={videoBusy}
           title={videoError || (videoOn ? "Turn off camera" : "Turn on camera")}
         >
-          <div className={`cb-icon ${videoOn ? "" : "cb-icon--off"}`}>
+          <span className="cb-icon">
             {videoOn ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="23 7 16 12 23 17 23 7"/>
@@ -280,41 +285,42 @@ export default function ControlBar({
                 <line x1="1" y1="1" x2="23" y2="23"/>
               </svg>
             )}
-          </div>
+          </span>
           <span className="cb-label">{videoError || "Video"}</span>
         </button>
 
         {/* Screen Share */}
-        <button className="cb-btn" onClick={toggleScreen} title="Share screen">
-          <div className={`cb-icon ${screenOn ? "cb-icon--active" : ""}`}>
+        <button className={`cb-btn ${screenOn ? "cb-btn--active" : ""}`} onClick={toggleScreen} title="Share screen">
+          <span className="cb-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
               <polyline points="8 21 12 17 16 21"/>
               <line x1="12" y1="17" x2="12" y2="11"/>
               <polyline points="9 14 12 11 15 14"/>
             </svg>
-          </div>
-          <span className="cb-label">Screen</span>
+          </span>
+          <span className="cb-label">Share</span>
         </button>
 
         {/* Raise Hand — students only */}
         {isStudent && <RaiseHandButton />}
 
-        {/* Other */}
+        {/* Other — secondary/rare actions folded behind a subtle affordance
+            so the 5 primary buttons read as the visual group the redesign
+            spec calls for (mute / camera / share / raise-hand / end call). */}
         <div className="cb-other-wrap" ref={otherRef}>
           <button
-            className={`cb-btn ${otherOpen ? "cb-btn--active" : ""}`}
+            className={`cb-btn cb-btn--other ${otherOpen ? "cb-btn--active" : ""}`}
             title="More options"
             onClick={() => setOtherOpen((v) => !v)}
           >
-            <div className="cb-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <span className="cb-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="5" r="1"/>
                 <circle cx="12" cy="12" r="1"/>
                 <circle cx="12" cy="19" r="1"/>
               </svg>
-            </div>
-            <span className="cb-label">Other</span>
+            </span>
           </button>
 
           {otherOpen && (
@@ -350,71 +356,77 @@ export default function ControlBar({
           )}
         </div>
 
-        {/* Leave */}
-        <button className="cb-btn" onClick={leaveRoom} title={isHost ? "End session" : "Leave session"}>
-          <div className="cb-icon cb-icon--leave">
+        {/* End Call / Leave — visually distinct, separated from the other
+            controls (this is the destructive/final action). */}
+        <button className="cb-btn cb-btn--end" onClick={leaveRoom} title={isHost ? "End session" : "Leave session"}>
+          <span className="cb-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" transform="rotate(135 12 12)"/>
             </svg>
-          </div>
-          <span className="cb-label">Leave</span>
+          </span>
+          <span className="cb-label">{isHost ? "End Call" : "Leave"}</span>
         </button>
       </div>
 
-      {/* RIGHT — Info / People / Chat */}
-      <div className="cb-right">
-        <button
-          className={`cb-side-btn ${activePanel === "info" ? "cb-side-btn--active" : ""}`}
-          onClick={() => onTogglePanel("info")}
-          title="Session info"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="16" x2="12" y2="12"/>
-            <line x1="12" y1="8" x2="12.01" y2="8"/>
-          </svg>
-          <span>Info</span>
-        </button>
+      {/* RIGHT — Info / People / Chat / Notes (legacy toggle-button system;
+          the new conference redesign folds these into sidebar tabs instead —
+          see ClassroomUI.jsx — but this keeps working unchanged for any
+          caller that still passes activePanel/onTogglePanel). */}
+      {!hideRailToggle && (
+        <div className="cb-right">
+          <button
+            className={`cb-side-btn ${activePanel === "info" ? "cb-side-btn--active" : ""}`}
+            onClick={() => onTogglePanel("info")}
+            title="Session info"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            <span>Info</span>
+          </button>
 
-        <button
-          className={`cb-side-btn ${activePanel === "people" ? "cb-side-btn--active" : ""}`}
-          onClick={() => onTogglePanel("people")}
-          title="Participants"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-          <span>People</span>
-        </button>
+          <button
+            className={`cb-side-btn ${activePanel === "people" ? "cb-side-btn--active" : ""}`}
+            onClick={() => onTogglePanel("people")}
+            title="Participants"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span>People</span>
+          </button>
 
-        <button
-          className={`cb-side-btn ${activePanel === "chat" ? "cb-side-btn--active" : ""}`}
-          onClick={() => onTogglePanel("chat")}
-          title="Chat"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          <span>Chat</span>
-        </button>
+          <button
+            className={`cb-side-btn ${activePanel === "chat" ? "cb-side-btn--active" : ""}`}
+            onClick={() => onTogglePanel("chat")}
+            title="Chat"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span>Chat</span>
+          </button>
 
-        <button
-          className={`cb-side-btn ${activePanel === "notes" ? "cb-side-btn--active" : ""}`}
-          onClick={() => onTogglePanel("notes")}
-          title="Notes"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-          </svg>
-          <span>Notes</span>
-        </button>
-      </div>
+          <button
+            className={`cb-side-btn ${activePanel === "notes" ? "cb-side-btn--active" : ""}`}
+            onClick={() => onTogglePanel("notes")}
+            title="Notes"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <span>Notes</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

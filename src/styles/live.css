@@ -110,36 +110,63 @@
   transform: scale(1.06);
 }
 
-/* Control bar */
+/* Control bar — shared by ClassroomUI's full-viewport dark conference
+   redesign AND PrivateClassroomUI's 1-on-1 room (both use this same
+   component/file). The base rules below stay LIGHT (Private's original
+   theme, untouched) — the dark pill re-theme only applies scoped under
+   `.conf-overlay` (the new conference redesign's root), so Private keeps
+   its original colours even though the pill shape/spacing is now shared.
+   `.control-bar--legacy` is added whenever a caller still relies on the
+   inline timer / cb-right toggle-button rail (i.e. doesn't pass
+   hideTimer+hideRailToggle) so that layout still reads sensibly with those
+   extra slots present. */
 .control-bar {
   position: relative;
-  flex: 0 0 55px;
-  min-height: 56px;
-  display: grid;
-  grid-template-columns: 92px 1fr 240px;
+  flex: 0 0 72px;
+  min-height: 72px;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
-  padding: 8px 18px;
-  border-radius: 0 0 12px 12px;
+  padding: 0 24px;
+  border-radius: 0;
   border: none;
   border-top: 2px solid var(--ls-primary);
   background: #ffffff;
   box-sizing: border-box;
 }
 
+.conf-overlay .control-bar {
+  border-top: 1px solid #2a3147;
+  background: #161b27;
+}
+
+.control-bar--legacy {
+  justify-content: space-between;
+}
+
+.control-bar--legacy .cb-center {
+  flex: 1;
+}
+
 .cb-timer {
   color: #0f172a;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.conf-overlay .cb-timer {
+  color: #ffffff;
 }
 
 .cb-center {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 22px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -147,56 +174,91 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 3px;
+  min-width: 64px;
+  min-height: 44px;
   border: none;
-  background: transparent;
+  border-radius: 12px;
+  background: #eef1f2;
   cursor: pointer;
-  padding: 0;
+  padding: 8px 16px;
   flex-shrink: 0;
   color: #0f172a;
   font-family: inherit;
-  transition: transform 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.conf-overlay .cb-btn {
+  background: #1e2435;
+  color: #e5eaed;
 }
 
 .cb-btn:hover {
-  transform: translateY(-2px);
+  opacity: 0.85;
+}
+
+.cb-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .cb-btn--active {
+  background: rgba(0, 109, 120, 0.16);
   color: var(--ls-primary);
+}
+
+.conf-overlay .cb-btn--active {
+  background: rgba(66, 95, 127, 0.55);
+  color: #ffffff;
+}
+
+.cb-btn--off {
+  background: rgba(220, 38, 38, 0.22);
+}
+
+.cb-btn--off .cb-label {
+  color: #f3a9a9;
+}
+
+.cb-btn--other {
+  min-width: 40px;
+  padding: 8px 10px;
+  background: transparent;
+}
+
+.cb-btn--other .cb-label {
+  display: none;
+}
+
+.cb-btn--end {
+  background: #dc2626;
+  padding: 8px 20px;
+  margin-left: 16px;
+}
+
+.cb-btn--end:hover {
+  background: #b91c1c;
+  opacity: 1;
 }
 
 .cb-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #2d3340;
-  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.cb-icon--off {
-  background: #2d3340;
-  color: #ffffff;
-}
-
-.cb-icon--active {
-  background: rgba(0, 109, 120, 0.18);
-  color: var(--ls-primary);
-}
-
-.cb-icon--leave {
-  background: var(--ls-danger);
-  color: #ffffff;
+  color: inherit;
 }
 
 .cb-label {
-  color: #0f172a;
-  font-size: 11px;
+  color: #9ca3af;
+  font-size: 9px;
   line-height: 1;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cb-btn--end .cb-label {
+  color: #ffffff;
   font-weight: 700;
 }
 
@@ -206,6 +268,7 @@
   justify-content: flex-end;
   gap: 13px;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .cb-side-btn {
@@ -218,7 +281,7 @@
   min-height: 44px;
   border: none;
   background: transparent;
-  color: #0f172a;
+  color: #9ca3af;
   cursor: pointer;
   padding: 3px;
   font-family: inherit;
@@ -226,12 +289,12 @@
 }
 
 .cb-side-btn:hover {
-  color: var(--ls-primary);
+  color: #e5eaed;
   transform: translateY(-1px);
 }
 
 .cb-side-btn--active {
-  color: var(--ls-primary);
+  color: #ffffff;
 }
 
 .cb-side-btn span {
@@ -557,25 +620,28 @@
   height: 22px;
 }
 
-/* Waiting / paused states */
+/* Waiting / paused states — full-viewport, same dark language as the
+   conference overlay itself (these are sub-states of the same call). */
 .waiting-screen,
 .ls-paused {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
   width: 100%;
   height: 100%;
   min-height: 0;
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0d1117;
+  background: #0f1117;
   color: #e8eaf2;
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .waiting-card {
   padding: 40px 48px;
   border-radius: 20px;
-  background: #161b22;
+  background: #1a1f2e;
   text-align: center;
   box-shadow: 0 8px 32px rgba(0,0,0,.4);
 }
@@ -621,7 +687,8 @@
   backdrop-filter: blur(12px);
 }
 
-/* Fullscreen */
+/* Fullscreen (legacy grid layout — PrivateClassroomUI only; the new
+   conference overlay below is already fixed/full-viewport at all times) */
 .classroom-layout.fs-mode {
   position: fixed;
   inset: 0;
@@ -633,7 +700,494 @@
   box-sizing: border-box;
 }
 
-/* Responsive */
+/* ============================================================
+   CONFERENCE OVERLAY — ClassroomUI.jsx's redesigned full-viewport
+   room. Uses its own `conf-*` classes throughout (no overlap with the
+   legacy `.classroom-layout` grid above, which PrivateClassroomUI still
+   uses) so the two can evolve independently while sharing ControlBar.
+   ============================================================ */
+.conf-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: #0f1117;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.conf-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.conf-video-area {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  position: relative;
+}
+
+.conf-main-tile {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  background: #1a1f2e;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.conf-main-tile video,
+.conf-main-tile .lk-video-track,
+.conf-main-tile [data-lk-participant-media-video] {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #1a1f2e;
+  display: block;
+}
+
+.conf-main-tile .video-fs-btn {
+  top: 14px;
+  right: 14px;
+  bottom: auto;
+}
+
+.conf-live-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  z-index: 5;
+}
+
+.conf-name-badge {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  z-index: 5;
+}
+
+.conf-self-tile {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  width: 160px;
+  height: 100px;
+  background: #1e2435;
+  border-radius: 10px;
+  border: 2px solid #425f7f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 20;
+}
+
+.conf-self-tile video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.conf-self-off {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.conf-self-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #425f7f;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: "Montserrat", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.conf-self-off span {
+  font-size: 9px;
+  color: #9ca3af;
+}
+
+.conf-self-label {
+  position: absolute;
+  bottom: 6px;
+  left: 8px;
+  font-size: 9px;
+  color: #d1d5db;
+  font-weight: 600;
+}
+
+/* Right sidebar */
+.conf-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  background: #161b27;
+  border-left: 1px solid #2a3147;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.conf-info-block {
+  padding: 16px;
+  border-bottom: 1px solid #2a3147;
+  flex-shrink: 0;
+}
+
+.conf-subject {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #6b7c83;
+  margin-bottom: 4px;
+}
+
+.conf-topic {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e5eaed;
+  line-height: 1.3;
+}
+
+.conf-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.conf-timer-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #dc2626;
+  animation: confDotPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes confDotPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .35; }
+}
+
+.conf-timer-text {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  color: #ffffff;
+  letter-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.conf-tabs {
+  display: flex;
+  border-bottom: 1px solid #2a3147;
+  flex-shrink: 0;
+}
+
+.conf-tab {
+  flex: 1;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: transparent;
+  color: #6b7c83;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: inherit;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.conf-tab:hover {
+  color: #c9d1d9;
+}
+
+.conf-tab--active {
+  font-weight: 800;
+  color: #e5eaed;
+  border-bottom-color: #425f7f;
+}
+
+.conf-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Chat/Notes panels are LiveChatPanel.jsx/NotesPanel.jsx (shared with
+   PrivateClassroomUI) — scope the dark reskin to `.conf-panel` so
+   PrivateClassroomUI's own (still light-themed) sidebar is unaffected. */
+.conf-panel .cp-outer {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  height: 100%;
+}
+
+.conf-panel .cp-header {
+  display: none;
+}
+
+.conf-panel .cp-wrap {
+  background: transparent;
+}
+
+.conf-panel .cp-messages {
+  padding: 12px;
+  gap: 8px;
+}
+
+.conf-panel .cp-empty {
+  color: #4b5563;
+  font-size: 11px;
+}
+
+.conf-panel .cp-name {
+  font-size: 10px;
+  color: #e5eaed;
+}
+
+.conf-panel .cp-time {
+  font-size: 9px;
+  color: #4b5563;
+}
+
+.conf-panel .cp-bubble {
+  font-size: 11.5px;
+  border-radius: 8px;
+  padding: 7px 10px;
+  line-height: 1.5;
+}
+
+.conf-panel .cp-bubble--me,
+.conf-panel .cp-bubble--other {
+  background: #1e2435;
+  color: #d1d5db;
+}
+
+.conf-panel .cp-input-area {
+  background: transparent;
+  border-top: 1px solid #2a3147;
+  padding: 10px;
+}
+
+.conf-panel .cp-input {
+  background: #1e2435;
+  border: 1px solid #2a3147;
+  border-radius: 8px;
+  color: #e5eaed;
+  padding: 8px 12px;
+  height: auto;
+  font-size: 11.5px;
+}
+
+.conf-panel .cp-input::placeholder {
+  color: #6b7c83;
+}
+
+.conf-panel .cp-send-btn {
+  background: #425f7f;
+  color: #ffffff;
+  border-radius: 8px;
+  width: auto;
+  height: auto;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.conf-panel .cp-send-btn:hover {
+  background: #35506c;
+  color: #ffffff;
+  transform: none;
+}
+
+.conf-notes-wrap {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.conf-notes-hint {
+  flex-shrink: 0;
+  padding: 10px 12px 0;
+  font-size: 10px;
+  color: #6b7c83;
+}
+
+.conf-panel .np-wrap {
+  background: transparent;
+  padding: 12px;
+}
+
+.conf-panel .np-textarea {
+  background: #1e2435;
+  border: 1px solid #2a3147;
+  color: #e5eaed;
+  font-family: Georgia, serif;
+  line-height: 1.7;
+  border-radius: 8px;
+}
+
+.conf-panel .np-textarea::placeholder {
+  color: #6b7c83;
+}
+
+.conf-panel .np-status {
+  color: #6b7c83;
+}
+
+/* People tab */
+.conf-ppl-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.conf-ppl-empty {
+  margin: 20px auto;
+  color: #4b5563;
+  font-size: 12px;
+  text-align: center;
+}
+
+.conf-ppl-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #1e2435;
+}
+
+.conf-ppl-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #425f7f;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.conf-ppl-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.conf-ppl-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.conf-ppl-name {
+  color: #e5eaed;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conf-ppl-role {
+  color: #6b7c83;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.conf-ppl-mic {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.conf-ppl-mic--off {
+  background: rgba(220, 38, 38, 0.25);
+  color: #f3a9a9;
+}
+
+/* Info tab */
+.conf-info-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.conf-info-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7c83;
+  margin-bottom: 3px;
+}
+
+.conf-info-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e5eaed;
+  word-break: break-word;
+}
+
+/* Responsive — legacy grid layout (PrivateClassroomUI) */
 @media (max-width: 900px) {
   .classroom-layout {
     grid-template-columns: 1fr;
@@ -644,27 +1198,38 @@
     height: 360px;
   }
 
-  .control-bar {
-    grid-template-columns: 78px 1fr;
-    grid-template-rows: auto auto;
-    min-height: 118px;
-  }
-
   .cb-right {
-    grid-column: 1 / -1;
     justify-content: center;
   }
 
   .cb-center {
-    gap: 14px;
+    gap: 10px;
+  }
+
+  /* Responsive — conference overlay */
+  .conf-body {
+    flex-direction: column;
+  }
+
+  .conf-sidebar {
+    width: 100%;
+    height: 280px;
+    border-left: none;
+    border-top: 1px solid #2a3147;
+  }
+
+  .conf-self-tile {
+    width: 110px;
+    height: 70px;
+    bottom: 16px;
+    right: 16px;
   }
 }
 
 @media (max-width: 560px) {
   .control-bar {
-    padding: 8px 10px;
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
+    padding: 0 10px;
+    gap: 6px;
   }
 
   .cb-timer {
@@ -674,6 +1239,16 @@
   .cb-center,
   .cb-right {
     flex-wrap: wrap;
+  }
+
+  .cb-btn {
+    min-width: 52px;
+    padding: 6px 10px;
+  }
+
+  .cb-btn--end {
+    margin-left: 8px;
+    padding: 6px 14px;
   }
 
   .pip-camera {
