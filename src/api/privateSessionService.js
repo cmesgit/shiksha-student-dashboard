@@ -57,25 +57,6 @@ const privateSessionService = {
     return transformSession(res.data);
   },
 
-  // TODO(backend): sessions_app/views.py already defines `accept_invite` /
-  // `decline_invite` (a student accepting or rejecting a *peer's* group
-  // 1-on-1 invite — see SessionParticipant.status), but sessions_app/urls.py
-  // never wires either one to a route, so these two calls currently 404.
-  // The equivalent group-session flow IS wired (see groupSessionService /
-  // group-sessions/<id>/accept|decline/), so the fix is a one-line addition
-  // to sessions_app/urls.py, e.g.:
-  //   path("<uuid:session_id>/accept-invite/", views.accept_invite, name="private-session-accept-invite"),
-  //   path("<uuid:session_id>/decline-invite/", views.decline_invite, name="private-session-decline-invite"),
-  async acceptInvite(id) {
-    const res = await api.post(`/sessions/${id}/accept-invite/`);
-    return res.data;
-  },
-
-  async declineInvite(id) {
-    const res = await api.post(`/sessions/${id}/decline-invite/`);
-    return res.data;
-  },
-
   // ─────────────────────────────────────────────
   // STUDENT — Subject / Teacher / Student lookup
   // ─────────────────────────────────────────────
