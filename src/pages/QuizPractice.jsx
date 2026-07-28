@@ -22,6 +22,7 @@ export default function QuizPractice() {
   const [streak, setStreak] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [finishing, setFinishing] = useState(false);
+  const [showEndModal, setShowEndModal] = useState(false);
 
   const answersRef = useRef([]); // accumulated { question, selected_choice, time_spent, marked_for_review }
   const questionStartRef = useRef(Date.now());
@@ -178,7 +179,7 @@ export default function QuizPractice() {
       </div>
 
       <div className="qp-footer">
-        <button className="qp-end-btn" onClick={endSession}>End session</button>
+        <button className="qp-end-btn" onClick={() => setShowEndModal(true)}>End session</button>
         {feedback && (
           <button className="qp-next-btn" onClick={goNext} disabled={finishing}>
             {finishing
@@ -189,6 +190,22 @@ export default function QuizPractice() {
           </button>
         )}
       </div>
+
+      {showEndModal && (
+        <div className="qp-modal-overlay">
+          <div className="qp-modal-box">
+            <h3>End practice session?</h3>
+            <p>
+              You've answered {index} of {total} questions so far. Your progress is saved —
+              you can view it on the results screen or resume this set any time.
+            </p>
+            <div className="qp-modal-actions">
+              <button className="qp-btn-cancel" onClick={() => setShowEndModal(false)}>Keep practicing</button>
+              <button className="qp-btn-exit" onClick={endSession}>End session</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

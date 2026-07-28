@@ -32,8 +32,8 @@ import Subjects from "./pages/Subjects";
 import SubjectDetails from "./pages/SubjectDetails";
 import SubjectsAssignments from "./pages/SubjectsAssignments";
 import AssignmentDetail from "./pages/AssignmentDetail";
-import QuizList from "./pages/QuizList";
-import QuizDetail from "./pages/QuizDetail";
+import QuizHub from "./pages/QuizHub";
+import QuizMock from "./pages/QuizMock";
 import QuizPractice from "./pages/QuizPractice";
 import QuizResult from "./pages/QuizResult";
 import QuizAttempts from "./pages/QuizAttempts";
@@ -128,9 +128,9 @@ export default function App() {
                   Assignments already collapsed. The optional :subjectId
                   route still resolves so older deep links (and the
                   Dashboard's per-quiz links) preselect that subject's pill. */}
-              <Route path="subjects/quiz" element={<QuizList />} />
-              <Route path="subjects/quiz/:subjectId" element={<QuizList />} />
-              <Route path="subjects/quiz/:subjectId/take/:quizId" element={<QuizDetail />} />
+              <Route path="subjects/quiz" element={<QuizHub />} />
+              <Route path="subjects/quiz/:subjectId" element={<QuizHub />} />
+              <Route path="subjects/quiz/:subjectId/take/:quizId" element={<QuizMock />} />
               <Route path="subjects/quiz/:subjectId/practice/:quizId" element={<QuizPractice />} />
               <Route path="subjects/quiz/:subjectId/result/:quizId" element={<QuizResult />} />
               <Route path="subjects/quiz/:subjectId/attempts/:quizId" element={<QuizAttempts />} />

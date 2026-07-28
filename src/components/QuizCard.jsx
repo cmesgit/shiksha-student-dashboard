@@ -1,7 +1,8 @@
 // src/components/QuizCard.jsx
 // ──────────────────────────────────────────────────────────────────────────
-// Shared quiz card — used by the Quizzes list (src/pages/QuizList.jsx) and
-// the Dashboard's right-rail Assignments/Quizzes toggle. Matches the design
+// Shared quiz card — used by the Dashboard's right-rail Assignments/Quizzes
+// toggle (the Quizzes hub itself, src/pages/QuizHub.jsx, has its own
+// QuizHubCard). Matches the design
 // handoff's Quizzes card (Academy Dashboard.dc.html, section 12): subject
 // chip + status/mode tag on top, title, meta, then a footer with one action.
 //

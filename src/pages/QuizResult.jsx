@@ -170,25 +170,44 @@ export default function QuizResult() {
           </div>
         </div>
 
-        {/* ── Score summary cards ── */}
-        <div className="quizResultSummary">
-          {[
-            { label: "Score",     value: `${resultData.score} / ${resultData.total_marks}`, mod: "score" },
-            { label: "Correct",   value: correct,   mod: "correct" },
-            { label: "Incorrect", value: incorrect, mod: "incorrect" },
-            { label: "Accuracy",  value: `${pct}%`, mod: "accuracy" },
-          ].map(({ label, value, mod }) => (
-            <div key={label} className={`quizResultSummaryCard quizResultSummaryCard--${mod}`}>
-              <div className="quizResultSummaryValue">{value}</div>
-              <div className="quizResultSummaryLabel">{label}</div>
+        {/* ── Score hero: ring + summary cards ── */}
+        <div className="qraScoreHero">
+          <div className="qraRingWrap">
+            <svg width="128" height="128" viewBox="0 0 128 128" className="qraRingSvg">
+              <circle cx="64" cy="64" r="56" fill="none" stroke="#e5eaed" strokeWidth="10" />
+              <circle
+                cx="64" cy="64" r="56" fill="none" stroke={pct >= 75 ? "#22c55e" : pct >= 50 ? "#f59e0b" : "#ef4444"}
+                strokeWidth="10" strokeLinecap="round" transform="rotate(-90 64 64)"
+                strokeDasharray={`${(pct / 100) * (2 * Math.PI * 56)} ${2 * Math.PI * 56}`}
+              />
+            </svg>
+            <div className="qraRingOverlay">
+              <div className="qraRingPct">{pct}%</div>
+              <div className="qraRingMarks">{resultData.score} / {resultData.total_marks} marks</div>
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* ── Class comparison ── */}
-        <div className="qraCompareRow">
-          <span>Class average: <strong>{resultData.class_avg_percent}%</strong></span>
-          <span>You're in the top <strong>{resultData.percentile}%</strong> of attempts</span>
+          <div className="qraScoreHeroRight">
+            <div className="qraVerdict">
+              {pct >= 75 ? "Great job! 🎉" : pct >= 50 ? "Good effort" : "Keep practicing"}
+            </div>
+            <div className="quizResultSummary">
+              {[
+                { label: "Correct",   value: correct,   mod: "correct" },
+                { label: "Incorrect", value: incorrect, mod: "incorrect" },
+                { label: "Accuracy",  value: `${pct}%`, mod: "accuracy" },
+              ].map(({ label, value, mod }) => (
+                <div key={label} className={`quizResultSummaryCard quizResultSummaryCard--${mod}`}>
+                  <div className="quizResultSummaryValue">{value}</div>
+                  <div className="quizResultSummaryLabel">{label}</div>
+                </div>
+              ))}
+            </div>
+            <div className="qraCompareRow">
+              <span>Class average: <strong>{resultData.class_avg_percent}%</strong></span>
+              <span>You're in the top <strong>{resultData.percentile}%</strong> of attempts</span>
+            </div>
+          </div>
         </div>
 
         {/* ── Score trend ── */}
