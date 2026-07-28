@@ -56,9 +56,12 @@ import "../styles/dashboard.css";
 
 const DATE_FORMAT = { day: "2-digit", month: "short", year: "numeric" };
 
+// Quizzes have no due date (product decision — a quiz stays attemptable
+// indefinitely once published), so they're not date-scheduled events: no
+// calendar dots, no schedule-rail entries. They still get their own
+// Assignments/Quizzes toggle in the right rail, unfiltered by date.
 const EVENT_COLORS = {
   assignment: "#57D982",
-  quiz: "#93A1E5",
   "live-session": "#38bdf8",
   "private-session": "#FF8A65",
 };
@@ -66,7 +69,6 @@ const EVENT_COLORS = {
 const SCHEDULE_TYPE_LABELS = {
   "live-session": "Live Session",
   assignment: "Assignment",
-  quiz: "Quiz",
   "private-session": "Private Session",
 };
 
@@ -82,14 +84,12 @@ const SCHEDULE_OPTIONS = [
   { value: "All", label: "All" },
   { value: "ASSIGNMENT", label: "Assignment" },
   { value: "SESSION", label: "Live Session" },
-  { value: "QUIZ", label: "Quiz" },
   { value: "PRIVATE_SESSION", label: "Private Session" },
 ];
 
 const SCHEDULE_FILTER_MAP = {
   ASSIGNMENT: "assignment",
   SESSION: "live-session",
-  QUIZ: "quiz",
   PRIVATE_SESSION: "private-session",
 };
 
@@ -300,11 +300,10 @@ export default function Dashboard() {
       if (!map[key].includes(type)) map[key].push(type);
     };
     assignments.forEach((a) => add(a.due, "assignment"));
-    quizzes.forEach((q) => add(q.due, "quiz"));
     privateSessions.forEach((p) => add(p.date, "private-session"));
     allSessions.forEach((s) => add(s.dateTime, "live-session"));
     return map;
-  }, [assignments, quizzes, privateSessions, allSessions]);
+  }, [assignments, privateSessions, allSessions]);
 
   const scheduleItems = useMemo(() => {
     const items = [];
@@ -333,18 +332,6 @@ export default function Dashboard() {
       })
     );
 
-    quizzes.forEach((q) =>
-      items.push({
-        id: `quiz-${q.id}`,
-        type: "quiz",
-        title: q.title,
-        date: q.due,
-        teacher: q.teacher,
-        subject: q.subject_name || "",
-        link: q.subject_id ? `/subjects/quiz/${q.subject_id}` : null,
-      })
-    );
-
     privateSessions.forEach((ps) =>
       items.push({
         id: `private-${ps.id}`,
@@ -359,7 +346,7 @@ export default function Dashboard() {
 
     items.sort((a, b) => new Date(a.date) - new Date(b.date));
     return items;
-  }, [allSessions, assignments, quizzes, privateSessions]);
+  }, [allSessions, assignments, privateSessions]);
 
   // Notifications come pre-isolated (profile-scoped) and pre-normalized
   // (canonical UPPERCASE type) from the singleton hook.
@@ -377,19 +364,6 @@ export default function Dashboard() {
       return assignmentFilter === "due" ? dueDate >= now : dueDate < now;
     });
   }, [assignments, assignmentFilter]);
-
-  // Same due/overdue toggle pattern as assignments, applied to quizzes — feeds
-  // the "Quizzes" tab of the merged right-rail card.
-  const filteredQuizzes = useMemo(() => {
-    const now = new Date();
-    return quizzes.filter((q) => {
-      const raw = q.dueDate || q.due;
-      if (!raw) return assignmentFilter === "due";
-      const dueDate = new Date(raw);
-      if (Number.isNaN(dueDate.getTime())) return assignmentFilter === "due";
-      return assignmentFilter === "due" ? dueDate >= now : dueDate < now;
-    });
-  }, [quizzes, assignmentFilter]);
 
   const filteredSchedule = scheduleItems.filter((item) => {
     if (selectedDate) {
@@ -518,10 +492,6 @@ export default function Dashboard() {
             Assignment
           </span>
           <span className="calLegend__item">
-            <span className="calLegend__dot" style={{ background: EVENT_COLORS.quiz }} />
-            Quiz
-          </span>
-          <span className="calLegend__item">
             <span className="calLegend__dot" style={{ background: EVENT_COLORS["live-session"] }} />
             Live Session
           </span>
@@ -540,11 +510,9 @@ export default function Dashboard() {
         ? "livesessions"
         : item.type === "assignment"
           ? "assignments"
-          : item.type === "quiz"
-            ? "quiz"
-            : item.type === "private-session"
-              ? "privatesession"
-              : "";
+          : item.type === "private-session"
+            ? "privatesession"
+            : "";
 
     return (
       <div
@@ -636,14 +604,7 @@ export default function Dashboard() {
                 key={q.id}
                 title={q.title}
                 teacher={q.teacher}
-                deadline={
-                  q.due
-                    ? new Date(q.due).toLocaleDateString("en-GB", {
-                        day: "2-digit", month: "short", year: "numeric",
-                        hour: "2-digit", minute: "2-digit", hour12: true,
-                      })
-                    : "No due date"
-                }
+                deadline={q.subject_name || ""}
                 isCompleted={false}
                 inProgress={false}
                 onClick={() =>
@@ -719,10 +680,6 @@ export default function Dashboard() {
     const d = a.dueDate || a.due ? new Date(a.dueDate || a.due) : null;
     return !d || Number.isNaN(d.getTime()) || d >= _now;
   }).length;
-  const _pendingQuizzes = quizzes.filter((q) => {
-    const d = q.dueDate || q.due ? new Date(q.dueDate || q.due) : null;
-    return !d || Number.isNaN(d.getTime()) || d >= _now;
-  }).length;
   // Backend may not have landed quiz_avg_pct yet on every deploy — default to
   // null (renders as "—") rather than throwing on a transitional response.
   const quizAvgPct = data?.quiz_avg_pct ?? null;
@@ -730,7 +687,7 @@ export default function Dashboard() {
     { icon: "video", iconBg: "#e6f4f6", iconColor: "#13899b", value: sessions.length,               label: "Classes this week" },
     { icon: "file",  iconBg: "#ecf8ee", iconColor: "#2f9d42", value: _pendingAssignments,            label: "Assignments due" },
     { icon: "trend", iconBg: "#e8edfb", iconColor: "#1d4ed8", value: quizAvgPct != null ? `${quizAvgPct}%` : "—", label: "Average quiz score" },
-    { icon: "help",  iconBg: "#f3e8ff", iconColor: "#7c3aed", value: _pendingQuizzes,                 label: "Quizzes due" },
+    { icon: "help",  iconBg: "#f3e8ff", iconColor: "#7c3aed", value: quizzes.length,                 label: "Quizzes available" },
   ];
 
   return (
@@ -854,27 +811,31 @@ export default function Dashboard() {
                   </button>
                 </div>
 
-                <div className="assignmentToggle">
-                  <button
-                    type="button"
-                    className={`assignmentToggle__btn ${
-                      assignmentFilter === "due" ? "assignmentToggle__btn--active" : ""
-                    }`}
-                    onClick={() => setAssignmentFilter("due")}
-                  >
-                    Due
-                  </button>
+                {/* Quizzes have no due date, so the Due/Over Due toggle only
+                    applies to the Assignments tab. */}
+                {rightRailTab === "assignments" && (
+                  <div className="assignmentToggle">
+                    <button
+                      type="button"
+                      className={`assignmentToggle__btn ${
+                        assignmentFilter === "due" ? "assignmentToggle__btn--active" : ""
+                      }`}
+                      onClick={() => setAssignmentFilter("due")}
+                    >
+                      Due
+                    </button>
 
-                  <button
-                    type="button"
-                    className={`assignmentToggle__btn ${
-                      assignmentFilter === "overdue" ? "assignmentToggle__btn--active" : ""
-                    }`}
-                    onClick={() => setAssignmentFilter("overdue")}
-                  >
-                    Over Due
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      className={`assignmentToggle__btn ${
+                        assignmentFilter === "overdue" ? "assignmentToggle__btn--active" : ""
+                      }`}
+                      onClick={() => setAssignmentFilter("overdue")}
+                    >
+                      Over Due
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="cardBodyScroll">
@@ -892,19 +853,12 @@ export default function Dashboard() {
                   </>
                 ) : (
                   <>
-                    {filteredQuizzes.map((q, idx) => (
+                    {quizzes.map((q, idx) => (
                       <QuizCard
                         key={q.id || idx}
                         title={q.title}
                         teacher={q.teacher}
-                        deadline={
-                          q.due
-                            ? new Date(q.due).toLocaleDateString("en-GB", {
-                                day: "2-digit", month: "short", year: "numeric",
-                                hour: "2-digit", minute: "2-digit", hour12: true,
-                              })
-                            : "No due date"
-                        }
+                        deadline={q.subject_name || ""}
                         isCompleted={false}
                         inProgress={false}
                         onClick={() =>
@@ -913,10 +867,8 @@ export default function Dashboard() {
                       />
                     ))}
 
-                    {filteredQuizzes.length === 0 && (
-                      <div className="emptyState">
-                        {assignmentFilter === "due" ? "No quizzes due" : "No overdue quizzes"}
-                      </div>
+                    {quizzes.length === 0 && (
+                      <div className="emptyState">No quizzes available</div>
                     )}
                   </>
                 )}

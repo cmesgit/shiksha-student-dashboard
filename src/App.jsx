@@ -32,7 +32,6 @@ import Subjects from "./pages/Subjects";
 import SubjectDetails from "./pages/SubjectDetails";
 import SubjectsAssignments from "./pages/SubjectsAssignments";
 import AssignmentDetail from "./pages/AssignmentDetail";
-import SubjectsQuiz from "./pages/SubjectsQuiz";
 import QuizList from "./pages/QuizList";
 import QuizDetail from "./pages/QuizDetail";
 import QuizPractice from "./pages/QuizPractice";
@@ -124,7 +123,12 @@ export default function App() {
               <Route path="subjects/:subjectId/assignments" element={<SubjectsAssignments />} />
               <Route path="subjects/:subjectId/assignments/:assignmentId" element={<AssignmentDetail />} />
 
-              <Route path="subjects/quiz" element={<SubjectsQuiz />} />
+              {/* Quizzes is one flat, subject-filterable list (design handoff:
+                  section 12 "Quizzes") — no picker step, matching how
+                  Assignments already collapsed. The optional :subjectId
+                  route still resolves so older deep links (and the
+                  Dashboard's per-quiz links) preselect that subject's pill. */}
+              <Route path="subjects/quiz" element={<QuizList />} />
               <Route path="subjects/quiz/:subjectId" element={<QuizList />} />
               <Route path="subjects/quiz/:subjectId/take/:quizId" element={<QuizDetail />} />
               <Route path="subjects/quiz/:subjectId/practice/:quizId" element={<QuizPractice />} />

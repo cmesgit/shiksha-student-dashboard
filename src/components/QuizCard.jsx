@@ -1,6 +1,20 @@
+// src/components/QuizCard.jsx
+// ──────────────────────────────────────────────────────────────────────────
+// Shared quiz card — used by the Quizzes list (src/pages/QuizList.jsx) and
+// the Dashboard's right-rail Assignments/Quizzes toggle. Matches the design
+// handoff's Quizzes card (Academy Dashboard.dc.html, section 12): subject
+// chip + status/mode tag on top, title, meta, then a footer with one action.
+//
+// `subject`/`subjSlot` are optional — the Dashboard's compact rail card
+// doesn't pass them (no room for a chip there), so the top row degrades to
+// just the status/mode tag.
+// ──────────────────────────────────────────────────────────────────────────
+import "../styles/academyScreens.css";
 import "../styles/quiz.css";
 
 export default function QuizCard({
+  subject,
+  subjSlot,
   title,
   teacher,
   deadline,
@@ -11,49 +25,45 @@ export default function QuizCard({
   scoreLabel,
   onClick,
 }) {
+  const statusTag = isCompleted
+    ? { tone: "success", label: `Completed${scoreLabel ? ` · ${scoreLabel}` : ""}` }
+    : inProgress
+      ? { tone: "warning", label: "In progress" }
+      : mode === "Practice"
+        ? { tone: "info", label: "Practice" }
+        : null;
+
   return (
-    <div
-      className={`quizCard ${isCompleted ? "quizCard--completed" : ""} ${inProgress ? "quizCard--inprogress" : ""}`}
-      onClick={onClick}
-    >
-      {/* Status badge — top-right corner */}
-      {isCompleted && (
-        <span className="quizCard__badge quizCard__badge--done">
-          ✓ Completed{scoreLabel ? ` · ${scoreLabel}` : ""}
-        </span>
-      )}
-      {inProgress && (
-        <span className="quizCard__badge quizCard__badge--progress">
-          ▶ In Progress
-        </span>
-      )}
-
-      <div className="quizCard__top">
-        {mode && (
-          <span className={`quizCard__mode quizCard__mode--${mode.toLowerCase()}`}>
-            {mode}
-          </span>
+    <div className="ac-card qz-card" onClick={onClick}>
+      <div className="ac-card__top">
+        {subject && (
+          <span className={`subj-chip subj-chip--${subjSlot ?? 0}`}>{subject}</span>
         )}
-        <p className="quizCard__title">{title}</p>
+        {statusTag && <span className={`ac-tag ac-tag--${statusTag.tone}`}>{statusTag.label}</span>}
       </div>
 
-      <p className="quizCard__teacher">{teacher}</p>
-
-      <div className="quizCard__bottom">
-        <p className="quizCard__info">{deadline}</p>
-        {badge && <span className="quizCard__attempts">{badge}</span>}
+      <div>
+        <div className="ac-card__title">{title}</div>
+        <div className="ac-card__meta">{teacher}</div>
+        <div className="ac-card__meta">{badge ? `${deadline} · ${badge}` : deadline}</div>
       </div>
-      {isCompleted && (
-        <p className="quizCard__reattempt">Tap to review or re-attempt →</p>
-      )}
 
-      {/* Pulsing dot for in-progress */}
-      {inProgress && (
-        <div className="quizCard__pulse-wrap">
-          <span className="quizCard__pulse" />
-          <span className="quizCard__pulse-label">Resume</span>
+      <div className="ac-card__foot">
+        <span className="ac-card__footText">
+          {isCompleted ? "Tap to review or re-attempt" : ""}
+        </span>
+        <div className="ac-card__actions">
+          <button type="button" className="ac-cardBtn ac-cardBtn--primary" onClick={onClick}>
+            {isCompleted
+              ? "Review"
+              : inProgress
+                ? "Resume"
+                : mode === "Practice"
+                  ? "Practice"
+                  : "Start quiz"}
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

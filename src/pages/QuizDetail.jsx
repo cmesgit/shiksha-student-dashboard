@@ -114,6 +114,7 @@ export default function QuizDetail() {
   const [palette, setPalette]            = useState({});
   const [marked, setMarked]              = useState({});
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showSubmitWarning, setShowSubmitWarning] = useState(false);
   const [quizReady, setQuizReady]        = useState(false);
 
   const answersRef    = useRef({});
@@ -417,18 +418,7 @@ export default function QuizDetail() {
   };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
-  const handleSubmit = async () => {
-    const unanswered = shuffledQuestions.filter(
-      (qq) => answers[qq.id] === undefined
-    ).length;
-
-    if (unanswered > 0) {
-      const confirmed = window.confirm(
-        `You have ${unanswered} unanswered question(s). Submit anyway?\nUnanswered questions will be scored 0.`
-      );
-      if (!confirmed) return;
-    }
-
+  const doSubmit = async () => {
     try {
       setSubmitting(true);
       setError(null);
@@ -453,6 +443,18 @@ export default function QuizDetail() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const unansweredCount = shuffledQuestions.filter(
+    (qq) => answers[qq.id] === undefined
+  ).length;
+
+  const handleSubmit = () => {
+    if (unansweredCount > 0) {
+      setShowSubmitWarning(true);
+      return;
+    }
+    doSubmit();
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -626,6 +628,31 @@ export default function QuizDetail() {
                 }}
               >
                 Leave Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* UNANSWERED-QUESTIONS SUBMIT WARNING */}
+      {showSubmitWarning && (
+        <div className="quiz-modal-overlay">
+          <div className="quiz-modal-box">
+            <h3>Submit anyway?</h3>
+            <p>
+              You have {unansweredCount} unanswered question{unansweredCount === 1 ? "" : "s"}.
+              <br /><br />
+              Unanswered questions will be scored 0.
+            </p>
+            <div className="quiz-modal-actions">
+              <button className="quiz-btn-cancel" onClick={() => setShowSubmitWarning(false)}>
+                Go Back
+              </button>
+              <button
+                className="quiz-btn-exit"
+                onClick={() => { setShowSubmitWarning(false); doSubmit(); }}
+              >
+                Submit Anyway
               </button>
             </div>
           </div>
