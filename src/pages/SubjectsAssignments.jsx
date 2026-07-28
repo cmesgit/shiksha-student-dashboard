@@ -33,7 +33,6 @@ import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import { subjectChipSlot } from "../utils/subjectChips";
 import "../styles/academyCommon.css";
 import "../styles/academyScreens.css";
-import "../styles/assignmentPending.css";
 
 const STATUS_FILTERS = ["All", "Due", "Overdue", "Submitted"];
 
@@ -44,6 +43,16 @@ const fmtDue = (d) =>
   d
     ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
     : "";
+
+// Same convention as StudyMaterialList/Subjects/Progress: the assignment
+// endpoints don't carry a teacher name (AssignmentListSerializer has no such
+// field), but the subject object from CourseContext does via `.teachers[]` —
+// so the row's meta line is built from that, not from a field the API never
+// sends.
+const teacherLabelFor = (subject) =>
+  subject?.teachers?.length
+    ? subject.teachers.map((t) => t.name).join(", ")
+    : "No teacher assigned";
 
 export default function SubjectsAssignments() {
   const navigate = useNavigate();
@@ -129,7 +138,14 @@ export default function SubjectsAssignments() {
 
   const now = Date.now();
 
-  // Decorate once: status key, chip label, and the design's meta line.
+  const bySubjectId = useMemo(
+    () => new Map((subjects || []).map((s) => [String(s.id), s])),
+    [subjects]
+  );
+
+  // Decorate once: status key, chip label, and the design's meta line (just
+  // the teacher name — the due date already lives in the status chip, so
+  // repeating it in the meta line would just duplicate it).
   const decorated = useMemo(
     () =>
       assignments.map((a) => {
@@ -137,23 +153,20 @@ export default function SubjectsAssignments() {
         const isOverdue =
           !isSubmitted && a.due_date && new Date(a.due_date).getTime() < now;
         const stKey = isSubmitted ? "submitted" : isOverdue ? "overdue" : "due";
-        // "Due 12 Aug · 20 marks" per the design; each part only when known.
-        const marks = a.max_marks ?? a.marks ?? a.total_marks;
-        const meta = [
-          a.due_date ? `Due ${fmtDue(a.due_date)}` : null,
-          marks != null ? `${marks} marks` : null,
-          a.teacher || null,
-        ]
-          .filter(Boolean)
-          .join(" · ");
+        const subject = bySubjectId.get(String(a.subjectId));
         return {
           ...a,
           stKey,
-          stLabel: stKey === "submitted" ? "Submitted" : stKey === "overdue" ? "Overdue" : "Due",
-          meta,
+          stLabel:
+            stKey === "submitted"
+              ? "Submitted"
+              : stKey === "overdue"
+              ? "Overdue"
+              : `Due ${fmtDue(a.due_date)}`,
+          meta: teacherLabelFor(subject),
         };
       }),
-    [assignments, now]
+    [assignments, now, bySubjectId]
   );
 
   // Only offer a pill for subjects that actually have an assignment.
@@ -254,7 +267,7 @@ export default function SubjectsAssignments() {
                   className="ac-btn"
                   onClick={() => navigate(`/subjects/${a.subjectId}/assignments/${a.id}`)}
                 >
-                  Open
+                  {a.stKey === "submitted" ? "Feedback" : "Open"}
                 </button>
               </div>
             ))
