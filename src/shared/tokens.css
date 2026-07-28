@@ -5,18 +5,23 @@
    (the prototype markup — NOT the README prose, which lags the source on a
    few values: the header is 60px not 64px, nav items have an 8px radius not
    0, and the header pill group sits on #eef1f2 at 999px, not #e4e9eb/9px).
+   The README's own sidebar-color table (student teal #0f6b78 / teacher
+   maroon #5c1515) is ALSO stale — the source's actual computed value
+   (`themeSideBg`, dc.html ~line 3036) reuses the primary/action color:
+   student #425f7f, teacher #7a1c1c. Confirmed against the reference
+   screenshots, not just the JS — both show the lighter blue-gray / brick-red
+   sidebar, not teal/near-black maroon.
 
    This file is deliberately NOT synced by shared/sync.mjs — each app paints
-   its own role chrome. The student sidebar is teal (#0f6b78); the teacher
-   app's copy sets maroon (#5c1515). Everything below the "Role chrome"
-   block is identical between the two copies — keep them in step.
+   its own role chrome. Everything below the "Role chrome" block is
+   identical between the two copies — keep them in step.
 
    New components must not introduce raw hex values — use var(--…).
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ── Role chrome — THE PER-APP BLOCK (student) ─────────────────────── */
-  --side-bg:      #0f6b78;   /* sidebar background */
+  --side-bg:      #425f7f;   /* sidebar background */
   --side-accent:  #13899b;   /* avatar fill, live pulse, unread dot */
   --action:       #425f7f;   /* primary action button */
   --action-hover: #2d4560;
@@ -60,9 +65,9 @@
 
   /* Both role themes, so cross-role UI (a teacher's chip inside a student
      view) can reach either without redefining it. */
-  --student-side:         #0f6b78;
+  --student-side:         #425f7f;
   --student-accent:       #13899b;
-  --teacher-side:         #5c1515;
+  --teacher-side:         #7a1c1c;
   --teacher-accent:       #c0392b;
   --teacher-action:       #7a1c1c;
   --teacher-action-hover: #6b1818;

@@ -332,7 +332,7 @@
   position: absolute;
   top: 0;
   right: 0;
-  background: #ef4444;
+  background: var(--danger);
   color: white;
   font-size: 10px;
   font-weight: 700;
@@ -385,7 +385,7 @@
   border: none;
   border-top: 1px solid #f3f4f6;
   background: #fafafa;
-  color: #b3402e;
+  color: var(--acc-ink, #425f7f);
   font-weight: 700;
   font-size: 12.5px;
   padding: 11px 16px;

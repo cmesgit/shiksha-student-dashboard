@@ -26,7 +26,7 @@ export default function Chat() {
 
   return (
     <div className="chat-page">
-      <ChatPanel directTo={directTo} courseRoom={courseRoom} />
+      <ChatPanel directTo={directTo} courseRoom={courseRoom} theme="academy" />
     </div>
   );
 }
