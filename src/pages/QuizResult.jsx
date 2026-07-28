@@ -121,7 +121,7 @@ export default function QuizResult() {
 
   return (
     <div className="quizResultPage">
-      <button className="quizResultBack" onClick={() => navigate(`/subjects/quiz/${subjectId}`)}>
+      <button className="quizResultBack" onClick={() => navigate(-1)}>
         &lt; Back
       </button>
 
@@ -141,7 +141,7 @@ export default function QuizResult() {
       <div className="quizResultHeaderBtns">
         <button
           className="quizResultBackBtn"
-          onClick={() => navigate(`/subjects/quiz/${subjectId}`)}
+          onClick={() => navigate(-1)}
         >
           ← Back to Quizzes
         </button>

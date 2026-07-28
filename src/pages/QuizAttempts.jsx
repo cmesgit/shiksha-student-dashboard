@@ -56,7 +56,7 @@ export default function QuizAttempts() {
     <div className="quizResultPage">
       <button
         className="quizResultBack"
-        onClick={() => navigate(`/subjects/quiz/${subjectId}`)}
+        onClick={() => navigate(-1)}
       >
         &lt; Back to Quizzes
       </button>
