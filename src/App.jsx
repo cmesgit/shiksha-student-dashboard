@@ -55,6 +55,7 @@ import MyCourseDetail from "./pages/MyCourseDetail";
 import Progress from "./pages/Progress";
 import MyCourses from "./pages/MyCourses";
 import BrowseCourses from "./pages/BrowseCourses";
+import BlogFeed from "./pages/BlogFeed";
 import MyCounselling from "./pages/counselling/MyCounselling";
 import CounsellingAssessment from "./pages/counselling/CounsellingAssessment";
 
@@ -161,6 +162,7 @@ export default function App() {
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
               <Route path="my-courses/:courseId/progress" element={<Progress />} />
               <Route path="browse-courses" element={<BrowseCourses />} />
+              <Route path="blogs" element={<BlogFeed />} />
 
               {/* ── Counselling ──
                   /counseling/* (US spelling) matches the backend's

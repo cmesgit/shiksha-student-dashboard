@@ -21,6 +21,7 @@ export const ACAD_NAV = [
   { l: "Assignments", i: "file", to: "/assignments" },
   { l: "Quizzes", i: "help", to: "/subjects/quiz" },
   { l: "Study Material", i: "clip", to: "/study-material" },
+  { l: "Blogs", i: "book", to: "/blogs" },
   { section: "CONNECT" },
   { l: "Teachers", i: "grad", to: "/teachers" },
   { l: "Messages", i: "msg", to: "/chat" },
