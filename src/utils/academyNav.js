@@ -43,6 +43,26 @@ const MATCHERS = [...ACAD_NAV.filter((n) => n.l), ...EXTRA_TITLES]
   .slice()
   .sort((a, b) => b.to.length - a.to.length);
 
+// Sidebar highlighting needs the same "most specific sibling wins" rule as
+// the header title above, but the sidebar can't reuse MATCHERS as-is: it
+// must only ever pick ONE nav item (never EXTRA_TITLES, which aren't
+// rendered there) and must respect `end` so "Dashboard" (`/`, end: true)
+// doesn't swallow every other route. Without this, <NavLink>'s own
+// per-item matching (each item decides its own active state independently,
+// with no notion of a sibling being a more specific match) marks BOTH
+// "Subjects" (`/subjects`) and "Recordings"/"Quizzes" (`/subjects/recordings`,
+// `/subjects/quiz`) active at once, since the latter two never got their own
+// top-level path the way Assignments/Study Material did.
+const NAV_MATCHERS = ACAD_NAV.filter((n) => n.l).slice().sort((a, b) => b.to.length - a.to.length);
+
+/** Which ACAD_NAV item's `to` should be highlighted for this pathname. */
+export function activeNavTo(pathname) {
+  const hit = NAV_MATCHERS.find((n) =>
+    n.end ? pathname === n.to : pathname === n.to || pathname.startsWith(`${n.to}/`)
+  );
+  return hit ? hit.to : null;
+}
+
 function humanise(pathname) {
   const seg = pathname.split("/").filter(Boolean)[0];
   if (!seg) return "Dashboard";

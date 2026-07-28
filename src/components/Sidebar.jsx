@@ -21,7 +21,7 @@ import { useCourse } from "../contexts/CourseContext";
 import { useAuth } from "../contexts/AuthContext";
 import CourseSwitcher from "./CourseSwitcher";
 import NavIcon from "./NavIcon";
-import { ACAD_NAV } from "../utils/academyNav";
+import { ACAD_NAV, activeNavTo } from "../utils/academyNav";
 
 import { BiVideo } from "react-icons/bi";
 import { AiOutlineClose } from "react-icons/ai";
@@ -137,6 +137,11 @@ const initialsOf = (name) =>
 function AcademySidebar({ setMenuOpen }) {
   const { user, activeProfile } = useAuth();
   const { activeCourse } = useCourse();
+  const location = useLocation();
+  // Which single nav item should light up — see activeNavTo's own comment
+  // for why this can't be left to each <NavLink>'s own matching (Recordings/
+  // Quizzes live under /subjects/... and would light up alongside Subjects).
+  const activeTo = activeNavTo(location.pathname);
   const userName =
     activeProfile?.display_name || user?.name || user?.full_name ||
     user?.username || (user?.email ? user.email.split("@")[0] : "") || "Learner";
@@ -184,7 +189,10 @@ function AcademySidebar({ setMenuOpen }) {
               to={item.to}
               end={item.end}
               onClick={() => setMenuOpen(false)}
-              className="acad-side__item"
+              // Function form deliberately ignores the `isActive` NavLink
+              // would otherwise compute per-item — activeTo is the single
+              // shared source of truth instead (see activeNavTo).
+              className={() => `acad-side__item${item.to === activeTo ? " active" : ""}`}
             >
               <NavIcon name={item.i} size={14} />
               {item.l}
