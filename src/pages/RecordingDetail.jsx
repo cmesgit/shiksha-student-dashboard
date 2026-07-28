@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { LoadingState, EmptyState } from "../components/StateViews";
 import api from "../api/apiClient";
+import NotesViewModal from "../components/live/NotesViewModal";
 import "../styles/academyCommon.css";
 import "../styles/recordingDetail.css";
 
@@ -16,6 +17,7 @@ export default function RecordingDetail() {
   const [loading, setLoading]       = useState(true);
   const [startTime, setStartTime]   = useState(0);
   const [progressPct, setProgressPct] = useState(null);
+  const [showNotes, setShowNotes] = useState(false);
 
   const progressIntervalRef = useRef(null);
   const currentPositionRef  = useRef(0);
@@ -135,9 +137,18 @@ export default function RecordingDetail() {
         />
       ) : (
         <>
-          <div className="ac-page__head">
-            <h1 className="ac-page__title">{videoData.title}</h1>
-            <p className="ac-page__sub">{videoData.uploaded_by_name || "Teacher"}</p>
+          <div className="ac-page__headRow">
+            <div className="ac-page__head">
+              <h1 className="ac-page__title">{videoData.title}</h1>
+              <p className="ac-page__sub">{videoData.uploaded_by_name || "Teacher"}</p>
+            </div>
+            <button type="button" className="ac-linkbtn" onClick={() => setShowNotes(true)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <path d="M14 2v6h6M9 13h6M9 17h6" />
+              </svg>
+              My notes
+            </button>
           </div>
 
           <div className="recDetail__player">
@@ -192,6 +203,10 @@ export default function RecordingDetail() {
             </div>
           </div>
         </>
+      )}
+
+      {showNotes && (
+        <NotesViewModal sessionId={videoId} sessionType="recording" onClose={() => setShowNotes(false)} />
       )}
     </div>
   );
