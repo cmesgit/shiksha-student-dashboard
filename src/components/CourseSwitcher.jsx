@@ -14,6 +14,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useCourse } from "../contexts/CourseContext";
+import { courseTrack } from "../utils/trackFromCourses";
 
 /* The design's selector caret is a double chevron (up + down), 13px,
    stroke-width 2.4 — Academy Dashboard.dc.html line 576. */
@@ -53,8 +54,19 @@ export default function CourseSwitcher({ setMenuOpen }) {
 
   if (!activeCourse) return null;
 
-  const list = courses || [];
+  // This switcher only ever renders inside the Academy sidebar — a Skill Dev
+  // enrolment mixed into the list here would be confusing (it lives in a
+  // different app surface, SkillDevSidebar, with its own routes) and picking
+  // it would silently yank the learner into a track switch disguised as a
+  // course switch. Filter to the courses that actually belong on this screen.
+  const list = (courses || []).filter((c) => courseTrack(c) === "academy");
   const multiple = list.length > 1;
+  // activeCourse can technically be a Skill course while this sidebar is
+  // showing (a manual track override can outrun which course is selected) —
+  // fall back to the first Academy course for the label in that case rather
+  // than displaying a course this switcher's own list doesn't contain.
+  const displayCourse =
+    list.find((c) => c.id === activeCourse.id) || list[0] || activeCourse;
 
   const pick = (course) => {
     if (course.id !== activeCourse.id) selectCourse(course.id);
@@ -70,11 +82,11 @@ export default function CourseSwitcher({ setMenuOpen }) {
         onClick={() => multiple && setOpen((o) => !o)}
         aria-haspopup={multiple ? "listbox" : undefined}
         aria-expanded={multiple ? open : undefined}
-        title={activeCourse.title}
+        title={displayCourse.title}
       >
         <span className="acad-side__wellText">
           <span className="acad-side__wellLabel">Active course</span>
-          <span className="acad-side__wellValue">{activeCourse.title}</span>
+          <span className="acad-side__wellValue">{displayCourse.title}</span>
         </span>
         {multiple && <SwitchCaret />}
       </button>
@@ -86,8 +98,8 @@ export default function CourseSwitcher({ setMenuOpen }) {
               key={c.id}
               type="button"
               role="option"
-              aria-selected={c.id === activeCourse.id}
-              className={`acad-side__menuItem${c.id === activeCourse.id ? " is-active" : ""}`}
+              aria-selected={c.id === displayCourse.id}
+              className={`acad-side__menuItem${c.id === displayCourse.id ? " is-active" : ""}`}
               onClick={() => pick(c)}
             >
               {c.title}
