@@ -2,6 +2,7 @@ import { useTracks, VideoTrack, useRoomContext } from "@livekit/components-react
 import { Track } from "livekit-client";
 import LiveChatPanel from "./LiveChatPanel";
 import NotesPanel from "./NotesPanel";
+import Whiteboard from "./Whiteboard";
 import ControlBar from "./ControlBar";
 import React, { useState, useRef, useEffect } from "react";
 import "../../styles/live.css";
@@ -17,6 +18,7 @@ export default function PrivateClassroomUI({
   const [raisedHands, setRaisedHands] = useState({});
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
+  const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [, setTick] = useState(0);
   const bump = () => setTick((t) => t + 1);
 
@@ -166,7 +168,9 @@ export default function PrivateClassroomUI({
     >
       <div className="classroom-main">
         <div className="main-stage">
-          {mainTrack ? (
+          {whiteboardOpen ? (
+            <Whiteboard />
+          ) : mainTrack ? (
             <VideoTrack trackRef={mainTrack} />
           ) : (
             <div className="camera-off-tile" style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", color: "#cbd5e1", fontSize: 16 }}>
@@ -174,7 +178,8 @@ export default function PrivateClassroomUI({
             </div>
           )}
 
-          {/* Self-view: your own camera, always small */}
+          {/* Self-view: your own camera, always small — unaffected by the
+              whiteboard swap, same as it already is during screen-share. */}
           {selfTrack && (
             <div className="pip-camera">
               <VideoTrack trackRef={selfTrack} />
@@ -196,6 +201,8 @@ export default function PrivateClassroomUI({
           unrestricted={unrestricted}
           activePanel={activePanel}
           onTogglePanel={togglePanel}
+          whiteboardOpen={whiteboardOpen}
+          onToggleWhiteboard={() => setWhiteboardOpen((v) => !v)}
         />
       </div>
 

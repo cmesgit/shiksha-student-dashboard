@@ -141,3 +141,16 @@
   height: 100%;
   display: flex;
 }
+/* Lightweight page-load fade — pure CSS, no library. Keyed by route pathname
+   (see StudentLayout.jsx) so React remounts this wrapper on navigation and
+   the animation replays. */
+.page-fade {
+  animation: page-fade-in 180ms ease both;
+}
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-fade { animation: none; }
+}

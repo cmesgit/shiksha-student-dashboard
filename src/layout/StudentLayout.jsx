@@ -66,7 +66,7 @@ export default function StudentLayout() {
           toggleMenu={() => setMenuOpen(!menuOpen)}
           menuOpen={menuOpen}
         />
-        <div className="studentLayout__page" key={identityKey}>
+        <div className="studentLayout__page page-fade" key={`${identityKey}:${location.pathname}`}>
           <Breadcrumbs />
           <Outlet />
         </div>

@@ -16,6 +16,8 @@ export default function ControlBar({
   unrestricted = false,   // 1-on-1 skill call: no teacher-permission gating
   hideTimer = false,      // new conference redesign moves the timer into the sidebar
   hideRailToggle = false, // new conference redesign folds Info/People/Chat/Notes into sidebar tabs
+  whiteboardOpen = false,
+  onToggleWhiteboard = null,
 }) {
   const isStudent = role !== "PRESENTER";
   const gated = isStudent && !unrestricted;   // only group-class students are gated
@@ -425,6 +427,22 @@ export default function ControlBar({
             </svg>
             <span>Notes</span>
           </button>
+
+          {onToggleWhiteboard && (
+            <button
+              className={`cb-side-btn ${whiteboardOpen ? "cb-side-btn--active" : ""}`}
+              onClick={onToggleWhiteboard}
+              title="Whiteboard"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="12" rx="2"/>
+                <path d="M8 20h8"/>
+                <path d="M12 16v4"/>
+                <path d="M7 10l3 2 3-3 4 2.5"/>
+              </svg>
+              <span>Board</span>
+            </button>
+          )}
         </div>
       )}
     </div>
