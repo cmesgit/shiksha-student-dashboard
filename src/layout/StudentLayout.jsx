@@ -6,6 +6,7 @@ import Breadcrumbs from "../components/Breadcrumbs";
 import { useCourse } from "../contexts/CourseContext";
 import { useAuth } from "../contexts/AuthContext";
 import useSwipeBack from "../utils/useSwipeBack";
+import { SkillToastProvider } from "../components/SkillToast";
 import "../styles/studentLayout.css";
 
 export default function StudentLayout() {
@@ -68,7 +69,13 @@ export default function StudentLayout() {
         />
         <div className="studentLayout__page page-fade" key={`${identityKey}:${location.pathname}`}>
           <Breadcrumbs />
-          <Outlet />
+          {/* Mounted app-wide (this layout serves both Academy and Skill
+              tracks, no separate Skill Dev layout component exists here)
+              rather than adding a new wrapper — Academy pages simply never
+              call useSkillToast(). */}
+          <SkillToastProvider>
+            <Outlet />
+          </SkillToastProvider>
         </div>
       </div>
     </div>

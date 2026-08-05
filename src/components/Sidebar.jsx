@@ -25,7 +25,7 @@ import { ACAD_NAV, activeNavTo } from "../utils/academyNav";
 
 import { BiVideo } from "react-icons/bi";
 import { AiOutlineClose } from "react-icons/ai";
-import { FiHome, FiSearch, FiLayout, FiMessageCircle, FiStar } from "react-icons/fi";
+import { FiHome, FiSearch, FiLayout, FiMessageCircle, FiStar, FiBookOpen } from "react-icons/fi";
 import { HOME_URL } from "../config/urls";
 
 /* ── Skill Dev design tokens ─────────────────────────────────────── */
@@ -42,21 +42,17 @@ const SD = {
   MP: '"Poppins", system-ui, sans-serif',
 };
 
-/* Skill Dev sidebar nav */
+/* Skill Dev sidebar nav — flat list matching design_handoff_skilldev's own
+   nav exactly (Dashboard, Explore experts, My courses, My sessions,
+   Messages, Reviews); no section dividers, unlike the Academy sidebar.
+   Booking/profile pages are reached contextually, not from here. */
 const SD_NAV = [
-  { id: "dash",     label: "Skill Dashboard", Icon: FiLayout,        to: "/"                    },
-
-  { section: "LIVE 1-ON-1" },
-  { id: "sessions", label: "My Sessions",     Icon: BiVideo,         to: "/skill-dev/sessions"  },
-
-  { section: "DISCOVER" },
-  // Booking now happens inside Explore (pick a tutor → book), so there is no
-  // separate "Book a Tutor" nav item.
-  { id: "explore",  label: "Explore",         Icon: FiSearch,        to: "/skill-dev/explore"   },
-  { id: "reviews",  label: "My Reviews",      Icon: FiStar,          to: "/skill-dev/reviews"   },
-
-  { section: "COMMUNICATE" },
+  { id: "dash",     label: "Dashboard",       Icon: FiLayout,        to: "/"                    },
+  { id: "explore",  label: "Explore experts", Icon: FiSearch,        to: "/skill-dev/explore"   },
+  { id: "courses",  label: "My courses",      Icon: FiBookOpen,      to: "/skill-dev/courses"   },
+  { id: "sessions", label: "My sessions",     Icon: BiVideo,         to: "/skill-dev/sessions"  },
   { id: "messages", label: "Messages",        Icon: FiMessageCircle, to: "/skill-messages"      },
+  { id: "reviews",  label: "Reviews",         Icon: FiStar,          to: "/skill-dev/reviews"   },
 ];
 
 /* ── Skill Dev sidebar ───────────────────────────────────────────── */

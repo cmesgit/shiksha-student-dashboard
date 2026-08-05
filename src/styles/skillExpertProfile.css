@@ -1,0 +1,172 @@
+/* src/styles/skillExpertProfile.css — design_handoff_skilldev README "3. Expert profile" */
+
+.sep-screen {
+  padding: 24px 22px 40px;
+  max-width: 1080px;
+  margin: 0 auto;
+  animation: fadeUp .35s ease both;
+}
+
+.sep-back {
+  all: unset;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  margin-bottom: 16px;
+  display: inline-block;
+}
+.sep-back:hover { color: var(--ink); }
+
+.sep-cols {
+  display: grid;
+  grid-template-columns: 1fr 330px;
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  .sep-cols { grid-template-columns: 1fr; }
+}
+
+.sep-heroCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.sep-video {
+  position: relative;
+  aspect-ratio: 16 / 7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.sep-videoFrame { width: 100%; height: 100%; border: none; }
+.sep-videoPill {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  color: #fff;
+  background: rgba(0,0,0,.4);
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+}
+.sep-videoPill--top { top: 10px; left: 10px; }
+.sep-playDisc {
+  all: unset;
+  cursor: pointer;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: var(--skill);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,.25);
+}
+.sep-heroBody { padding: 20px 22px; }
+.sep-heroName {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 21px;
+  color: var(--ink);
+  margin-top: 12px;
+}
+.sep-heroTitle { font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
+.sep-ratingRow { font-size: 12.5px; color: var(--ink); margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+.sep-reviewsCount { color: var(--ink-faint); }
+
+.sep-statGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+  border-top: 1px solid var(--divider);
+  padding-top: 16px;
+}
+.sep-statValue { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--ink); }
+.sep-statLabel { font-size: 10.5px; color: var(--ink-muted); margin-top: 2px; }
+
+.sep-h {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--ink);
+  margin: 22px 0 8px;
+}
+.sep-about { font-size: 12.5px; line-height: 1.7; color: var(--ink-2); margin: 0 0 8px; text-wrap: pretty; }
+
+.sep-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.sep-pill {
+  background: var(--skill-soft);
+  border: 1px solid var(--skill-border);
+  color: var(--sk-accent-text-on-tint);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+}
+
+.sep-timeline { display: flex; flex-direction: column; gap: 14px; }
+.sep-timelineRow { display: grid; grid-template-columns: 96px 1fr; gap: 12px; }
+.sep-timelineYears { font-size: 11.5px; font-weight: 700; color: var(--ink-muted); }
+.sep-timelineRole { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.sep-timelineDetail { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+
+/* ── Right rail ── */
+.sep-rail { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 12px; align-self: start; }
+.sep-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+.sep-card--tint { background: var(--skill-soft); border-color: var(--skill-border); }
+.sep-cardTitle { font-family: var(--font-display); font-weight: 800; font-size: 13.5px; color: var(--ink); margin: 0 0 4px; }
+.sep-cardSub { font-size: 11px; color: var(--ink-muted); margin: 0 0 12px; }
+
+.sep-dayRow { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; gap: 8px; }
+.sep-dayLabel { font-size: 11.5px; font-weight: 700; color: var(--ink-muted); flex-shrink: 0; width: 54px; }
+.sep-dayPills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.sep-timePill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: var(--r-pill);
+  background: var(--skill-soft);
+  color: var(--skill-ink);
+  border: 1px solid var(--skill-border);
+  cursor: pointer;
+}
+.sep-timePill:hover { background: var(--skill); color: #fff; }
+.sep-notFree { font-size: 11px; font-style: italic; color: var(--sk-meta-faint); }
+
+.sep-priceRow { display: flex; align-items: baseline; gap: 6px; margin-bottom: 14px; }
+.sep-price { font-family: var(--font-display); font-weight: 900; font-size: 24px; color: var(--ink); }
+.sep-priceUnit { font-size: 12px; color: var(--ink-muted); }
+
+.sep-btn {
+  width: 100%;
+  border: none;
+  border-radius: var(--r-md);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 11px 0;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.sep-btn--primary { background: var(--skill); color: #fff; }
+.sep-btn--primary:hover { background: var(--skill-hover); }
+.sep-btn--secondary { background: var(--surface-muted); color: var(--ink-2); }
+.sep-btn--secondary:disabled { opacity: .5; cursor: not-allowed; }
+
+.sep-facts { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.sep-facts > div { display: flex; justify-content: space-between; font-size: 11.5px; }
+.sep-facts span { color: var(--ink-muted); }
+.sep-facts b { color: var(--ink); font-weight: 600; }
+
+.sep-empty { text-align: center; padding: 60px; color: var(--ink-muted); }

@@ -2,8 +2,8 @@
 // Small shared bits used across the Skill Dev views.
 
 import { Icon } from "./skillIcons";
+import { avatarColor } from "./skillColors";
 
-const PAL = ["#0a808a", "#9c27b0", "#d97706", "#6b2410", "#b3402e", "#b3402e", "#5b6ee0"];
 const initials = (name = "") =>
   name.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
@@ -13,7 +13,7 @@ export function Avatar({ name = "", img, size = 44, radius, circle = false }) {
   if (img) {
     return <img src={img} alt="" style={{ width: size, height: size, borderRadius: r, objectFit: "cover", flexShrink: 0 }} />;
   }
-  const bg = PAL[(name.charCodeAt(0) + name.length) % PAL.length];
+  const bg = avatarColor(name);
   return (
     <div style={{ width: size, height: size, borderRadius: r, background: bg, color: "#fff",
       display: "grid", placeItems: "center", fontWeight: 800, fontFamily: "var(--font-head, Montserrat)",

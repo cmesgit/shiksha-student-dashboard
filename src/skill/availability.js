@@ -38,6 +38,12 @@ export function dateLabels() {
   });
 }
 
+/** Short day-header labels, e.g. "Mon 20" — matches the design's Free-times
+ *  day-row headers (no month shown there, unlike dateLabels() above). */
+export function shortDayLabels() {
+  return DAYS.map((n, i) => `${n} ${nextOccurrence(i).getDate()}`);
+}
+
 /** True when the slot is TODAY's column but its hour has already passed —
  *  shown as unavailable so the header date is never a lie. */
 export function isPastToday(di, si) {
@@ -52,4 +58,4 @@ export function label(k) {
   return `${ds} \u00b7 ${SLOTS[si] ?? "?"}`;
 }
 
-export default { DAYS, SLOTS, SLOT_HOURS, dateLabels, isPastToday, label };
+export default { DAYS, SLOTS, SLOT_HOURS, dateLabels, shortDayLabels, isPastToday, label };

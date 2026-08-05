@@ -4,9 +4,8 @@
    (rd-card, sp-card, sp-thumb, sp-mod, slot, pack) don't collide with
    studentDash.css. Accent is the learner orange via --acc.
 
-   Brand fonts (optional): the views fall back gracefully, but for full
-   fidelity import Montserrat + Poppins once in your app:
-   @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap");
+   Montserrat (400/600/700/800/900) + Poppins (400/500/600/700) are already
+   loaded app-wide via index.html — no per-file @import needed here.
 */
 
 .rd-card {

@@ -378,7 +378,7 @@
   color: var(--primary);
   transition: background .15s, border-color .15s, color .15s;
 }
-.ac-btn:hover { background: var(--academy-soft); }
+.ac-btn:hover { background: var(--acc-soft); }
 .ac-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .ac-btn:disabled { cursor: default; color: var(--ink-faint); border-color: var(--border); background: var(--surface); }
 
@@ -387,7 +387,7 @@
   border-color: var(--primary);
   color: #fff;
 }
-.ac-btn--primary:hover { background: #35506c; border-color: #35506c; }
+.ac-btn--primary:hover { background: var(--action-hover); border-color: var(--action-hover); }
 
 .ac-btn--success {
   background: var(--success);
@@ -445,7 +445,7 @@
   border: 1px solid var(--primary);
   color: var(--primary);
 }
-.ac-headBtn--outline:hover { background: var(--academy-soft); }
+.ac-headBtn--outline:hover { background: var(--acc-soft); }
 
 /* Small icon-only action (e.g. row-level download). */
 .ac-btn__icon { flex-shrink: 0; }
@@ -559,7 +559,7 @@
   color: var(--primary);
   transition: background .15s, border-color .15s;
 }
-.ac-cardBtn:hover:not(:disabled) { background: var(--academy-soft); }
+.ac-cardBtn:hover:not(:disabled) { background: var(--acc-soft); }
 .ac-cardBtn:disabled { cursor: default; color: var(--ink-faint); border-color: var(--border); }
 .ac-cardBtn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 

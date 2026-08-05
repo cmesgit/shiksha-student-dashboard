@@ -11,10 +11,6 @@
  *   live page, which 404s on a skill-session id). The live page performs the
  *   POST /skill/sessions/<id>/join/ handshake.
  *
- * NOTE: the "Cancel this request" button posts to /skill/sessions/<id>/cancel/,
- * which has no backend route yet (there is no student-side cancel endpoint —
- * only the teacher-side decline). It fails gracefully with an alert. Add a
- * StudentCancelSessionView + url if you want learner-initiated cancellation.
  */
 
 import { useState, useEffect } from "react";

@@ -1,0 +1,115 @@
+/* src/styles/skillSessions.css — design_handoff_skilldev README "6. My sessions" */
+
+.ss-screen {
+  padding: 24px 22px 40px;
+  max-width: 900px;
+  margin: 0 auto;
+  animation: fadeUp .35s ease both;
+}
+
+.ss-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-page-title);
+  color: var(--ink);
+  margin: 0 0 16px;
+}
+
+.ss-seg {
+  display: inline-flex;
+  background: var(--toggle-track);
+  border-radius: var(--r-pill);
+  padding: 3px;
+  margin-bottom: 18px;
+}
+.ss-seg__btn {
+  all: unset;
+  cursor: pointer;
+  padding: 7px 18px;
+  border-radius: var(--r-pill);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+.ss-seg__btn.is-active { background: var(--skill); color: #fff; }
+
+.ss-rowWrap { margin-bottom: 10px; }
+.ss-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ss-topic { font-family: var(--font-display); font-weight: 700; font-size: 13.5px; color: var(--ink); }
+.ss-meta { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+
+.ss-tag {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  flex-shrink: 0;
+}
+.ss-tag--requested { color: var(--st-requested); background: var(--st-requested-bg); }
+.ss-tag--confirmed { color: var(--st-confirmed); background: var(--st-confirmed-bg); }
+
+.ss-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.ss-btn {
+  border: none;
+  border-radius: var(--r-md);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 8px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.ss-btn:disabled { opacity: .5; cursor: not-allowed; }
+.ss-btn--primary { background: var(--skill); color: #fff; }
+.ss-btn--primary:hover:not(:disabled) { background: var(--skill-hover); }
+.ss-btn--live { background: var(--danger); color: #fff; }
+.ss-btn--outline { background: var(--surface); border: 1px solid var(--border); color: var(--ink-2); }
+.ss-reviewedTag { font-size: 11.5px; font-weight: 700; color: var(--success); display: inline-flex; align-items: center; gap: 5px; }
+
+.ss-reschedPanel {
+  background: var(--skill-soft);
+  border: 1px solid var(--skill-border);
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  padding: 12px 16px;
+  margin-top: -1px;
+}
+.ss-reschedTitle { font-size: 10.5px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: var(--sk-accent-text-on-tint); margin-bottom: 4px; }
+.ss-reschedLine { font-size: 12.5px; color: var(--ink); }
+.ss-reschedReason { font-size: 12px; color: var(--ink-muted); font-style: italic; margin-top: 4px; }
+.ss-reschedActions { display: flex; gap: 8px; margin-top: 10px; }
+
+.ss-empty { text-align: center; padding: 40px; color: var(--ink-muted); font-size: 13px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+.ss-link { all: unset; cursor: pointer; color: var(--skill-ink); font-weight: 600; }
+
+/* ── Review modal ── */
+.ss-reviewSub { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 4px; }
+.ss-starPicker { display: flex; gap: 4px; margin: 12px 0; }
+.ss-starBtn { all: unset; cursor: pointer; font-size: 28px; color: var(--border-strong); }
+.ss-starBtn.is-filled { color: var(--skill); }
+.ss-reviewInput {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  resize: vertical;
+}
+.ss-reviewErr { margin-top: 8px; font-size: 12px; color: var(--danger); font-weight: 600; }
+.ss-reviewActions { display: flex; gap: 8px; margin-top: 14px; }
+.ss-reviewActions .ss-btn { flex: 1; justify-content: center; padding: 10px 0; }
