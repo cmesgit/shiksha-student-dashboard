@@ -32,10 +32,11 @@
 .smc-masteredPill {
   background: var(--success);
   color: #fff;
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 800;
   letter-spacing: .4px;
-  padding: 2px 8px;
+  text-transform: uppercase;
+  padding: 3px 9px;
   border-radius: var(--r-pill);
 }
 
@@ -48,6 +49,7 @@
   font-size: 12.5px;
   padding: 10px 0;
   cursor: pointer;
+  transition: all .15s ease;
 }
 .smc-btn--primary { background: var(--skill); color: #fff; }
 .smc-btn--primary:hover { background: var(--skill-hover); }

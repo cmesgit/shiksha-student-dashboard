@@ -17,14 +17,19 @@ export default function MasteryBar({
     : mastered ? "var(--success-border)" : "var(--skill-border)";
   const fill = variant === "hero" ? "var(--skill)"
     : mastered ? "var(--success)" : "var(--skill-ink)";
+  // Card variant renders standalone on a plain white course card, so it needs
+  // its own tinted panel — the hero variant already sits inside one
+  // (Dashboard's amber "Book another session" card) and would double up.
+  const labelColor = mastered ? "var(--sk-success-deep)" : "var(--sk-accent-text-on-tint)";
 
-  return (
+  const bar = (
     <div>
       <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "baseline",
-        marginBottom: 6, fontSize: 11.5, fontWeight: 700, color: "var(--ink-muted)",
+        marginBottom: 6, fontSize: 10.5, fontWeight: 700, whiteSpace: "nowrap",
+        color: variant === "card" ? labelColor : "var(--ink-muted)",
       }}>
-        <span>{progress} of {target}</span>
+        <span>{progress}/{target} sessions</span>
       </div>
       <div style={{
         height, borderRadius: "var(--r-pill)", background: track, overflow: "hidden",
@@ -36,10 +41,23 @@ export default function MasteryBar({
       </div>
       {sentence && (
         <p style={{
-          margin: "8px 0 0", fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-2)",
+          margin: "7px 0 0", fontSize: 11, fontWeight: 600, lineHeight: 1.45,
+          color: variant === "card" ? labelColor : "var(--ink-2)",
           textWrap: "pretty",
         }}>{sentence}</p>
       )}
+    </div>
+  );
+
+  if (variant !== "card") return bar;
+
+  return (
+    <div style={{
+      background: mastered ? "var(--success-soft)" : "var(--skill-soft)",
+      border: `1px solid ${mastered ? "var(--success-border)" : "var(--skill-border)"}`,
+      borderRadius: 12, padding: "11px 12px",
+    }}>
+      {bar}
     </div>
   );
 }

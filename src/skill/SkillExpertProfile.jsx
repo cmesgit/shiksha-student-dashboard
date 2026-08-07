@@ -152,12 +152,13 @@ export default function SkillExpertProfile() {
             })}
           </div>
 
-          <div className="sep-card sep-card--tint">
-            <MasteryBar
-              progress={progress} target={t.mastery_target} mastered={false} variant="card"
-              sentence={`Complete ${t.mastery_target} sessions with ${t.name.split(" ")[0]} to master ${t.title}`}
-            />
-          </div>
+          {/* MasteryBar's "card" variant already renders its own tinted panel
+              (design_handoff_skilldev's amber "mastery" panel) — no outer
+              .sep-card--tint wrapper needed, that would double-tint. */}
+          <MasteryBar
+            progress={progress} target={t.mastery_target} mastered={false} variant="card"
+            sentence={`Complete ${t.mastery_target} sessions with ${t.name.split(" ")[0]} to master ${t.title}`}
+          />
 
           <div className="sep-card">
             <div className="sep-priceRow">

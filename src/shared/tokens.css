@@ -223,8 +223,11 @@
   --acc-ink:    var(--skill-ink);
   --acc-soft:   var(--skill-soft);
   --acc-border: var(--skill-border);
-  /* Skill Dev keeps its own dark-orange chrome. */
-  --side-bg:     #431407;
+  /* design_handoff_skilldev: sidebar/ink is #425f7f on both dashboards —
+     matches the shared --primary, so no override needed for --side-bg.
+     Kept explicit here (rather than just deleting) so the intent survives
+     the next person's grep. */
+  --side-bg:     #425f7f;
   --side-accent: #ff8f01;
 
   /* design_handoff_skilldev: the redesign's single brand accent (#ff8f01) is

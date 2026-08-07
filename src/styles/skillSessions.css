@@ -71,6 +71,7 @@
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  transition: all .15s ease;
 }
 .ss-btn:disabled { opacity: .5; cursor: not-allowed; }
 .ss-btn--primary { background: var(--skill); color: #fff; }
@@ -92,14 +93,14 @@
 .ss-reschedReason { font-size: 12px; color: var(--ink-muted); font-style: italic; margin-top: 4px; }
 .ss-reschedActions { display: flex; gap: 8px; margin-top: 10px; }
 
-.ss-empty { text-align: center; padding: 40px; color: var(--ink-muted); font-size: 13px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+.ss-empty { text-align: center; padding: 26px; color: var(--sk-meta); font-size: 12.5px; border: 1px dashed var(--border); border-radius: 14px; }
 .ss-link { all: unset; cursor: pointer; color: var(--skill-ink); font-weight: 600; }
 
 /* ── Review modal ── */
 .ss-reviewSub { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 4px; }
 .ss-starPicker { display: flex; gap: 4px; margin: 12px 0; }
 .ss-starBtn { all: unset; cursor: pointer; font-size: 28px; color: var(--border-strong); }
-.ss-starBtn.is-filled { color: var(--skill); }
+.ss-starBtn.is-filled { color: var(--skill-ink); }
 .ss-reviewInput {
   width: 100%;
   box-sizing: border-box;

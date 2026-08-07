@@ -48,6 +48,7 @@
   font-size: 9px;
   font-weight: 800;
   letter-spacing: .4px;
+  text-transform: uppercase;
   color: #fff;
   background: rgba(0,0,0,.4);
   padding: 3px 8px;
@@ -65,7 +66,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(0,0,0,.25);
 }
 .sep-heroBody { padding: 20px 22px; }
 .sep-heroName {
@@ -76,7 +76,7 @@
   margin-top: 12px;
 }
 .sep-heroTitle { font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
-.sep-ratingRow { font-size: 12.5px; color: var(--ink); margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+.sep-ratingRow { font-size: 12.5px; color: var(--skill-ink); font-weight: 700; margin-top: 8px; display: flex; align-items: center; gap: 4px; }
 .sep-reviewsCount { color: var(--ink-faint); }
 
 .sep-statGrid {
@@ -124,7 +124,6 @@
   border-radius: 16px;
   padding: 18px 20px;
 }
-.sep-card--tint { background: var(--skill-soft); border-color: var(--skill-border); }
 .sep-cardTitle { font-family: var(--font-display); font-weight: 800; font-size: 13.5px; color: var(--ink); margin: 0 0 4px; }
 .sep-cardSub { font-size: 11px; color: var(--ink-muted); margin: 0 0 12px; }
 
@@ -137,9 +136,10 @@
   padding: 4px 9px;
   border-radius: var(--r-pill);
   background: var(--skill-soft);
-  color: var(--skill-ink);
+  color: var(--sk-accent-text-on-tint);
   border: 1px solid var(--skill-border);
   cursor: pointer;
+  transition: all .15s ease;
 }
 .sep-timePill:hover { background: var(--skill); color: #fff; }
 .sep-notFree { font-size: 11px; font-style: italic; color: var(--sk-meta-faint); }
@@ -158,9 +158,10 @@
   padding: 11px 0;
   cursor: pointer;
   margin-bottom: 8px;
+  transition: all .15s ease;
 }
 .sep-btn--primary { background: var(--skill); color: #fff; }
-.sep-btn--primary:hover { background: var(--skill-hover); }
+.sep-btn--primary:hover { background: var(--skill-hover); transform: translateY(-2px); }
 .sep-btn--secondary { background: var(--surface-muted); color: var(--ink-2); }
 .sep-btn--secondary:disabled { opacity: .5; cursor: not-allowed; }
 

@@ -35,19 +35,19 @@
 .sr-date { font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
 
 .sr-body { margin-top: 8px; }
-.sr-stars { color: var(--skill); font-size: 13px; letter-spacing: 1px; }
+.sr-stars { color: var(--skill-ink); font-size: 13px; letter-spacing: 1px; }
 .sr-starsEmpty { color: var(--border-strong); }
 .sr-bodyText { font-size: 13px; color: var(--ink-2); line-height: 1.6; margin: 6px 0 0; text-wrap: pretty; }
 
 .sr-rowActions { display: flex; gap: 14px; margin-top: 10px; }
-.sr-link { all: unset; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.sr-link { all: unset; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--ink-muted); transition: color .15s ease; }
 .sr-link:hover { color: var(--ink); }
 .sr-link--danger { color: var(--danger); }
 
 .sr-editArea { margin-top: 10px; }
 .sr-starPicker { display: flex; gap: 4px; }
 .sr-starBtn { all: unset; cursor: pointer; font-size: 22px; line-height: 1; color: var(--border-strong); }
-.sr-starBtn.is-filled { color: var(--skill); }
+.sr-starBtn.is-filled { color: var(--skill-ink); }
 .sr-textarea {
   width: 100%;
   box-sizing: border-box;
@@ -79,6 +79,7 @@
   font-size: 12.5px;
   padding: 8px 16px;
   cursor: pointer;
+  transition: all .15s ease;
 }
 .sr-btn:disabled { opacity: .6; cursor: not-allowed; }
 .sr-btn--primary { background: var(--skill); color: #fff; }
@@ -87,10 +88,9 @@
 
 .sr-empty {
   text-align: center;
-  padding: 40px;
-  color: var(--ink-muted);
-  font-size: 13px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  padding: 26px;
+  color: var(--sk-meta);
+  font-size: 12.5px;
+  border: 1px dashed var(--border);
   border-radius: 14px;
 }
