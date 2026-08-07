@@ -43,6 +43,10 @@
   align-items: center;
   gap: 12px;
 }
+/* .ss-reschedPanel glues directly under this row (border-top:none, margin-top:
+   -1px) to read as one continuous card — flatten the row's own bottom corners
+   to match, otherwise its 14px curve pokes past the panel's square top edge. */
+.ss-row--resched { border-radius: 14px 14px 0 0; }
 .ss-topic { font-family: var(--font-display); font-weight: 700; font-size: 13.5px; color: var(--ink); }
 .ss-meta { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
 

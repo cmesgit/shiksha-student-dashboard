@@ -110,7 +110,7 @@ export default function SkillSessions({ setTab = () => {} }) {
         </div>
       ) : rows.map((s) => (
         <div className="ss-rowWrap" key={s.id}>
-          <div className="ss-row">
+          <div className={`ss-row${tab === "upcoming" && reschedule && reschedule.id === s.id ? " ss-row--resched" : ""}`}>
             <Avatar name={s.expert_name} img={s.expert_img} size={44} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="ss-topic">{s.topic}</div>

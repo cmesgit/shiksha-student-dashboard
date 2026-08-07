@@ -29,15 +29,21 @@ import { FiHome, FiSearch, FiLayout, FiMessageCircle, FiStar, FiBookOpen } from 
 import { HOME_URL } from "../config/urls";
 
 /* ── Skill Dev design tokens ─────────────────────────────────────── */
+// design_handoff_skilldev: sidebar/ink is #425f7f, logo tile is the brand
+// accent, "Skill Dev" subtitle is accentLight — all already correct in
+// shared/tokens.css's [data-track="skill"] block (`.studentLayout` carries
+// data-track), so this reads the same tokens instead of re-stating them as
+// literals that can silently drift from the CSS (as `bg`/`forest`/`brand`
+// had: they were still the pre-redesign dark-orange chrome).
 const SD = {
-  bg:      "#431407",
-  bgItem:  "#ff8f01",
-  border:  "rgba(255,255,255,.08)",
-  txt:     "rgba(255,255,255,.62)",
+  bg:      "var(--side-bg)",
+  bgItem:  "var(--acc)",
+  border:  "var(--side-sep)",
+  txt:     "var(--side-ink-2)",
   txtOn:   "#fff",
-  section: "rgba(255,255,255,.28)",
-  brand:   "#ff8f01",
-  forest:  "#6b2410",
+  section: "var(--side-ink-4)",
+  brand:   "var(--sk-accent-light)",
+  forest:  "var(--acc)",
   MH: '"Montserrat", system-ui, sans-serif',
   MP: '"Poppins", system-ui, sans-serif',
 };
