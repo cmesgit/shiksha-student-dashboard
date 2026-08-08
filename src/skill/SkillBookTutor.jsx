@@ -15,7 +15,7 @@
 
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Avatar, StarRow } from "./skillUI";
+import { Avatar, StarRow } from "./SkillUI";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingState } from "../components/StateViews";
 import * as AV from "./availability";

@@ -11,8 +11,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Icon } from "./skillIcons";
-import { Avatar, StarRow } from "./skillUI";
-import { avatarColor } from "./skillColors";
+import { Avatar, StarRow } from "./SkillUI";
+import { avatarColor } from "./SkillUI";
 import MasteryBar from "../components/MasteryBar";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingState } from "../components/StateViews";

@@ -8,7 +8,7 @@
 // DELETE /skill/my-reviews/<id>/         → permanent delete
 
 import { useState, useEffect } from "react";
-import { Avatar } from "./skillUI";
+import { Avatar } from "./SkillUI";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingState } from "../components/StateViews";
 import { useSkillToast } from "../components/useSkillToast";

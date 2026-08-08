@@ -8,7 +8,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Avatar } from "./skillUI";
+import { Avatar } from "./SkillUI";
 import MasteryBar from "../components/MasteryBar";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingState } from "../components/StateViews";

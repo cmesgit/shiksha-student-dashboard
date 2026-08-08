@@ -17,7 +17,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingState } from "./StateViews";
-import { Avatar, StarRow } from "../skill/skillUI";
+import { Avatar, StarRow } from "../skill/SkillUI";
 import MasteryBar from "./MasteryBar";
 import "../styles/skillDevDashboard.css";
 

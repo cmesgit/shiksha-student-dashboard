@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "./skillIcons";
-import { Avatar } from "./skillUI";
+import { Avatar } from "./SkillUI";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingState } from "../components/StateViews";
 import SkillReviewModal from "../components/SkillReviewModal";
