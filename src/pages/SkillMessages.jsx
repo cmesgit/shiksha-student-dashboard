@@ -42,7 +42,7 @@ export default function SkillMessages() {
 
   return (
     <div style={{ padding: "20px", height: "calc(100vh - 80px)", boxSizing: "border-box" }}>
-      <ChatPanel directTo={directTo} initialDraft={draft} />
+      <ChatPanel directTo={directTo} initialDraft={draft} theme="skill" />
     </div>
   );
 }
