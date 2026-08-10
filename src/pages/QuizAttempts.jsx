@@ -2,11 +2,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../api/apiClient";
 import { LoadingState } from "../components/StateViews";
+import { useToast } from "../contexts/ToastContext";
 import "../styles/quiz.css";
 
 export default function QuizAttempts() {
   const navigate = useNavigate();
   const { subjectId, quizId } = useParams();
+  const { showToast } = useToast();
 
   const [attempts, setAttempts] = useState([]);
   const [quizTitle, setQuizTitle] = useState("");
@@ -43,7 +45,7 @@ export default function QuizAttempts() {
       navigate(`/subjects/quiz/${subjectId}/${path}/${quizId}`);
     } catch (err) {
       const msg = err.response?.data?.detail || "Unable to start reattempt.";
-      alert(msg);
+      showToast({ type: "error", message: msg });
     } finally {
       setStarting(false);
     }

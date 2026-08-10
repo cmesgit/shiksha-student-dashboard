@@ -16,6 +16,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 
 const T = {
   forest:    "#6b2410",
@@ -138,6 +139,7 @@ export default function SkillSessionDetail() {
   const { id }   = useParams();
   const navigate = useNavigate();
   const { api }  = useAuth();
+  const { showToast } = useToast();
 
   const [session,    setSession]    = useState(null);
   const [loading,    setLoading]    = useState(true);
@@ -169,7 +171,7 @@ export default function SkillSessionDetail() {
       await api.post(`/skill/sessions/${id}/cancel/`);
       setSession(s => ({ ...s, status: "cancelled" }));
     } catch {
-      alert("Could not cancel. Please try again.");
+      showToast({ type: "error", message: "Could not cancel. Please try again." });
     } finally {
       setCancelling(false);
     }

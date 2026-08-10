@@ -115,6 +115,7 @@ export default function LiveSessionDetail() {
       connect={true}
       video={data.role === "PRESENTER"}
       audio={true}
+      onError={(err) => setError(err?.message || "Lost connection to the session.")}
     >
       <ReconnectingBanner />
       <ClassroomUI role={data.role} sessionId={id} onLeave={handleControlBarLeave} />

@@ -1,12 +1,11 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { LoadingState, EmptyState } from "../components/StateViews";
+import { LoadingState, EmptyState, ErrorState } from "../components/StateViews";
 import api from "../api/apiClient";
 import NotesViewModal from "../components/live/NotesViewModal";
+import { BUNNY_LIBRARY_ID } from "../config/urls";
 import "../styles/academyCommon.css";
 import "../styles/recordingDetail.css";
-
-const LIBRARY_ID = import.meta.env.VITE_BUNNY_LIBRARY_ID;
 const SAVE_INTERVAL_MS = 15000; // save progress every 15 seconds
 
 export default function RecordingDetail() {
@@ -153,14 +152,21 @@ export default function RecordingDetail() {
 
           <div className="recDetail__player">
             <div className="recDetail__video" ref={playerWrapRef}>
-              <iframe
-                src={`https://iframe.mediadelivery.net/embed/${LIBRARY_ID}/${videoData.bunny_video_id}?autoplay=false&start=${startTime}`}
-                loading="lazy"
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                allowFullScreen
-                className="recDetail__videoElement"
-                title={videoData.title}
-              />
+              {BUNNY_LIBRARY_ID ? (
+                <iframe
+                  src={`https://iframe.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${videoData.bunny_video_id}?autoplay=false&start=${startTime}`}
+                  loading="lazy"
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+                  allowFullScreen
+                  className="recDetail__videoElement"
+                  title={videoData.title}
+                />
+              ) : (
+                <ErrorState
+                  title="Playback isn't configured"
+                  message="This recording can't be played right now — the video library isn't set up. Contact support."
+                />
+              )}
               <button
                 type="button"
                 className="recDetail__fullscreenBtn"

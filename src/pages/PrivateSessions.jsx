@@ -12,6 +12,7 @@ import { statusLabel, statusTone } from "../utils/sessionStatus";
 import "../styles/academyScreens.css";
 import { LoadingState } from "../components/StateViews";
 import NotesViewModal from "../components/live/NotesViewModal";
+import { useToast } from "../contexts/ToastContext";
 import "../styles/privateSessions.css";
 
 /* ═══════════════════════════════════════════════════════════
@@ -560,6 +561,7 @@ function RequestedCard({ item, onClick }) {
    REQUESTS TAB
 ═══════════════════════════════════════════════════════════ */
 function RequestsTab({ onUnreadChange, searchTerm = "", registerRefresh, forceOpenForm, onForceOpenFormHandled }) {
+  const { showToast } = useToast();
   const [requests, setRequests] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -608,7 +610,7 @@ function RequestsTab({ onUnreadChange, searchTerm = "", registerRefresh, forceOp
       setShowForm(false);
       loadRequests();
     } catch (err) {
-      alert(err?.response?.data?.error || "Failed to submit request. Please try again.");
+      showToast({ type: "error", message: err?.response?.data?.error || "Failed to submit request. Please try again." });
     }
   };
 

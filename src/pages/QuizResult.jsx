@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
 import { LoadingState } from "../components/StateViews";
+import { useToast } from "../contexts/ToastContext";
 import "../styles/quiz.css";
 import "../styles/quiz-result-analytics.css";
 
@@ -51,6 +52,7 @@ export default function QuizResult() {
   const { subjectId, quizId } = useParams();
   const [searchParams] = useSearchParams();
   const attemptId = searchParams.get("attempt");
+  const { showToast } = useToast();
 
   const [resultData, setResultData]       = useState(null);
   const [loading, setLoading]             = useState(true);
@@ -70,7 +72,7 @@ export default function QuizResult() {
       navigate(`/subjects/quiz/${subjectId}/${path}/${quizId}`);
     } catch (err) {
       console.error("Failed to reattempt quiz:", err);
-      alert("Unable to start reattempt");
+      showToast({ type: "error", message: "Unable to start reattempt" });
     }
   };
 
