@@ -1,14 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/apiClient";
-import PageHeader from "../components/PageHeader";
-import CompletedAssignment from "../components/CompletedAssignment";
 import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
+import { subjectChipSlot } from "../utils/subjectChips";
+import "../styles/academyCommon.css";
 import "../styles/assignmentDetail.css";
+
+const fmtDate = (d) =>
+  d ? new Date(d).toLocaleDateString("en-GB") : "";
+
+const fmtDueShort = (d) =>
+  d
+    ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+    : "";
 
 export default function AssignmentDetail() {
   const navigate = useNavigate();
-  const { assignmentId } = useParams();
+  const { subjectId, assignmentId } = useParams();
 
   const [assignment, setAssignment] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -16,6 +24,7 @@ export default function AssignmentDetail() {
   const [submittedAt, setSubmittedAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!assignmentId) return;
@@ -54,33 +63,35 @@ export default function AssignmentDetail() {
   }, [assignmentId]);
 
   const handleFileUpload = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const allowedMimeTypes = [
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-  ];
+    const allowedMimeTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
 
-  const allowedExtensions = [".pdf", ".doc", ".docx"];
+    const allowedExtensions = [".pdf", ".doc", ".docx"];
 
-  const fileName = file.name.toLowerCase();
+    const fileName = file.name.toLowerCase();
 
-  const isValidMime = allowedMimeTypes.includes(file.type);
-  const isValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+    const isValidMime = allowedMimeTypes.includes(file.type);
+    const isValidExtension = allowedExtensions.some((ext) => fileName.endsWith(ext));
 
-  if (!isValidMime && !isValidExtension) {
-    alert("Only PDF, DOC, and DOCX files are allowed.");
-    return;
-  }
+    if (!isValidMime && !isValidExtension) {
+      alert("Only PDF, DOC, and DOCX files are allowed.");
+      return;
+    }
 
-  setUploadedFile(file);
-};
+    setUploadedFile(file);
+  };
+
   const handleSubmit = async () => {
     if (!uploadedFile) return;
 
     try {
+      setSubmitting(true);
       const formData = new FormData();
       formData.append("file", uploadedFile);
 
@@ -100,23 +111,22 @@ export default function AssignmentDetail() {
     } catch (err) {
       console.error("Submission error:", err);
       alert(err.response?.data?.detail || "Submission failed.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleOpenAttachment = () => {
-    if (assignment?.attachment) {
-      window.open(assignment.attachment, "_blank");
-    }
-  };
+  const backHref = subjectId ? `/subjects/${subjectId}/assignments` : "/assignments";
 
-  const formatSmallDate = (dateObj) => {
-    if (!dateObj) return "";
-    return dateObj.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
+  const stKey = useMemo(() => {
+    if (!assignment) return "due";
+    if (isSubmitted) return "submitted";
+    if (assignment.due_date && new Date(assignment.due_date).getTime() < Date.now()) return "overdue";
+    return "due";
+  }, [assignment, isSubmitted]);
+
+  const stLabel =
+    stKey === "submitted" ? "Submitted" : stKey === "overdue" ? "Overdue" : `Due ${fmtDueShort(assignment?.due_date)}`;
 
   if (loading) return <LoadingState label="Loading assignment" />;
   if (error) return <ErrorState message={error} />;
@@ -130,152 +140,227 @@ export default function AssignmentDetail() {
       />
     );
 
+  const legacyAttachmentName = assignment.attachment
+    ? assignment.attachment.split("/").pop()
+    : null;
+
+  const hasAnyAttachment = Boolean(assignment.attachment) || (assignment.files?.length > 0);
+
   return (
-    <div className="assignmentDetailPage">
-      <button className="assignmentDetailBack" onClick={() => navigate(-1)}>
-        &lt; Back
+    <div className="ac-page">
+      <button type="button" className="asg-back" onClick={() => navigate(backHref)}>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Back to Assignments
       </button>
 
-      <div className="assignmentDetailHeaderBox">
-        {/* ✅ FIXED */}
-        <PageHeader title={assignment.subject_name || assignment.title} />
-      </div>
-
-      <div className="assignmentDetailBodyBox">
-        <div className="assignmentDetailContent">
-
-          {!isSubmitted && (
-            <div className="assignmentDetailLeft">
-              <div className="assignmentTitleRow">
-                <h3 className="assignmentDetailTitle">Assignment</h3>
-              </div>
-
-              <p className="assignmentDetailDue">
-                Due Date:{" "}
-                {new Date(assignment.due_date).toLocaleDateString("en-GB")}
-              </p>
-
-              <div className="assignmentDetailDivider" />
-
-              <p className="assignmentDetailLabel">
-                Title: {assignment.title}
-              </p>
-
-              <p className="assignmentDetailDesc">
-                Description: {assignment.description}
-              </p>
-
-              {assignment.attachment && (
-  <div>
-    <div className="fileStrip">
-      <div className="fileStripIcon">📄</div>
-      <div className="fileStripName">
-        {assignment.attachment.split("/").pop()}
-      </div>
-    </div>
-
-    <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
-      <button
-        className="openFileBtn"
-        onClick={() => window.open(assignment.attachment, "_blank")}
-      >
-        View
-      </button>
-
-      <a
-        href={assignment.attachment}
-        download
-        className="openFileBtn"
-        style={{ textAlign: "center", display: "inline-block" }}
-      >
-        Download
-      </a>
-    </div>
-  </div>
-)}
-            </div>
-          )}
-
-          {!isSubmitted ? (
-            <div className="assignmentDetailRight">
-              <div className="yourWorkTop">
-                <h4 className="assignmentDetailWorkTitle">Your Work</h4>
-              </div>
-
-              <label className="assignmentDetailUploadBtn">
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  hidden
-                  onChange={handleFileUpload}
-                />
-                {uploadedFile ? uploadedFile.name : "[Upload File]"}
-              </label>
-
-              {uploadedFile && (
-                <button
-                  className="openFileBtn"
-                  onClick={() => setUploadedFile(null)}
-                  style={{ marginBottom: "10px" }}
-                >
-                  Cancel File
-                </button>
+      <div className="asg-detailGrid">
+        {/* ── Main column ─────────────────────────────────────────── */}
+        <div className="asg-detailMain">
+          <div className="asg-card">
+            <div className="asg-row__tags" style={{ marginBottom: 12 }}>
+              {assignment.subject_name && (
+                <span className={`asg-chip asg-chip--${subjectChipSlot(assignment.subject_name)}`}>
+                  {assignment.subject_name}
+                </span>
               )}
-
-              <button
-                className="assignmentDetailSubmitBtn"
-                onClick={handleSubmit}
-                disabled={!uploadedFile}
-              >
-                Submit
-              </button>
+              <span className={`asg-statusChip asg-statusChip--${stKey}`}>{stLabel}</span>
             </div>
-          ) : (
-            <CompletedAssignment
-              assignment={{
-                title: assignment.title,
+            <h1 className="asg-detailTitle">{assignment.title}</h1>
+            <div className="asg-detailMetaRow">
+              {assignment.teacher_name && (
+                <span>Posted by <strong>{assignment.teacher_name}</strong></span>
+              )}
+              <span>Due <strong>{fmtDate(assignment.due_date)}</strong></span>
+            </div>
+          </div>
 
-                // ✅ FIXED MAPPING
-                subject: assignment.subject_name || "",
-                chapter: assignment.chapter_name || "",
-                teacher: assignment.teacher_name || "",
+          <div className="asg-card">
+            <h3 className="asg-cardHeading">Instructions</h3>
+            <p className="asg-description">{assignment.description}</p>
+          </div>
 
-                description: assignment.description,
+          <div className="asg-card">
+            <h3 className="asg-cardHeading">Attachments</h3>
 
-                // ✅ FIXED DATE
-                assignedOn: assignment.assigned_on
-                  ? new Date(assignment.assigned_on).toLocaleDateString("en-GB")
-                  : "",
+            {legacyAttachmentName && (
+              <div className="asg-attachmentRow">
+                <div className="asg-attachmentIcon">FILE</div>
+                <div className="asg-attachmentMeta">
+                  <div className="asg-attachmentName">{legacyAttachmentName}</div>
+                  <div className="asg-attachmentSub">
+                    Posted by {assignment.teacher_name || "your teacher"}
+                  </div>
+                </div>
+                <div className="asg-attachmentActions">
+                  <button
+                    type="button"
+                    className="asg-ghostBtn"
+                    onClick={() => window.open(assignment.attachment, "_blank")}
+                  >
+                    View
+                  </button>
+                  <a href={assignment.attachment} download className="asg-ghostBtn">
+                    Download
+                  </a>
+                </div>
+              </div>
+            )}
 
-                dueDate: assignment.due_date
-                  ? new Date(assignment.due_date).toLocaleDateString("en-GB")
-                  : "",
+            {assignment.files?.map((f) => (
+              <div className="asg-attachmentRow" key={f.id}>
+                <div className="asg-attachmentIcon">FILE</div>
+                <div className="asg-attachmentMeta">
+                  <div className="asg-attachmentName">{f.original_filename}</div>
+                  <div className="asg-attachmentSub">
+                    Posted by {assignment.teacher_name || "your teacher"}
+                  </div>
+                </div>
+                <div className="asg-attachmentActions">
+                  <button
+                    type="button"
+                    className="asg-ghostBtn"
+                    onClick={() => window.open(f.url, "_blank")}
+                  >
+                    View
+                  </button>
+                  <a href={f.url} download className="asg-ghostBtn">
+                    Download
+                  </a>
+                </div>
+              </div>
+            ))}
 
-                teacherFile: assignment.attachment
-                  ? {
-                      name: assignment.attachment.split("/").pop(),
-                      size: "—",
-                      url: assignment.attachment,
-                    }
-                  : null,
+            {!hasAnyAttachment && (
+              <p className="asg-noAttachment">No file attached to this assignment.</p>
+            )}
+          </div>
+        </div>
 
-                submittedOn: formatSmallDate(submittedAt),
+        {/* ── Side column ─────────────────────────────────────────── */}
+        <div className="asg-detailSide">
+          <div className="asg-card">
+            <h3 className="asg-cardHeading">Your submission</h3>
 
-                submissionStatus: assignment.submission_status_label || "",
+            {isSubmitted ? (
+              <div className="asg-submittedHero">
+                <div className="asg-submittedTick">✓</div>
+                <div className="asg-submittedLabel">Submitted</div>
+                <p className="asg-submittedText">
+                  Your work has been submitted. You'll receive feedback once graded.
+                </p>
 
-                // ✅ FIXED FILE (NO FALLBACKS)
-                submittedFile: assignment.submitted_file
-                  ? {
-                      name: assignment.submitted_file.split("/").pop(),
-                      size: "—",
-                      type: assignment.submitted_file.split(".").pop().toUpperCase(),
-                      url: assignment.submitted_file,
-                    }
-                  : null,
-              }}
-            />
-          )}
+                {submittedAt && (
+                  <div className="asg-submittedMetaRow">
+                    <span>Submitted {fmtDate(submittedAt)}</span>
+                    {assignment.submission_status_label && (
+                      <span className={`asg-lateChip ${assignment.submission_status_label === "Late" ? "asg-lateChip--late" : ""}`}>
+                        {assignment.submission_status_label}
+                      </span>
+                    )}
+                  </div>
+                )}
 
+                {assignment.submitted_file && (
+                  <div className="asg-attachmentRow asg-attachmentRow--tight">
+                    <div className="asg-attachmentIcon">FILE</div>
+                    <div className="asg-attachmentMeta">
+                      <div className="asg-attachmentName">
+                        {assignment.submitted_file.split("/").pop()}
+                      </div>
+                    </div>
+                    <div className="asg-attachmentActions">
+                      <button
+                        type="button"
+                        className="asg-ghostBtn"
+                        onClick={() => window.open(assignment.submitted_file, "_blank")}
+                      >
+                        View
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="asg-submitForm">
+                <label className="asg-dropzone">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    hidden
+                    onChange={handleFileUpload}
+                  />
+                  {uploadedFile ? (
+                    <div className="asg-dropzone__chosen">
+                      <div className="asg-attachmentIcon">FILE</div>
+                      <div className="asg-attachmentMeta">
+                        <div className="asg-attachmentName">{uploadedFile.name}</div>
+                        <div className="asg-attachmentSub asg-attachmentSub--ready">Ready to submit</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="asg-dropzone__empty">
+                      <div className="asg-dropzone__icon" aria-hidden="true">📎</div>
+                      <div className="asg-dropzone__label">Click to upload your work</div>
+                      <div className="asg-dropzone__hint">PDF, DOC, DOCX</div>
+                    </div>
+                  )}
+                </label>
+
+                {uploadedFile && (
+                  <button
+                    type="button"
+                    className="asg-removeFileBtn"
+                    onClick={() => setUploadedFile(null)}
+                  >
+                    Remove file
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="asg-submitBtn"
+                  onClick={handleSubmit}
+                  disabled={!uploadedFile || submitting}
+                >
+                  {submitting ? "Submitting…" : "Submit assignment"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="asg-card">
+            <h3 className="asg-cardHeading">Details</h3>
+            <div className="asg-detailsList">
+              {assignment.subject_name && (
+                <div className="asg-detailsRow">
+                  <span>Subject</span>
+                  <strong>{assignment.subject_name}</strong>
+                </div>
+              )}
+              {assignment.chapter_name && (
+                <div className="asg-detailsRow">
+                  <span>Chapter</span>
+                  <strong>{assignment.chapter_name}</strong>
+                </div>
+              )}
+              {assignment.teacher_name && (
+                <div className="asg-detailsRow">
+                  <span>Posted by</span>
+                  <strong>{assignment.teacher_name}</strong>
+                </div>
+              )}
+              <div className="asg-detailsRow">
+                <span>Assigned on</span>
+                <strong>{fmtDate(assignment.assigned_on)}</strong>
+              </div>
+              <div className="asg-detailsRow">
+                <span>Due date</span>
+                <strong>{fmtDate(assignment.due_date)}</strong>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

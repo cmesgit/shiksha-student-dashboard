@@ -1,63 +1,65 @@
 /**
  * student_dashboard/src/components/Header.jsx
  *
- * Header: greeting + Academy⟷Skill toggle + notifications + ProfileSwitcher.
- * The track toggle is the learner-facing LearnerTrackSwitcher, which flips
- * activeTrack in CourseContext. (The old "Select Course" dropdown stays
- * removed — the active course comes from enrollment.)
+ * The design's 60px header (Academy Dashboard.dc.html lines 598–636):
+ *   left  — current page title (Montserrat 800 15px) over today's long date
+ *   right — track switcher, messages, notification bell, avatar
+ *
+ * The title comes from the active nav label via pageTitleFor(), so every page
+ * is identified in the header (previously only the dashboard had a heading
+ * here, and it was a greeting — the greeting now lives on the dashboard page
+ * itself, as the design's H1).
+ *
+ * The design's Student/Teacher pill switcher is deliberately NOT reproduced:
+ * it exists so one prototype file can demo both roles. Here the roles are two
+ * separate apps behind separate logins, so that slot holds the real controls —
+ * LearnerTrackSwitcher (Academy ⟷ Skill Dev) and ProfileSwitcher.
  */
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCourse } from "../contexts/CourseContext";
+import { useAuth } from "../contexts/AuthContext";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import { RiDashboardLine, RiBookOpenLine } from "react-icons/ri";
-import { useAuth } from "../contexts/AuthContext";
 import ProfileSwitcher from "../shared/ProfileSwitcher";
 import LearnerTrackSwitcher from "./LearnerTrackSwitcher";
 import "../styles/header.css";
 import "../shared/ProfileSwitcher.css";
 import MessageIcon from "./MessageIcon";
 import NotificationBell from "./NotificationBell";
+import { pageTitleFor } from "../utils/academyNav";
+import { pageTitleForSkill, firstName } from "../utils/skillNav";
 import { HOME_URL, TEACHER_DASHBOARD_URL as TEACHER_URL } from "../config/urls";
+
+// "Saturday, 25 July 2026" — en-GB, matching the design's date sub-line.
+const DATE_FMT = { weekday: "long", day: "numeric", month: "long", year: "numeric" };
 
 export default function Header({ toggleMenu, menuOpen }) {
   const { activeTrack } = useCourse();
+  const { activeProfile, user } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const isDashboard = pathname === "/";
 
-  const { user, activeProfile, isTeacherContext } = useAuth();
-
-  // Name to greet: active learner profile, else teacher username, else account.
-  const greetName =
-    (!isTeacherContext && activeProfile?.display_name) ||
-    user?.username ||
-    (user?.email ? user.email.split("@")[0] : "") ||
-    "";
-
-  const hour = new Date().getHours();
-  const timeGreeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const isSkill = activeTrack === "skill";
+  const title = isSkill
+    ? pageTitleForSkill(pathname, firstName(activeProfile, user))
+    : pageTitleFor(pathname);
+  const todayLong = new Date().toLocaleDateString("en-GB", DATE_FMT);
 
   return (
-    <header className={"header" + (activeTrack === "skill" ? " header--skill" : "")}>
+    <header className={"header" + (isSkill ? " header--skill" : "")}>
       <div className="header__hamburger" onClick={toggleMenu}>
         {menuOpen ? <HiOutlineX size={26} /> : <HiOutlineMenu size={26} />}
       </div>
 
-      {isDashboard && (
-        <div className="header__left">
-          <h3 className="header__title">
-            {greetName ? `${timeGreeting}, ${greetName}` : "Welcome Back"}
-          </h3>
-          <p className="header__subtitle">Let's learn something new today</p>
-        </div>
-      )}
+      <div className="header__left">
+        <h1 className="header__title">{title}</h1>
+        <p className="header__subtitle">{todayLong}</p>
+      </div>
 
-      {/* Academy ⟷ Skill Dev switch (learner) */}
-      <LearnerTrackSwitcher />
-
-      <div className="header__right" style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" }}>
-        <MessageIcon to={activeTrack === "skill" ? "/skill-messages" : "/chat"} />
+      <div className="header__right">
+        {/* Academy ⟷ Skill Dev switch (learner) */}
+        <LearnerTrackSwitcher />
+        <MessageIcon to={isSkill ? "/skill-messages" : "/chat"} />
         <NotificationBell />
         <ProfileSwitcher
           teacherSignupUrl={`${HOME_URL}/signup?role=teacher`}
@@ -65,7 +67,7 @@ export default function Header({ toggleMenu, menuOpen }) {
           teachUrl={TEACHER_URL}
           quickActions={[
             { label: "Dashboard", icon: <RiDashboardLine />, onClick: () => navigate("/") },
-            activeTrack === "skill"
+            isSkill
               ? { label: "My sessions", icon: <RiBookOpenLine />, onClick: () => navigate("/skill-dev/sessions") }
               : { label: "My courses", icon: <RiBookOpenLine />, onClick: () => navigate("/my-courses") },
           ]}

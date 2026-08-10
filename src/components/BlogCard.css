@@ -1,0 +1,107 @@
+/* BlogCard.css — namespaced .blg-* to avoid the .ac-card/.ac-grid collision
+   (those classnames mean different things in the student vs teacher app).
+   Ported 1:1 from shiksha-frontend's original .blog-list-* card design. */
+
+.blg-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.blg-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  background: #ffffff;
+  border: 1px solid #e6f1ed;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(17, 49, 42, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.blg-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 34px rgba(17, 49, 42, 0.12);
+}
+
+.blg-card__imageWrap {
+  position: relative;
+  height: 280px;
+  overflow: hidden;
+}
+
+.blg-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.blg-card__image--fallback {
+  background: linear-gradient(135deg, #0f9d6b 0%, #0b5b3e 100%);
+}
+
+.blg-card__category {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(12, 61, 51, 0.82);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.blg-card__content {
+  padding: 22px;
+}
+
+.blg-card__title {
+  margin: 0 0 10px;
+  color: #18352d;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.blg-card__subtitle {
+  margin: 0 0 16px;
+  color: #60726b;
+  line-height: 1.7;
+  font-size: 14px;
+}
+
+.blg-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.blg-card__tags span,
+.blg-card__read {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.blg-card__tags span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #f1f7f5;
+  color: #4a675f;
+}
+
+.blg-card__read {
+  color: #1b9c85;
+}
+
+@media (max-width: 1024px) {
+  .blg-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .blg-card__imageWrap {
+    height: 260px;
+  }
+}

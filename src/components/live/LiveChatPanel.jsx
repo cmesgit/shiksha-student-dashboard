@@ -81,12 +81,12 @@ export default function LiveChatPanel({
           className="cp-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Your message here"
+          placeholder="Type a message..."
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
         />
 
         <button className="cp-send-btn" onClick={sendMessage} aria-label="Send">
-          <IoSend size={22} />
+          <IoSend size={20} />
         </button>
       </div>
     </div>

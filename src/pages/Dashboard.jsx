@@ -47,15 +47,21 @@ import AcademyEmptyState from "../components/AcademyEmptyState";
 import { LoadingState } from "../components/StateViews";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
+import { useAuth } from "../contexts/AuthContext";
 import useNotificationSocket from "../hooks/useNotificationSocket";
 import { PICK_PROFILE_URL } from "../config/urls";
+import { subjectChipPalette } from "../utils/subjectChips";
+import { fmtClockTime, dayLabel, startsInText } from "../utils/sessionTime";
 import "../styles/dashboard.css";
 
 const DATE_FORMAT = { day: "2-digit", month: "short", year: "numeric" };
 
+// Quizzes have no due date (product decision — a quiz stays attemptable
+// indefinitely once published), so they're not date-scheduled events: no
+// calendar dots, no schedule-rail entries. They still get their own
+// Assignments/Quizzes toggle in the right rail, unfiltered by date.
 const EVENT_COLORS = {
   assignment: "#57D982",
-  quiz: "#93A1E5",
   "live-session": "#38bdf8",
   "private-session": "#FF8A65",
 };
@@ -63,7 +69,6 @@ const EVENT_COLORS = {
 const SCHEDULE_TYPE_LABELS = {
   "live-session": "Live Session",
   assignment: "Assignment",
-  quiz: "Quiz",
   "private-session": "Private Session",
 };
 
@@ -79,14 +84,12 @@ const SCHEDULE_OPTIONS = [
   { value: "All", label: "All" },
   { value: "ASSIGNMENT", label: "Assignment" },
   { value: "SESSION", label: "Live Session" },
-  { value: "QUIZ", label: "Quiz" },
   { value: "PRIVATE_SESSION", label: "Private Session" },
 ];
 
 const SCHEDULE_FILTER_MAP = {
   ASSIGNMENT: "assignment",
   SESSION: "live-session",
-  QUIZ: "quiz",
   PRIVATE_SESSION: "private-session",
 };
 
@@ -110,6 +113,22 @@ function toDateKey(dateStr) {
   ).padStart(2, "0")}`;
 }
 
+// `live` is the backend's authoritative signal (LiveSession.status, or the
+// scheduled window as a fallback — see DashboardSessionSerializer.get_live)
+// — the SAME field LiveSessions.jsx's rows trust. Deriving "is this live"
+// from clock math here too would let this chip disagree with the rest of
+// the app for a session that's overdue but never actually started.
+function heroStatus(session) {
+  if (session.live) return { chip: "LIVE NOW", relative: "In progress" };
+  const start = new Date(session.dateTime);
+  if (Number.isNaN(start.getTime())) return { chip: "NEXT CLASS", relative: "" };
+  const diffMins = Math.round((start - new Date()) / 60000);
+  if (diffMins <= 0) return { chip: "NEXT CLASS", relative: "Starting soon" };
+  if (diffMins < 60) return { chip: "NEXT CLASS", relative: `Starts in ${diffMins}m` };
+  const hours = Math.floor(diffMins / 60);
+  return { chip: "NEXT CLASS", relative: hours < 24 ? `Starts in ${hours}h` : `Starts in ${Math.floor(hours / 24)}d` };
+}
+
 function isSameDay(a, b) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -119,14 +138,39 @@ function isSameDay(a, b) {
 }
 
 export default function Dashboard() {
-  const { activeCourse, activeTrack } = useCourse();
+  const { activeCourse, activeTrack, subjects, loading: courseLoading } = useCourse();
+  const { user, activeProfile } = useAuth();
   const navigate = useNavigate();
+
+  // Page heading (design dc.html lines 2123–2124): a time-derived greeting
+  // plus a line naming the course and its subjects.
+  const greetName =
+    activeProfile?.display_name || user?.name || user?.full_name || user?.username ||
+    (user?.email ? user.email.split("@")[0] : "") || "";
+  const hour = new Date().getHours();
+  const timeGreeting =
+    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const courseLabel = useMemo(() => {
+    if (!activeCourse?.title) return "";
+    const names = (subjects || []).map((s) => s.name || s.title).filter(Boolean);
+    // "Class 10 · Science & Maths" — list subjects only when it stays readable.
+    if (names.length && names.length <= 3) {
+      const list =
+        names.length === 1
+          ? names[0]
+          : `${names.slice(0, -1).join(", ")} & ${names[names.length - 1]}`;
+      return `${activeCourse.title} · ${list}`;
+    }
+    return activeCourse.title;
+  }, [activeCourse, subjects]);
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [assignmentFilter, setAssignmentFilter] = useState("due");
   const [notificationFilter, setNotificationFilter] = useState("All");
   const [scheduleFilter, setScheduleFilter] = useState("All");
   const [activeMobileTab, setActiveMobileTab] = useState("sessions");
+  // Desktop right-rail tab: which list the merged Assignments/Quizzes card shows.
+  const [rightRailTab, setRightRailTab] = useState("assignments");
 
   const today = new Date();
   const [currMonth, setCurrMonth] = useState(today.getMonth());
@@ -200,6 +244,21 @@ export default function Dashboard() {
   const quizzes = data?.quizzes ?? [];
   const privateSessions = data?.private_sessions ?? [];
 
+  // Hero "next class" — the soonest upcoming/live session this week.
+  // `sessions` is only filtered server-side to "not before today", so it can
+  // still contain an already-finished same-day class — exclude anything
+  // that's neither live nor still ahead of its end_time before picking the
+  // earliest, or a finished morning class would win the sort and get shown
+  // as the hero with a dead join link.
+  const heroSession = useMemo(() => {
+    const now = new Date();
+    const candidates = sessions.filter(
+      (s) => s.live || !s.end_time || new Date(s.end_time) > now
+    );
+    if (!candidates.length) return null;
+    return [...candidates].sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime))[0];
+  }, [sessions]);
+
   const goToPrevMonth = () => {
     if (currMonth === 0) { setCurrMonth(11); setCurrYear((y) => y - 1); }
     else setCurrMonth((m) => m - 1);
@@ -212,22 +271,8 @@ export default function Dashboard() {
 
   const renderSessionCard = (s, idx) => {
     const sessionTime = new Date(s.dateTime);
-    const now = new Date();
-    const diffMs = sessionTime - now;
-    const diffMins = Math.round(diffMs / 60000);
-
-    let startsIn;
-    if (Number.isNaN(sessionTime.getTime())) startsIn = "";
-    else if (diffMs < 0) startsIn = "In progress";
-    else if (diffMins < 60) startsIn = `Starts in ${diffMins} min`;
-    else startsIn = `Starts in ${Math.floor(diffMins / 60)}h`;
-
-    const timing = Number.isNaN(sessionTime.getTime())
-      ? ""
-      : sessionTime.toLocaleString("en-GB", {
-          day: "2-digit", month: "short", year: "numeric",
-          hour: "2-digit", minute: "2-digit", hour12: true,
-        });
+    const validTime = !Number.isNaN(sessionTime.getTime());
+    const { bg: chipBg, ink: chipColor } = subjectChipPalette(s.subject);
 
     return (
       <SessionCard
@@ -236,8 +281,12 @@ export default function Dashboard() {
         subject={s.subject}
         topic={s.topic}
         teacher={s.teacher}
-        startsIn={startsIn}
-        timing={timing}
+        time={validTime ? fmtClockTime(sessionTime) : ""}
+        dayLabel={validTime ? dayLabel(sessionTime) : ""}
+        startsInText={validTime ? startsInText(sessionTime) : ""}
+        isLive={!!s.live}
+        chipBg={chipBg}
+        chipColor={chipColor}
       />
     );
   };
@@ -251,11 +300,10 @@ export default function Dashboard() {
       if (!map[key].includes(type)) map[key].push(type);
     };
     assignments.forEach((a) => add(a.due, "assignment"));
-    quizzes.forEach((q) => add(q.due, "quiz"));
     privateSessions.forEach((p) => add(p.date, "private-session"));
     allSessions.forEach((s) => add(s.dateTime, "live-session"));
     return map;
-  }, [assignments, quizzes, privateSessions, allSessions]);
+  }, [assignments, privateSessions, allSessions]);
 
   const scheduleItems = useMemo(() => {
     const items = [];
@@ -284,18 +332,6 @@ export default function Dashboard() {
       })
     );
 
-    quizzes.forEach((q) =>
-      items.push({
-        id: `quiz-${q.id}`,
-        type: "quiz",
-        title: q.title,
-        date: q.due,
-        teacher: q.teacher,
-        subject: q.subject_name || "",
-        link: q.subject_id ? `/subjects/quiz/${q.subject_id}` : null,
-      })
-    );
-
     privateSessions.forEach((ps) =>
       items.push({
         id: `private-${ps.id}`,
@@ -310,7 +346,7 @@ export default function Dashboard() {
 
     items.sort((a, b) => new Date(a.date) - new Date(b.date));
     return items;
-  }, [allSessions, assignments, quizzes, privateSessions]);
+  }, [allSessions, assignments, privateSessions]);
 
   // Notifications come pre-isolated (profile-scoped) and pre-normalized
   // (canonical UPPERCASE type) from the singleton hook.
@@ -456,10 +492,6 @@ export default function Dashboard() {
             Assignment
           </span>
           <span className="calLegend__item">
-            <span className="calLegend__dot" style={{ background: EVENT_COLORS.quiz }} />
-            Quiz
-          </span>
-          <span className="calLegend__item">
             <span className="calLegend__dot" style={{ background: EVENT_COLORS["live-session"] }} />
             Live Session
           </span>
@@ -478,11 +510,9 @@ export default function Dashboard() {
         ? "livesessions"
         : item.type === "assignment"
           ? "assignments"
-          : item.type === "quiz"
-            ? "quiz"
-            : item.type === "private-session"
-              ? "privatesession"
-              : "";
+          : item.type === "private-session"
+            ? "privatesession"
+            : "";
 
     return (
       <div
@@ -574,14 +604,7 @@ export default function Dashboard() {
                 key={q.id}
                 title={q.title}
                 teacher={q.teacher}
-                deadline={
-                  q.due
-                    ? new Date(q.due).toLocaleDateString("en-GB", {
-                        day: "2-digit", month: "short", year: "numeric",
-                        hour: "2-digit", minute: "2-digit", hour12: true,
-                      })
-                    : "No due date"
-                }
+                deadline={q.subject_name || ""}
                 isCompleted={false}
                 inProgress={false}
                 onClick={() =>
@@ -622,13 +645,18 @@ export default function Dashboard() {
   // ── Skill Dev track — render the skill home instead ───────────────
   if (activeTrack === "skill") {
     return (
-      <div style={{ height: "100%", background: "#f3e2da", display: "flex", overflow: "hidden" }}>
+      <div style={{ height: "100%", background: "var(--page-bg, #eef1f2)", display: "flex", overflow: "hidden" }}>
         <SkillDevStudentSection data={data} />
       </div>
     );
   }
 
-  if (loading) return <LoadingState label="Loading dashboard" />;
+  // `loading` alone isn't enough: fetchDashboard sees a still-null
+  // `activeCourse` before CourseContext's own fetch resolves and immediately
+  // sets loading=false, so without courseLoading this briefly rendered the
+  // "no courses" empty state below for every enrolled student on every load,
+  // before flashing to the real dashboard once activeCourse populated.
+  if (loading || courseLoading) return <LoadingState label="Loading dashboard" />;
 
   if (!activeCourse) {
     // No Academy enrolment on THIS profile — onboarding placeholder.
@@ -657,15 +685,34 @@ export default function Dashboard() {
     const d = a.dueDate || a.due ? new Date(a.dueDate || a.due) : null;
     return !d || Number.isNaN(d.getTime()) || d >= _now;
   }).length;
+  // Backend may not have landed quiz_avg_pct yet on every deploy — default to
+  // null (renders as "—") rather than throwing on a transitional response.
+  const quizAvgPct = data?.quiz_avg_pct ?? null;
   const statCards = [
-    { icon: "video", iconBg: "#e6f4f6", iconColor: "#13899b", value: sessions.length,        label: "Classes this week" },
-    { icon: "file",  iconBg: "#ecf8ee", iconColor: "#2f9d42", value: _pendingAssignments,     label: "Assignments due" },
-    { icon: "help",  iconBg: "#e8edfb", iconColor: "#1d4ed8", value: quizzes.length,          label: "Quizzes" },
-    { icon: "lock",  iconBg: "#fff8f0", iconColor: "#d97706", value: privateSessions.length,  label: "1-on-1 sessions" },
+    { icon: "video", iconBg: "#e6f4f6", iconColor: "#13899b", value: sessions.length,               label: "Classes this week" },
+    { icon: "file",  iconBg: "#ecf8ee", iconColor: "#2f9d42", value: _pendingAssignments,            label: "Assignments due" },
+    { icon: "trend", iconBg: "#e8edfb", iconColor: "#1d4ed8", value: quizAvgPct != null ? `${quizAvgPct}%` : "—", label: "Average quiz score" },
+    { icon: "help",  iconBg: "#f3e8ff", iconColor: "#7c3aed", value: quizzes.length,                 label: "Quizzes available" },
   ];
 
   return (
     <div className="dashboardShell">
+      {/* Page heading — the design's H1 (dc.html line 2123). This used to be a
+          greeting in the header; the header now shows the page title + date on
+          every page, so the greeting lives here where the design puts it. */}
+      <header className="dashGreet">
+        <h1 className="dashGreet__title">
+          {greetName ? `${timeGreeting}, ${greetName}` : timeGreeting} 👋
+        </h1>
+        <p className="dashGreet__sub">
+          {courseLabel ? (
+            <>Here's what's happening in <strong>{courseLabel}</strong> this week.</>
+          ) : (
+            <>Here's what's happening this week.</>
+          )}
+        </p>
+      </header>
+
       <div className="desktopOnly">
         <div className="dashStatRow">
           {statCards.map((st) => (
@@ -682,6 +729,29 @@ export default function Dashboard() {
         </div>
         <div className="dashboardMain">
           <div className="dashboardLeft">
+            {heroSession && (() => {
+              const { chip, relative } = heroStatus(heroSession);
+              return (
+                <section className="dashHero">
+                  <div className="dashHero__main">
+                    <span className={`dashHero__chip dashHero__chip--${chip === "LIVE NOW" ? "live" : "next"}`}>
+                      {chip}
+                    </span>
+                    <span className="dashHero__relative">{relative}</span>
+                    <h3 className="dashHero__topic">{heroSession.subject} — {heroSession.topic}</h3>
+                    <p className="dashHero__teacher">with {heroSession.teacher}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="dashHero__cta"
+                    onClick={() => navigate(`/live/${heroSession.id}`)}
+                  >
+                    {chip === "LIVE NOW" ? "Join class" : "Set reminder"}
+                  </button>
+                </section>
+              );
+            })()}
+
             <section className="dashboardCard dashboardCard--live">
               <div className="cardHeader liveHeader">
                 <h3>Upcoming Live Sessions</h3>
@@ -715,12 +785,40 @@ export default function Dashboard() {
                 </div>
               )}
             </section>
+          </div>
 
-            <div className="dashboardLeftBottom">
-              <section className="dashboardCard dashboardCard--assignments">
-                <div className="cardHeader">
-                  <h3>Assignments</h3>
+          <div className="dashboardRight">
+            <section className="dashboardCard dashboardCard--assignments">
+              <div className="cardHeader">
+                <div className="assignmentToggle" role="tablist" aria-label="Assignments or Quizzes">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={rightRailTab === "assignments"}
+                    className={`assignmentToggle__btn ${
+                      rightRailTab === "assignments" ? "assignmentToggle__btn--active" : ""
+                    }`}
+                    onClick={() => setRightRailTab("assignments")}
+                  >
+                    Assignments
+                  </button>
 
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={rightRailTab === "quizzes"}
+                    className={`assignmentToggle__btn ${
+                      rightRailTab === "quizzes" ? "assignmentToggle__btn--active" : ""
+                    }`}
+                    onClick={() => setRightRailTab("quizzes")}
+                  >
+                    Quizzes
+                  </button>
+                </div>
+
+                {/* Quizzes have no due date, so the Due/Over Due toggle only
+                    applies to the Assignments tab. */}
+                {rightRailTab === "assignments" && (
                   <div className="assignmentToggle">
                     <button
                       type="button"
@@ -742,73 +840,47 @@ export default function Dashboard() {
                       Over Due
                     </button>
                   </div>
-                </div>
-
-                <div className="cardBodyScroll">
-                  {filteredAssignments.map((a, idx) => (
-                    <AssignmentCard key={a.id || idx} {...a} />
-                  ))}
-
-                  {filteredAssignments.length === 0 && (
-                    <div className="emptyState">
-                      {assignmentFilter === "due" ? "No due assignments" : "No overdue assignments"}
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              <section className="dashboardCard dashboardCard--notifications">
-                <div className="cardHeader">
-                  <h3>Notifications</h3>
-                  <DropdownMenu
-                    value={notificationFilter}
-                    onChange={setNotificationFilter}
-                    options={NOTIF_OPTIONS}
-                  />
-                </div>
-
-                <div className="cardBodyScroll">
-                  {filteredNotifications.map((n) => (
-                    <NotificationCard key={n.id} notification={n} onRead={markOneRead} />
-                  ))}
-                  {filteredNotifications.length === 0 && (
-                    <div className="emptyState">No notifications</div>
-                  )}
-                </div>
-              </section>
-            </div>
-          </div>
-
-          <div className="dashboardRight">
-            <section className="dashboardCard dashboardCard--calendar">{renderCalendarGrid()}</section>
-
-            <section className="dashboardCard dashboardCard--schedule">
-              <div className="cardHeader">
-                <h3>
-                  Schedule
-                  {selectedDate && (
-                    <span className="selectedDateText">
-                      —{" "}
-                      {new Date(
-                        selectedDate.year,
-                        selectedDate.month,
-                        selectedDate.day
-                      ).toLocaleDateString("en-GB", DATE_FORMAT)}
-                    </span>
-                  )}
-                </h3>
-                <DropdownMenu
-                  value={scheduleFilter}
-                  onChange={setScheduleFilter}
-                  options={SCHEDULE_OPTIONS}
-                />
+                )}
               </div>
 
               <div className="cardBodyScroll">
-                {filteredSchedule.map((item, idx) => renderScheduleItem(item, idx))}
-                {filteredSchedule.length === 0 && <div className="emptyState">No schedule</div>}
+                {rightRailTab === "assignments" ? (
+                  <>
+                    {filteredAssignments.map((a, idx) => (
+                      <AssignmentCard key={a.id || idx} {...a} />
+                    ))}
+
+                    {filteredAssignments.length === 0 && (
+                      <div className="emptyState">
+                        {assignmentFilter === "due" ? "No assignments due" : "No overdue assignments"}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {quizzes.map((q, idx) => (
+                      <QuizCard
+                        key={q.id || idx}
+                        title={q.title}
+                        teacher={q.teacher}
+                        deadline={q.subject_name || ""}
+                        isCompleted={false}
+                        inProgress={false}
+                        onClick={() =>
+                          navigate(q.subject_id ? `/subjects/quiz/${q.subject_id}` : "/subjects/quiz")
+                        }
+                      />
+                    ))}
+
+                    {quizzes.length === 0 && (
+                      <div className="emptyState">No quizzes available</div>
+                    )}
+                  </>
+                )}
               </div>
             </section>
+
+            <section className="dashboardCard dashboardCard--calendar">{renderCalendarGrid()}</section>
           </div>
         </div>
       </div>

@@ -1,123 +1,131 @@
-/* Recording Detail Page */
-.recordingDetailPage {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
+/* ═══════════════════════════════════════════════════════════════════════
+   recordingDetail.css — Student "Recording" video player page.
+   Tokens from shared/tokens.css (slate #425f7f, Montserrat/Poppins),
+   matching the Academy Dashboard design handoff.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.recDetail {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
-/* Back button — above the header box */
-.recordingDetailBack {
-  background: #425f7f;
-  color: white;
-  border: none;
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  align-self: flex-start;
-  margin-bottom: 4px;
+.recDetail__back {
+  margin-bottom: 16px;
 }
 
-.recordingDetailBack:hover {
-  background: #097a83;
+/* ── Player card ──────────────────────────────────────────────────────── */
+.recDetail__player {
+  max-width: 860px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(26, 44, 51, 0.06));
+  padding: 14px;
+  margin-bottom: 20px;
 }
 
-/* Header box */
-.recordingDetailHeaderBox {
-  width: 100%;
-  background: white;
-  border-radius: 18px 18px 0 0;
-  padding: 20px 24px;
-}
-
-.recordingDetailHeaderBox .pageHeader {
-  padding-bottom: 0;
-  margin-bottom: 0;
-  border-bottom: none;
-}
-
-/* Body box */
-.recordingDetailBodyBox {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  width: 100%;
-  background: white;
-  border-radius: 0 0 18px 18px;
-  padding: 20px 24px;
-}
-
-/* Video Player */
-.recordingDetailPlayer {
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto 24px;
-}
-
-.recordingDetailVideo {
+.recDetail__video {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
   background: #000;
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
 }
+.recDetail__video:fullscreen,
+.recDetail__video:-webkit-full-screen {
+  border-radius: 0;
+  aspect-ratio: auto;
+}
 
-.recordingDetailVideoElement {
+.recDetail__videoElement {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  border: none;
+  display: block;
 }
 
-/* Video Info */
-.recordingDetailInfo {
+.recDetail__fullscreenBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
   display: flex;
-  justify-content: space-between;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 16px 0;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: rgba(26, 44, 51, 0.65);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.recDetail__fullscreenBtn:hover { background: rgba(26, 44, 51, 0.85); }
+.recDetail__fullscreenBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring, 0 0 0 3px rgba(66, 95, 127, 0.35));
 }
 
-.recordingDetailInfoLeft {
-  text-align: left;
+/* ── Progress bar under the player ───────────────────────────────────── */
+.recDetail__progressWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 2px 2px;
 }
-
-.recordingDetailInfoRight {
-  text-align: right;
+.recDetail__progressBar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: #e6edee;
+  overflow: hidden;
 }
-
-.recordingDetailInfoTitle {
-  font-size: 14px;
+.recDetail__progressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: #13899b;
+  transition: width 0.25s ease;
+}
+.recDetail__progressLabel {
+  font-size: 11px;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 16px;
+  color: var(--ink-3, #6b7c83);
+  white-space: nowrap;
 }
 
-.recordingDetailInfoTeacher {
-  font-size: 13px;
-  color: #555;
-  line-height: 1.5;
+/* ── Meta row ─────────────────────────────────────────────────────────── */
+.recDetail__meta {
+  max-width: 860px;
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(26, 44, 51, 0.06));
+  padding: 16px 18px;
+}
+.recDetail__metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.recDetail__metaLabel {
+  font-family: var(--font-body, "Poppins", system-ui, sans-serif);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--academy, #425f7f);
+}
+.recDetail__metaValue {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink, #1a2c33);
 }
 
-.recordingDetailInfoDate {
-  font-size: 13px;
-  color: #555;
-  line-height: 1.5;
-  margin-bottom: 16px;
-}
-
-.recordingDetailInfoDuration {
-  font-size: 13px;
-  color: #555;
-  line-height: 1.5;
-
-}
 @media (max-width: 768px) {
-  .recordingDetailHeaderBox,
-  .recordingDetailBodyBox {
-    padding: 14px;
-  }
+  .recDetail__player,
+  .recDetail__meta { padding: 12px; }
 }

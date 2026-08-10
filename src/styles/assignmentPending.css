@@ -1,291 +1,71 @@
-/* ===== PAGE WRAPPER ===== */
-.assignmentPage {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+/* ═══════════════════════════════════════════════════════════════════════
+   assignmentPending.css — what the assignment screens need BEYOND the shared
+   vocabulary in academyScreens.css.
 
-/* ===== BACK BUTTON (above the header box) ===== */
-.assignmentBack {
-  background: #425f7f;
-  color: white;
+   The Assignments list (pages/SubjectsAssignments.jsx) is now built from the
+   shared shapes — .ac-head, .ac-filterBar, .ac-pills/.ac-pill, .ac-select,
+   .ac-listCard, .ac-list, .ac-row--tall, .ac-tag, .ac-btn. This file used to
+   carry its own bespoke copy of every one of those (.asg-filterRow, .asg-pills,
+   .asg-pill, .asg-statusSelect, .asg-listCard, .asg-list, .asg-row,
+   .asg-row__main, .asg-row__title, .asg-row__meta, .asg-openBtn); the
+   conversion orphaned them all, so they're gone rather than left to drift.
+
+   (One of those had actually drifted already: .asg-pill's inactive colour was
+   --academy, but the design's inactive subject pill is --ink-muted. The shared
+   .ac-pill has it right.)
+
+   What remains is what pages/AssignmentDetail.jsx still uses.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Back link ─────────────────────────────────────────────────────────── */
+.asg-back {
   border: none;
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 12px;
+  background: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-faint);
+  font-size: var(--fs-meta);
   font-weight: 600;
-  cursor: pointer;
-  align-self: flex-start;
-  margin-bottom: 4px;
+  padding: 0;
+  margin-bottom: 16px;
+  font-family: var(--font-body);
 }
+.asg-back:hover { color: var(--ink); }
 
-.assignmentBack:hover {
-  background: #097a83;
-}
-
-/* ===== HEADER BOX (fixed, does not scroll) ===== */
-.assignmentHeaderBox {
-  width: 100%;
-  background: white;
-  border-radius: 18px 18px 0 0;
-  padding: 16px 24px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* Top row: title | search */
-.assignmentHeaderRow {
+/* ── Chip row (assignment detail hero) ────────────────────────────────── */
+.asg-row__tags {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 7px;
+  flex-wrap: wrap;
 }
 
-/* Subject name */
-.assignmentSubjectTitle {
-  font-size: 14px;
-  font-weight: 800;
-  color: #222;
-  margin: 0;
-}
-
-/* ===== TABS ===== */
-.assignmentTabs {
-  display: flex;
-  gap: 8px;
-}
-
-.assignmentTab {
-  background: #7BBEC7;
-  border: none;
-  padding: 8px 20px;
-  border-radius: 20px 20px 0 0;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  color: white;
-  transition: background 0.2s ease;
-}
-
-.assignmentTab--active {
-  background: #015865;
-  color: white;
-  z-index: 2;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
-}
-
-.assignmentTab:hover:not(.assignmentTab--active) {
-  background: #6ab3bc;
-}
-
-/* ===== SEARCH ===== */
-.assignmentSearch {
-  display: flex;
+/* ── Chips ────────────────────────────────────────────────────────────── */
+/* Shape only. The subject colour slots (.asg-chip--0…5) are declared once in
+   academyCommon.css — see src/utils/subjectChips.js. Never redeclare them. */
+.asg-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: #f2f2f2;
-  padding: 8px 12px;
-  border-radius: 8px;
-  width: 200px;
-  flex-shrink: 0;
-}
-
-.assignmentSearch input {
-  border: none;
-  outline: none;
-  background: transparent;
-  flex: 1;
-  font-size: 12px;
-}
-
-.assignmentSearchIcon {
-  font-size: 14px;
-  opacity: 0.6;
-}
-
-/* ===== BODY BOX (scrolls) ===== */
-.assignmentBodyBox {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  width: 100%;
-  background: white;
-  border-radius: 0 0 18px 18px;
-  padding: 20px 24px;
-}
-
-/* ===== ASSIGNMENT CARDS GRID ===== */
-.assignmentGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-}
-
-@media (max-width: 1200px) {
-  .assignmentGrid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .assignmentGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 600px) {
-  .assignmentGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ===== MOBILE HEADER ===== */
-@media (max-width: 768px) {
-  .assignmentHeaderRow {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .assignmentSubjectTitle {
-    text-align: center;
-  }
-
-  .assignmentSearch {
-    width: 100%;
-  }
-
-  .assignmentTabs {
-    width: 100%;
-  }
-
-  .assignmentTab {
-    flex: 1;
-    text-align: center;
-  }
-}
-
-/* ===== ASSIGNMENT PENDING CARD ===== */
-.assignmentPendingCard {
-  background: #425f7f;
-  border-radius: 10px;
-  color: white;
-  cursor: pointer;
-  padding: 14px 16px;
-  height: 145px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: opacity 0.18s;
-}
-
-.assignmentPendingCard:hover {
-  opacity: 0.88;
-}
-
-.assignmentPendingCard__top {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.assignmentPendingCard__title {
-  font-size: 13px;
+  white-space: nowrap;
+  font-family: var(--font-body);
+  font-size: var(--fs-chip);
   font-weight: 700;
-  line-height: 1.2;
-  margin: 0;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
 }
 
-.assignmentPendingCard__teacher {
-  font-size: 11px;
-  font-weight: 500;
-  margin: 0;
-}
-
-.assignmentPendingCard__bottom {
-  text-align: right;
-}
-
-.assignmentPendingCard__deadline {
-  font-size: 10px;
-  font-weight: 500;
-  margin: 0;
-}
-
-/* Empty State */
-.assignmentEmpty {
-  grid-column: 1 / -1;
-  text-align: center;
-  color: #888;
-  font-size: 14px;
-  padding: 40px;
-}
-
-/* ===== ASSIGNMENT COMPLETED CARD ===== */
-.assignmentCompletedCard {
-  background: #425f7f;
-  border-radius: 10px;
-  color: white;
-  cursor: pointer;
-  padding: 14px 16px;
-  height: 145px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: opacity 0.18s;
-  position: relative;
-}
-
-.assignmentCompletedCard:hover {
-  opacity: 0.88;
-}
-
-.assignmentCompletedCard__badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(255, 255, 255, 0.25);
-  color: white;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: bold;
-}
-
-.assignmentCompletedCard__top {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.assignmentCompletedCard__title {
-  font-size: 13px;
+.asg-statusChip {
+  white-space: nowrap;
+  font-family: var(--font-body);
+  font-size: var(--fs-tag);
   font-weight: 700;
-  line-height: 1.2;
-  margin: 0;
-  padding-right: 22px;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
 }
-
-.assignmentCompletedCard__teacher {
-  font-size: 11px;
-  font-weight: 500;
-  margin: 0;
-}
-
-.assignmentCompletedCard__bottom {
-  text-align: right;
-}
-
-.assignmentCompletedCard__date {
-  font-size: 10px;
-  font-weight: 500;
-  margin: 0;
-}
+.asg-statusChip--due       { background: var(--success-soft); color: var(--success); }
+.asg-statusChip--overdue   { background: var(--danger-soft);  color: var(--danger); }
+.asg-statusChip--submitted { background: var(--info-soft);    color: var(--info); }

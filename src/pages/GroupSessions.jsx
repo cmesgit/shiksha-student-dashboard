@@ -1,23 +1,34 @@
 /**
  * FILE: src/pages/GroupSessions.jsx
  *
- * Figma-style Group Sessions page.
+ * Group Sessions — the design's shared Academy list screen (Academy
+ * Dashboard.dc.html, `data-screen-label="Group Sessions"`, lines 1319–1360):
+ * head + Join/Host buttons, an underline Upcoming/Past tab bar, and one list
+ * card of standard rows. The shapes all come from styles/academyScreens.css.
+ *
  * Flow included:
- *   - Main Group Sessions cards page
+ *   - Main Group Sessions list screen
  *   - Join Session dialog
  *   - Host Session dialog
  *   - Scheduled Session create dialog: Details → Participants → Summary
  *   - Scheduled Session details dialog for Host / Participant
  *   - Edit Session dialog for Host: Details → Participants → Summary
+ *
+ * The design specifies the list screen only. The dialogs below keep their
+ * existing structure and step logic; they've been re-pointed at the shared
+ * tokens (surface / border / radius / ink / .ac-btn) so they stop clashing
+ * with the screen behind them.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import PageHeader from "../components/PageHeader";
 import { LoadingState } from "../components/StateViews";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../api/apiClient";
 import groupSessionService, { extractApiError } from "../api/groupSessionService";
+// Group sessions carry no subject, so no subject chip here — see GroupSessionRow.
+import { fmtClockTime, dayLabel, startsInText } from "../utils/sessionTime";
+import "../styles/academyScreens.css";
 import "../styles/groupSessions.css";
 
 /* ═══════════════════════════════════════════════════════════
@@ -129,26 +140,10 @@ function shortId(id) {
   return s.length > 12 ? `${s.slice(0, 10)}…` : s;
 }
 
-function getUserInitial(user) {
-  return (
-    user?.full_name ||
-    user?.name ||
-    user?.username ||
-    user?.email ||
-    "U"
-  ).charAt(0).toUpperCase();
-}
-
-function getHostPhoto(group) {
-  return (
-    group?.hostPhoto ||
-    group?.host_photo ||
-    group?.host_profile_photo ||
-    group?.hostAvatar ||
-    group?.host_avatar ||
-    ""
-  );
-}
+/* getUserInitial() and getHostPhoto() lived here to feed the old card's avatar
+   and the page's header initial. The design's row carries no avatar (it uses
+   the time/day block in that slot), so both are gone rather than left as dead
+   code. */
 
 function isEndedNow(g) {
   if (!g) return false;
@@ -195,27 +190,12 @@ function uniqueByUserId(list) {
 }
 
 async function updateScheduledSession(sessionId, payload) {
-  // Your service file currently has create/cancel/decline/join APIs, but no
-  // update API. This helper tries the common backend routes. If your backend
-  // uses a different route, add it in groupSessionService.js later.
-  const candidates = [
-    { method: "patch", url: `/sessions/group-sessions/${sessionId}/` },
-    { method: "patch", url: `/sessions/group-sessions/${sessionId}/update/` },
-    { method: "post", url: `/sessions/group-sessions/${sessionId}/update/` },
-  ];
-
-  let lastErr = null;
-  for (const c of candidates) {
-    try {
-      const res = await api[c.method](c.url, payload);
-      if (res?.data) return res.data;
-    } catch (err) {
-      lastErr = err;
-      const status = err?.response?.status;
-      if (status && ![404, 405].includes(status)) throw err;
-    }
-  }
-  throw lastErr || new Error("Update endpoint not available.");
+  // PATCH group_session_detail (host-only, while status="scheduled"):
+  // topic/scheduled_date/scheduled_time/duration_minutes, plus additive-only
+  // invited_user_ids (new ids get invited; ids missing from the submission
+  // are left alone — this never revokes an existing invite).
+  const res = await api.patch(`/sessions/group-sessions/${sessionId}/`, payload);
+  return res.data;
 }
 
 const DURATIONS = [
@@ -230,59 +210,99 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 /* ═══════════════════════════════════════════════════════════
    SESSION CARD
 ═══════════════════════════════════════════════════════════ */
-function GroupSessionCard({ group, onOpen }) {
-  const status = isEndedNow(group) ? "completed" : (group.status || "scheduled");
+/* The design's row wants a Date for its time/day block. Group sessions store
+   date and time as separate strings, so combine them — and fall back to the
+   existing string formatters if the result isn't a valid Date, rather than
+   rendering "Invalid Date". */
+function groupStartDate(group) {
+  if (!group?.date) return null;
+  const d = new Date(`${group.date}T${group.time || "00:00"}`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// Group-session status → shared .ac-tag--* variant.
+const GROUP_STATUS_TONE = {
+  scheduled: "info",
+  live: "live",
+  completed: "success",
+  cancelled: "danger",
+  expired: "neutral",
+};
+
+/* One row, shared by the Upcoming and Past tabs — the design uses the same row
+   shape for both, differing only in the trailing action. Group sessions carry
+   no subject, so there's no subject chip here (the status tag takes that slot);
+   inventing one would give a colour that means nothing. */
+function GroupSessionRow({ group, status, actionLabel, onAction }) {
+  const start = groupStartDate(group);
+  const tone = GROUP_STATUS_TONE[status] || "neutral";
   const isLive = status === "live";
-  const isScheduled = status === "scheduled";
-  const hostPhoto = getHostPhoto(group);
-  const startedAt = group.roomStartedAt ? new Date(group.roomStartedAt) : null;
-  const startTime = startedAt && !Number.isNaN(startedAt.getTime())
-    ? startedAt.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })
-    : formatTime(group.time);
   const participantCount = Math.max(1, 1 + Number(group.acceptedCount || 0));
 
   return (
-    <button
-      type="button"
-      className={`sg__sessionCard sg__sessionCard--${status}`}
-      onClick={() => onOpen(group)}
-    >
-      <div className="sg__sessionCardTop">
-        <div className="sg__sessionHostBlock">
-          <span className="sg__sessionAvatar">
-            {hostPhoto ? (
-              <img src={hostPhoto} alt={group.hostName || "Host"} />
-            ) : (
-              <span>{(group.hostName || "H").charAt(0).toUpperCase()}</span>
-            )}
-          </span>
-
-          <div className="sg__sessionHostText">
-            <span className="sg__sessionHostName">{group.hostName || "Host Name"}</span>
-            <span className="sg__sessionTitle">{group.topic || "Title (Only If Entered)"}</span>
-          </div>
+    <div className="ac-row">
+      <div className="ac-row__when">
+        <div className="ac-row__time">
+          {start ? fmtClockTime(start) : formatTime(group.time)}
         </div>
-
-        <span className={`sg__figmaStatus sg__figmaStatus--${status}`}>
-          {isLive ? "LIVE" : isScheduled ? "Scheduled" : statusLabel(status)}
-        </span>
+        <div className="ac-row__day">
+          {start ? dayLabel(start) : formatDate(group.date)}
+        </div>
       </div>
-
-      <div className="sg__sessionCardBottom">
-        {isLive ? (
-          <>
-            <span><strong>Duration</strong> {group.durationMinutes ? `${group.durationMinutes} min` : "—"}</span>
-            <span><strong>Start Time</strong> {startTime}</span>
-            <span><strong>Participants</strong> {participantCount}</span>
-          </>
-        ) : (
-          <>
-            <span><strong>Date</strong> {formatDate(group.date)}</span>
-            <span><strong>Session Timing</strong> {formatTiming(group.time, group.durationMinutes)}</span>
-          </>
-        )}
+      <div className="ac-row__divider" />
+      <div className="ac-row__body">
+        <div className="ac-row__meta">
+          <span className={`ac-tag ac-tag--${tone}`}>{statusLabel(status)}</span>
+          {isLive ? (
+            <span className="ac-when">{participantCount} in the room</span>
+          ) : start && status === "scheduled" ? (
+            <span className="ac-when">starts {startsInText(start)}</span>
+          ) : (
+            <span className="ac-when">{formatTiming(group.time, group.durationMinutes)}</span>
+          )}
+        </div>
+        <div className="ac-row__topic">{group.topic || "Untitled session"}</div>
+        <div className="ac-row__sub">
+          {group.hostName ? `Hosted by ${group.hostName}` : "Host unknown"}
+        </div>
       </div>
-    </button>
+      <button
+        type="button"
+        className="ac-btn ac-btn--primary"
+        onClick={() => onAction(group)}
+      >
+        {actionLabel}
+      </button>
+    </div>
+  );
+}
+
+function GroupSessionCard({ group, onOpen }) {
+  const status = isEndedNow(group) ? "completed" : (group.status || "scheduled");
+  return (
+    <GroupSessionRow
+      group={group}
+      status={status}
+      actionLabel={status === "live" ? "Join" : "Open"}
+      onAction={onOpen}
+    />
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PAST SESSION ROW (History tab)
+   Same row as GroupSessionCard, but the action is "Notes" rather than
+   opening the live/scheduled details dialog — per the design, past group
+   sessions expose Notes, not Recording.
+═══════════════════════════════════════════════════════════ */
+function PastSessionCard({ group, onNotes }) {
+  return (
+    <GroupSessionRow
+      group={group}
+      status={group.status === "cancelled" ? "cancelled" : "completed"}
+      actionLabel="Notes"
+      onAction={onNotes}
+    />
   );
 }
 
@@ -763,6 +783,8 @@ function SessionDetailsDialog({
       studentId: i.studentId,
       status: i.status,
       isHost: false,
+      declineCount: i.declineCount || 0,
+      joinedAt: i.joinedAt,
     })),
   ];
 
@@ -831,6 +853,12 @@ function SessionDetailsDialog({
               </span>
               {p.isHost && <span style={styles.hostLabel}>HOST</span>}
               {!p.isHost && p.status === "declined" && <span style={styles.declinedLabel}>DECLINED</span>}
+              {!p.isHost && p.status === "accepted" && p.joinedAt && <span style={styles.joinedLabel}>JOINED</span>}
+              {!p.isHost && p.declineCount > 0 && (
+                <span style={styles.reinvitedLabel} title="Number of times this invite was declined and resent">
+                  RE-INVITED ×{p.declineCount}
+                </span>
+              )}
             </div>
           ))}
         </div>
@@ -876,6 +904,92 @@ function SessionDetailsDialog({
               </button>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NOTES DIALOG (Past tab card action)
+   Private per-user scratchpad for a since-ended group session —
+   /sessions/group-sessions/:id/notes/ (GET/PATCH), autosaved.
+═══════════════════════════════════════════════════════════ */
+function NotesDialog({ session, open, onClose }) {
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved
+  const saveTimer = useRef(null);
+
+  useEffect(() => {
+    if (!open || !session) return undefined;
+    let cancelled = false;
+    api
+      .get(`/sessions/group-sessions/${session.id}/notes/`)
+      .then((res) => {
+        if (!cancelled) setContent(res.data?.content || "");
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(saveTimer.current);
+    };
+  }, [open, session]);
+
+  if (!open || !session) return null;
+
+  const handleChange = (e) => {
+    const value = e.target.value;
+    setContent(value);
+    setSaveStatus("saving");
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      api
+        .patch(`/sessions/group-sessions/${session.id}/notes/`, { content: value })
+        .then(() => setSaveStatus("saved"))
+        .catch(() => setSaveStatus("idle"));
+    }, 800);
+  };
+
+  return (
+    <div className="sg__modalOverlay" onClick={onClose}>
+      <div className="sg__smallModal" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="sg__modalClose" onClick={onClose} aria-label="Close">
+          ✕
+        </button>
+
+        <h3 className="sg__modalTitle">Session Notes</h3>
+        <p className="sg__hint sg__modalHint">
+          {session.topic || "Group session"} · {formatDate(session.date)}
+        </p>
+
+        <div className="sg__notesBody">
+          {loading ? (
+            <p className="sg__hint">Loading…</p>
+          ) : (
+            <>
+              <textarea
+                className="sg__input"
+                style={{ width: "100%", minHeight: 140, resize: "vertical", boxSizing: "border-box" }}
+                value={content}
+                onChange={handleChange}
+                placeholder="No notes taken for this session yet — only you can see these."
+              />
+              <p className="sg__hint" style={{ textAlign: "right", marginTop: 4, minHeight: 16 }}>
+                {saveStatus === "saving" && "Saving…"}
+                {saveStatus === "saved" && "Saved"}
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="sg__dialogFootEnd">
+          <button type="button" className="sg__idShareBtn" onClick={onClose}>
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -932,7 +1046,19 @@ function JoinSessionDialog({ open, busy, error, onClose, onEnter }) {
   );
 }
 
-function HostSessionDialog({ open, busy, error, onClose, onInstant, onScheduled }) {
+function HostSessionDialog({
+  open,
+  busy,
+  error,
+  onClose,
+  onInstant,
+  onScheduled,
+  revealSession,
+  onCopyId,
+  onShareViaMessage,
+  onEnterSession,
+  copied,
+}) {
   if (!open) return null;
 
   return (
@@ -947,21 +1073,63 @@ function HostSessionDialog({ open, busy, error, onClose, onInstant, onScheduled 
           ✕
         </button>
 
-        <h3 className="sg__modalTitle">Host Session</h3>
-        <p className="sg__hint sg__modalHint">Choose how you want to host your group session.</p>
-        {error && <div className="sg__errorBox">{error}</div>}
+        {revealSession ? (
+          <>
+            <h3 className="sg__modalTitle">Session started!</h3>
+            <p className="sg__hint sg__modalHint">
+              Share this ID with classmates to let them join.
+            </p>
+            {error && <div className="sg__errorBox">{error}</div>}
 
-        <div className="sg__hostChoiceList">
-          <button type="button" className="sg__hostChoice" disabled={busy} onClick={onInstant}>
-            <strong>Instant Session</strong>
-            <span>Go LIVE directly and share the session ID with students.</span>
-          </button>
+            <div className="sg__idDisplay">
+              <span className="sg__idDisplayLabel">Session ID</span>
+              <span className="sg__idDisplayValue">
+                {revealSession.shortCode || shortId(revealSession.id)}
+              </span>
+              <span className="sg__idDisplayHint">
+                Share this with classmates to let them join
+              </span>
+            </div>
 
-          <button type="button" className="sg__hostChoice" disabled={busy} onClick={onScheduled}>
-            <strong>Scheduled Session</strong>
-            <span>Create a scheduled group session. It stays Scheduled until the host starts it.</span>
-          </button>
-        </div>
+            <div className="sg__idShareRow">
+              <button type="button" className="sg__idShareBtn" onClick={onCopyId}>
+                {copied ? "Copied ✓" : "Copy ID"}
+              </button>
+              <button type="button" className="sg__idShareBtn" onClick={onShareViaMessage}>
+                Share via dashboard message
+              </button>
+            </div>
+
+            <div className="sg__dialogFootEnd">
+              <button
+                type="button"
+                className="sg__figmaActionBtn"
+                disabled={busy}
+                onClick={onEnterSession}
+              >
+                {busy ? "Entering…" : "Enter session"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h3 className="sg__modalTitle">Host Session</h3>
+            <p className="sg__hint sg__modalHint">Choose how you want to host your group session.</p>
+            {error && <div className="sg__errorBox">{error}</div>}
+
+            <div className="sg__hostChoiceList">
+              <button type="button" className="sg__hostChoice" disabled={busy} onClick={onInstant}>
+                <strong>Instant Session</strong>
+                <span>Go LIVE now — a shareable session ID is generated instantly for others to join.</span>
+              </button>
+
+              <button type="button" className="sg__hostChoice" disabled={busy} onClick={onScheduled}>
+                <strong>Scheduled Session</strong>
+                <span>Create a scheduled group session. It stays Scheduled until the host starts it.</span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -984,11 +1152,20 @@ export default function GroupSessions() {
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [detailsSession, setDetailsSession] = useState(null);
   const [editingSession, setEditingSession] = useState(null);
+  const [notesSession, setNotesSession] = useState(null);
 
   const [joinBusy, setJoinBusy] = useState(false);
   const [hostBusy, setHostBusy] = useState(false);
   const [joinError, setJoinError] = useState("");
   const [hostError, setHostError] = useState("");
+  const [instantReveal, setInstantReveal] = useState(null);
+  const [copiedId, setCopiedId] = useState(false);
+
+  // Upcoming / Past pill toggle above the cards grid.
+  const [sessTab, setSessTab] = useState("upcoming"); // "upcoming" | "past"
+  const [pastGroups, setPastGroups] = useState([]);
+  const [pastLoading, setPastLoading] = useState(false);
+  const [pastLoaded, setPastLoaded] = useState(false);
 
   // Small ticker so ended scheduled/live cards update without page reload.
   const [_tick, setTick] = useState(0);
@@ -1090,6 +1267,47 @@ export default function GroupSessions() {
     });
   }, [groups, selectedCourseId, selectedCourse, _tick]);
 
+  // Past tab — backed by the real ?tab=history endpoint (completed /
+  // cancelled / expired sessions the user was part of). Lazy-loaded the
+  // first time the Past pill is opened.
+  const loadPastGroups = useCallback(async () => {
+    setPastLoading(true);
+    try {
+      const history = await groupSessionService.getMyGroupSessions("history");
+      setPastGroups(history || []);
+      setPastLoaded(true); // only latch "loaded" on success — a transient
+      // failure should retry next time the Past tab is opened, not get
+      // stuck showing an empty list forever.
+    } catch {
+      setPastGroups([]);
+    } finally {
+      setPastLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (sessTab === "past" && !pastLoaded) loadPastGroups();
+  }, [sessTab, pastLoaded, loadPastGroups]);
+
+  const visiblePastGroups = useMemo(() => {
+    let list = pastGroups.filter((g) => {
+      if (!selectedCourseId) return true;
+      if (!g.courseId && !g.courseTitle) return true;
+      return String(g.courseId) === String(selectedCourseId) ||
+             String(g.courseTitle) === String(selectedCourse?.course_label);
+    });
+
+    return [...list].sort((a, b) => {
+      const aTime = new Date(`${a.date || "1970-01-01"}T${a.time || "00:00"}`).getTime();
+      const bTime = new Date(`${b.date || "1970-01-01"}T${b.time || "00:00"}`).getTime();
+      const aVal = Number.isNaN(aTime) ? 0 : aTime;
+      const bVal = Number.isNaN(bTime) ? 0 : bTime;
+      // Newest first, always: the design gives this screen no sort control
+      // (unlike Live Sessions, whose Past tab does have one).
+      return bVal - aVal;
+    });
+  }, [pastGroups, selectedCourseId, selectedCourse]);
+
   const refreshOne = async (sessionId) => {
     try {
       const fresh = await groupSessionService.getDetail(sessionId);
@@ -1126,14 +1344,54 @@ export default function GroupSessions() {
         duration_minutes: 60,
         topic: "",
       });
-      setShowHostDialog(false);
-      navigate(`/group-session/live/${sg.id}`);
+      // Reveal the generated session ID (Copy ID / Share) instead of
+      // jumping straight into the room, so the host can share it first.
+      setInstantReveal(sg);
+      setCopiedId(false);
+      loadGroups();
     } catch (err) {
       console.error("createInstant failed:", err?.response?.data || err);
       setHostError(extractApiError(err, "Could not start an instant session."));
     } finally {
       setHostBusy(false);
     }
+  };
+
+  const copyInstantId = async () => {
+    if (!instantReveal) return;
+    const code = instantReveal.shortCode || instantReveal.id;
+    try {
+      await navigator.clipboard?.writeText(code);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    } catch {
+      // Clipboard permission denied — the ID is still visible on screen
+      // for the host to copy manually.
+    }
+  };
+
+  const shareInstantViaMessage = async () => {
+    if (!instantReveal) return;
+    const code = instantReveal.shortCode || instantReveal.id;
+    try {
+      await navigator.clipboard?.writeText(code);
+    } catch {
+      // ignore — id is visible on screen
+    }
+    // TODO(backend): there's no endpoint to post this session ID straight
+    // into a conversation from here. For now we copy the ID and drop the
+    // host into Messages so they can paste it into a conversation
+    // themselves — a real "share" action would need a backend endpoint
+    // that creates/targets a chat message with the invite ID.
+    setShowHostDialog(false);
+    setInstantReveal(null);
+    navigate("/chat");
+  };
+
+  const enterInstantSession = () => {
+    if (!instantReveal) return;
+    setShowHostDialog(false);
+    navigate(`/group-session/live/${instantReveal.id}`);
   };
 
   const enterRoomByCode = async (code) => {
@@ -1183,42 +1441,88 @@ export default function GroupSessions() {
     loadGroups();
   };
 
-  const userInitial = getUserInitial(user);
-
   return (
-    <div className="sg__page sg__page--figma">
-
-      <div className="sg__figmaPanel">
-        <div className="sg__figmaPanelHeader">
-          <h2>Group Sessions</h2>
-          <div className="sg__figmaActions">
-            <button
-              type="button"
-              className="sg__figmaActionBtn"
-              onClick={() => { setJoinError(""); setShowJoinDialog(true); }}
-            >
-              Join Session
-            </button>
-            <button
-              type="button"
-              className="sg__figmaActionBtn"
-              onClick={() => { setHostError(""); setShowHostDialog(true); }}
-            >
-              Host Session
-            </button>
-          </div>
+    <div className="ac-screen">
+      {/* Head — the design pulls this tight against the tab bar (mb 4px). */}
+      <div className="ac-head ac-head--tight">
+        <div>
+          <h1 className="ac-head__title">Group Sessions</h1>
+          <p className="ac-head__sub">Study groups and doubt-clearing circles.</p>
         </div>
-
-        {loading ? (
-          <LoadingState plain label="Loading group sessions" />
-        ) : visibleGroups.length > 0 ? (
-          <div className="sg__figmaGrid">
-            {visibleGroups.map((g) => (
-              <GroupSessionCard key={g.id} group={g} onOpen={openCard} />
-            ))}
-          </div>
-        ) : null}
+        <div className="ac-head__actions">
+          <button
+            type="button"
+            className="ac-headBtn ac-headBtn--outline"
+            onClick={() => { setJoinError(""); setShowJoinDialog(true); }}
+          >
+            Join session
+          </button>
+          <button
+            type="button"
+            className="ac-headBtn ac-headBtn--success"
+            onClick={() => { setHostError(""); setInstantReveal(null); setShowHostDialog(true); }}
+          >
+            Host session
+          </button>
+        </div>
       </div>
+
+      {/* Underline tab bar. The README claims a pill toggle here, but the
+          .dc.html (line 1330) shows a 2px-underline tab bar — same control as
+          Private Sessions, not the segmented pill Live Sessions uses. */}
+      <div className="ac-tabs ac-tabs--tight" role="tablist" aria-label="Session view">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={sessTab === "upcoming"}
+          className={`ac-tab${sessTab === "upcoming" ? " is-active" : ""}`}
+          onClick={() => setSessTab("upcoming")}
+        >
+          Upcoming
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={sessTab === "past"}
+          className={`ac-tab${sessTab === "past" ? " is-active" : ""}`}
+          onClick={() => setSessTab("past")}
+        >
+          Past
+        </button>
+      </div>
+
+      {sessTab === "upcoming" ? (
+        <section className="ac-listCard">
+          {loading ? (
+            <LoadingState plain label="Loading group sessions" />
+          ) : visibleGroups.length > 0 ? (
+            <div className="ac-list">
+              {visibleGroups.map((g) => (
+                <GroupSessionCard key={g.id} group={g} onOpen={openCard} />
+              ))}
+            </div>
+          ) : (
+            <div className="ac-emptyRow">Nothing here yet</div>
+          )}
+        </section>
+      ) : (
+        <>
+
+          <section className="ac-listCard">
+            {pastLoading ? (
+              <LoadingState plain label="Loading past sessions" />
+            ) : visiblePastGroups.length > 0 ? (
+              <div className="ac-list">
+                {visiblePastGroups.map((g) => (
+                  <PastSessionCard key={g.id} group={g} onNotes={setNotesSession} />
+                ))}
+              </div>
+            ) : (
+              <div className="ac-emptyRow">Nothing here yet</div>
+            )}
+          </section>
+        </>
+      )}
 
       <JoinSessionDialog
         open={showJoinDialog}
@@ -1232,9 +1536,21 @@ export default function GroupSessions() {
         open={showHostDialog}
         busy={hostBusy}
         error={hostError}
-        onClose={() => { if (!hostBusy) { setShowHostDialog(false); setHostError(""); } }}
+        onClose={() => { if (!hostBusy) { setShowHostDialog(false); setHostError(""); setInstantReveal(null); } }}
         onInstant={startInstantMeeting}
         onScheduled={openScheduledSession}
+        revealSession={instantReveal}
+        onCopyId={copyInstantId}
+        onShareViaMessage={shareInstantViaMessage}
+        onEnterSession={enterInstantSession}
+        copied={copiedId}
+      />
+
+      <NotesDialog
+        key={notesSession?.id}
+        session={notesSession}
+        open={Boolean(notesSession)}
+        onClose={() => setNotesSession(null)}
       />
 
       <ScheduleSessionModal
@@ -1654,6 +1970,22 @@ const styles = {
   declinedLabel: {
     background: "#fee2e2",
     color: "#b91c1c",
+    borderRadius: 4,
+    padding: "3px 8px",
+    fontSize: 10,
+    fontWeight: 800,
+  },
+  joinedLabel: {
+    background: "#d1fae5",
+    color: "#065f46",
+    borderRadius: 4,
+    padding: "3px 8px",
+    fontSize: 10,
+    fontWeight: 800,
+  },
+  reinvitedLabel: {
+    background: "#fef3c7",
+    color: "#92400e",
     borderRadius: 4,
     padding: "3px 8px",
     fontSize: 10,

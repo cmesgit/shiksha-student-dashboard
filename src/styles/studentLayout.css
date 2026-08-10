@@ -1,14 +1,25 @@
+/* The design's root shell: display:flex, height:100vh, min-width:1240px,
+   background #eef1f2 (Academy Dashboard.dc.html line 559). The min-width is
+   applied only from 769px up — below that we keep the mobile drawer rather
+   than force a horizontal scroll on phones. */
 .studentLayout {
   display: flex;
   height: 100vh;
   overflow: hidden;
+  background: var(--page-bg);
+}
+
+@media (min-width: 769px) {
+  .studentLayout {
+    min-width: var(--app-min-w);
+  }
 }
 
 /* ================= SIDEBAR ================= */
 .studentLayout__sidebar {
-  width: 250px;
+  width: var(--sidebar-w);
   flex-shrink: 0;
-  background: #015865;
+  background: var(--side-bg);
   transition: 0.3s ease;
 }
 
@@ -20,22 +31,26 @@
   height: 100vh;
   overflow: hidden;
   min-width: 0;
-  background: #A3C5CC;
+  background: var(--page-bg);
 }
 
+/* Content column — Academy's design pads 20px 24px 28px; Skill Dev's own
+   design pads 26px 30px 40px (dc:104) via the [data-track="skill"] override
+   on --content-pad. Screens must not re-pad their own root. */
 .studentLayout__page {
   flex: 1;
-  padding: 0 20px 20px;
+  padding: var(--content-pad);
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
   display: flex;
   flex-direction: column;
   scrollbar-width: thin;
-  scrollbar-color: rgba(1, 88, 101, 0.5) transparent;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 .studentLayout__page::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 
 .studentLayout__page::-webkit-scrollbar-track {
@@ -43,12 +58,8 @@
 }
 
 .studentLayout__page::-webkit-scrollbar-thumb {
-  background: rgba(1, 88, 101, 0.4);
-  border-radius: 5px;
-}
-
-.studentLayout__page::-webkit-scrollbar-thumb:hover {
-  background: rgba(1, 88, 101, 0.6);
+  background: var(--border-strong);
+  border-radius: 8px;
 }
 
 /* ================= OVERLAY ================= */
@@ -73,11 +84,11 @@
 
   .studentLayout__sidebar {
     position: fixed;
-    left: -260px;
+    left: calc(-1 * var(--sidebar-w) - 10px);
     top: 0;
-    height: 100vh;
-    width: 250px;
-    background: #015865;
+    height: 100dvh;
+    width: var(--sidebar-w);
+    background: var(--side-bg);
     z-index: 100;
   }
 
@@ -131,4 +142,17 @@
   width: 100%;
   height: 100%;
   display: flex;
+}
+/* Lightweight page-load fade — pure CSS, no library. Keyed by route pathname
+   (see StudentLayout.jsx) so React remounts this wrapper on navigation and
+   the animation replays. */
+.page-fade {
+  animation: page-fade-in 180ms ease both;
+}
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-fade { animation: none; }
 }

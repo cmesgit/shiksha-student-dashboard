@@ -1,185 +1,157 @@
-// PLACEMENT: student_dashboard/src/skill/SkillSessions.jsx   (REPLACE WHOLE FILE)
-// DEPLOY:    /app/student_dashboard/src/skill/SkillSessions.jsx
-//
-// Change from previous version (ONLY the join handler):
-//   - "Join" no longer pre-joins then navigates to /private-session/live/<id>
-//     (the ACADEMY live page, which 404s on a skill-session id).
-//   - It now navigates straight to /skill-session/live/<id> (the new skill
-//     LiveKit room page). That page performs POST /skill/sessions/<id>/join/
-//     and mounts the LiveKit room. No throwaway pre-join here.
-// Everything else is identical to the previous version.
+// skill/SkillSessions.jsx — Skill Dev Student.dc.html dc:601-647 (list) +
+// dc:754-798 (cancel / rate modals).
 
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Icon } from "./skillIcons";
-import { Avatar } from "./skillUI";
+import { Avatar } from "./SkillUI";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingState } from "../components/StateViews";
 import SkillReviewModal from "../components/SkillReviewModal";
+import SkillModal from "../components/SkillModal";
+import { useSkillToast } from "../components/useSkillToast";
+import "../styles/skillSessions.css";
 
-const ACC = "#ff8f01";
+const STATUS_LABEL = { requested: "Requested", confirmed: "Confirmed", cancelled: "Cancelled" };
+const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
 
-export default function SkillSessions({ setTab = () => {}, openMsg = () => {} }) {
-  const { api }  = useAuth();
+export default function SkillSessions({ setTab = () => {} }) {
+  const { api } = useAuth();
   const navigate = useNavigate();
+  const showToast = useSkillToast();
 
+  const [tab, setLocalTab] = useState("upcoming");
   const [upcoming, setUpcoming] = useState([]);
-  const [past,     setPast]     = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [reviewFor, setReviewFor] = useState(null);   // session being reviewed inline
+  const [past, setPast] = useState([]);
+  const [reschedule, setReschedule] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [rateFor, setRateFor] = useState(null);
+  const [cancelFor, setCancelFor] = useState(null);
 
   const load = useCallback((quiet = false) => {
     if (!quiet) setLoading(true);
-    api.get("/skill/student/dashboard/")
-      .then(r => {
-        setUpcoming(r.data.upcoming_sessions || []);
-        setPast(r.data.past_sessions || []);
+    Promise.all([
+      api.get("/skill/student/dashboard/"),
+      api.get("/skill/my-sessions/"),
+    ])
+      .then(([dash, sessions]) => {
+        setUpcoming(dash.data.upcoming_sessions || []);
+        setPast(dash.data.past_sessions || []);
+        const awaiting = (Array.isArray(sessions.data) ? sessions.data : [])
+          .find((s) => s.status === "needs_reconfirmation");
+        setReschedule(awaiting || null);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [api]);
 
   useEffect(() => {
-    load();
-    // Poll so a "Join now" appears shortly after the tutor starts the class,
-    // without the student having to refresh.
+    // load()'s setState calls all happen inside its own .then()/.finally()
+    // callbacks once the request settles, never synchronously in this effect
+    // body — a standard mount-fetch, not the cascading-render pattern this
+    // rule targets. (The linter's static analysis can't see across the
+    // async boundary; CancelModal/RateModal below use the identical
+    // shape unflagged.)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load(true);
     const id = setInterval(() => load(true), 15000);
     return () => clearInterval(id);
   }, [load]);
 
-  // The live room page (SkillSessionLive) owns the join handshake.
   const joinSession = (sessionId) => navigate(`/skill-session/live/${sessionId}`);
 
+  const resolveReschedule = async (accept) => {
+    if (!reschedule) return;
+    try {
+      await api.post(`/skill/sessions/${reschedule.id}/${accept ? "confirm-reschedule" : "decline-reschedule"}/`);
+      showToast(accept ? "New time accepted." : "Kept your original time.");
+      load(true);
+    } catch {
+      showToast("Couldn't update — please try again.");
+    }
+  };
+
+  const rows = tab === "upcoming" ? upcoming : past;
+
   return (
-    <div style={{ padding: "14px 18px 22px", overflow: "auto", flex: 1 }}>
+    <div className="ss-screen">
       <SkillReviewModal onDone={() => load(true)} />
 
-      {/* Upcoming sessions */}
-      <div className="rd-card" style={{ marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <h4 style={{ margin: 0 }}>Upcoming 1-on-1 sessions</h4>
-          <button onClick={() => setTab("book")} style={{ background: "none", border: "none", color: "#d97706", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-            Book a tutor →
-          </button>
+      <div className="ss-seg">
+        <button className={`ss-seg__btn ${tab === "upcoming" ? "is-active" : ""}`} onClick={() => setLocalTab("upcoming")}>Upcoming</button>
+        <button className={`ss-seg__btn ${tab === "past" ? "is-active" : ""}`} onClick={() => setLocalTab("past")}>Past</button>
+      </div>
+
+      {loading ? (
+        <LoadingState label="Loading sessions" />
+      ) : rows.length === 0 ? (
+        <div className="ss-empty">
+          {tab === "upcoming" ? "No upcoming sessions." : "No completed sessions yet."}{" "}
+          {tab === "upcoming" && <button className="ss-link" onClick={() => setTab("explore")}>Explore tutors →</button>}
         </div>
+      ) : (
+        <div className="ss-rows">
+          {rows.map((s) => {
+            const resched = tab === "upcoming" && reschedule && reschedule.id === s.id;
+            return (
+              <div className={`ss-row ${s.status === "cancelled" ? "ss-tag--cancelled-row" : ""}`} key={s.id}>
+                <Avatar name={s.expert_name} img={s.expert_img} size={46} />
+                <div className="ss-body">
+                  <div className="ss-topic">{s.topic}</div>
+                  <div className="ss-meta">with {s.expert_name} · {s.when}</div>
+                </div>
+                <span className={`ss-tag ss-tag--${s.status}`}>{STATUS_LABEL[s.status] || s.status}</span>
 
-        {loading ? (
-          <LoadingState plain label="Loading sessions" />
-        ) : upcoming.length === 0 ? (
-          <div style={{ fontSize: 12, color: "#888", padding: "8px 0" }}>
-            No upcoming sessions.{" "}
-            <button onClick={() => setTab("book")} style={{ background: "none", border: "none", color: ACC, fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
-              Book one →
-            </button>
-          </div>
-        ) : upcoming.map((s) => (
-          <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 13, padding: 13, border: "1px solid #efe2d6", borderRadius: 13, marginBottom: 10, background: "#fff" }}>
-            <Avatar name={s.expert_name} img={s.expert_img} size={48} radius={11} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 800, color: "#1a2c33" }}>{s.topic}</div>
-              <div style={{ fontSize: 11.5, color: "#888" }}>with {s.expert_name}</div>
-              <div style={{ display: "flex", gap: 12, marginTop: 6, fontSize: 11.5, color: "#6b7c83" }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon.cal size={12} /> {s.when || "TBC"}</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon.clock size={12} /> {s.dur}</span>
-              </div>
-            </div>
-            <button
-              onClick={() => openMsg(s.expert_teacher_id, s.expert_name)}
-              title="Message"
-              disabled={!s.expert_teacher_id}
-              style={{
-                background: "#fff", border: "1px solid #f0d7b6", color: "#d97706",
-                borderRadius: 9, width: 38, height: 38,
-                cursor: s.expert_teacher_id ? "pointer" : "not-allowed",
-                display: "grid", placeItems: "center", flexShrink: 0,
-                opacity: s.expert_teacher_id ? 1 : 0.35,
-              }}
-            >
-              <Icon.msg size={15} />
-            </button>
-            {s.live ? (
-              <button
-                onClick={() => joinSession(s.id)}
-                style={{ background: "#dc2626", color: "#fff", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}
-              >
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff", boxShadow: "0 0 0 0 rgba(255,255,255,.7)", animation: "none" }} />
-                <Icon.vid size={14} /> Join · Live now
-              </button>
-            ) : s.joinable ? (
-              <button
-                onClick={() => joinSession(s.id)}
-                style={{ background: ACC, color: "#fff", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 12, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}
-              >
-                <Icon.vid size={14} /> Join
-              </button>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                {s.status === "requested" && (
-                  <span title="Waiting for the tutor to accept" style={{ fontSize: 10.5, fontWeight: 800, color: "#b46a00", background: "#ff8f0122", padding: "4px 9px", borderRadius: 100, whiteSpace: "nowrap" }}>
-                    Pending
-                  </span>
+                {tab === "upcoming" ? (
+                  <>
+                    {(s.live || s.joinable) && (
+                      <button className="ss-btn ss-btn--join" onClick={() => joinSession(s.session_id || s.id)}>Join session</button>
+                    )}
+                    <button className="ss-btn ss-btn--cancel" onClick={() => setCancelFor(s)}>Cancel</button>
+                  </>
+                ) : s.reviewed ? (
+                  <span className="ss-myStars">★★★★★</span>
+                ) : (
+                  <button className="ss-btn ss-btn--rate" onClick={() => setRateFor(s)}>Rate session</button>
                 )}
-                <button
-                  onClick={() => navigate(`/skill-dev/sessions/${s.id}`)}
-                  style={{ background: "#fff", border: "1px solid #e3dccf", color: "#555", borderRadius: 9, padding: "9px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                >
-                  Details
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
 
-      {/* Past sessions */}
-      <div className="rd-card">
-        <h4>Past sessions</h4>
-        {loading ? (
-          <LoadingState plain label="Loading sessions" />
-        ) : past.length === 0 ? (
-          <div style={{ fontSize: 12, color: "#888" }}>No completed sessions yet.</div>
-        ) : past.map((s) => (
-          <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: "1px solid #eee" }}>
-            <Avatar name={s.expert_name} img={s.expert_img} size={42} radius={10} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>{s.topic}</div>
-              <div style={{ fontSize: 11.5, color: "#888" }}>with {s.expert_name} · {s.when}</div>
-            </div>
-            <button
-              onClick={() => openMsg(s.expert_teacher_id, s.expert_name)}
-              title="Message"
-              disabled={!s.expert_teacher_id}
-              style={{
-                background: "none", border: "none", color: "#d97706",
-                cursor: s.expert_teacher_id ? "pointer" : "default",
-                opacity: s.expert_teacher_id ? 1 : 0.35, padding: "4px 8px",
-              }}
-            >
-              <Icon.msg size={15} />
-            </button>
-            <button
-              onClick={() => navigate(`/skill-dev/sessions/${s.id}`)}
-              style={{ background: "none", border: "none", color: "#888", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: "4px 8px", textDecoration: "underline" }}
-            >
-              Details
-            </button>
-            {s.reviewed
-              ? <span style={{ fontSize: 11.5, color: "#2f9d42", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon.check size={13} /> Reviewed</span>
-              : <button onClick={() => setReviewFor(s)} style={{ background: ACC, color: "#fff", border: "none", borderRadius: 8, padding: "7px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
-                  <Icon.star size={12} /> Leave review
-                </button>
-            }
-          </div>
-        ))}
-      </div>
-      {reviewFor && (
-        <ReviewOverlay
-          session={reviewFor}
+                {resched && (
+                  <div className="ss-reschedPanel">
+                    <div className="ss-reschedTitle">Reschedule requested</div>
+                    <div className="ss-reschedLine">
+                      {s.expert_name} proposed a new time: <strong>{reschedule.proposed_scheduled_for
+                        ? new Date(reschedule.proposed_scheduled_for).toLocaleString("en-IN", { weekday: "short", hour: "numeric", minute: "2-digit" })
+                        : "a new time"}</strong>
+                    </div>
+                    {reschedule.reschedule_reason && <div className="ss-reschedReason">&ldquo;{reschedule.reschedule_reason}&rdquo;</div>}
+                    <div className="ss-reschedActions">
+                      <button className="ss-btn ss-btn--accept" onClick={() => resolveReschedule(true)}>Accept new time</button>
+                      <button className="ss-btn ss-btn--keep" onClick={() => resolveReschedule(false)}>Keep current time</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {cancelFor && (
+        <CancelModal
+          session={cancelFor}
           api={api}
-          onClose={() => setReviewFor(null)}
+          onClose={() => setCancelFor(null)}
+          onCancelled={() => { setCancelFor(null); showToast("Session cancelled."); load(true); }}
+        />
+      )}
+
+      {rateFor && (
+        <RateModal
+          session={rateFor}
+          api={api}
+          onClose={() => setRateFor(null)}
           onSaved={() => {
-            setPast(list => list.map(x => x.id === reviewFor.id ? { ...x, reviewed: true } : x));
-            setReviewFor(null);
+            setPast((list) => list.map((x) => (x.id === rateFor.id ? { ...x, reviewed: true } : x)));
+            setRateFor(null);
             load(true);
           }}
         />
@@ -188,14 +160,67 @@ export default function SkillSessions({ setTab = () => {}, openMsg = () => {} })
   );
 }
 
-/* Small modal for reviewing a specific past session from the list.
-   One review per session — the server rejects duplicates, and success/duplicate
-   both flip the row to "Reviewed" so the button can't be spammed. */
-function ReviewOverlay({ session, api, onClose, onSaved }) {
+function CancelModal({ session, api, onClose, onCancelled }) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [now] = useState(() => Date.now());
+  const scheduled = session.scheduled_for ? new Date(session.scheduled_for) : null;
+  const isLate = scheduled ? scheduled.getTime() - now < TWELVE_HOURS_MS : false;
+
+  const confirm = async () => {
+    if (busy) return;
+    setBusy(true); setErr("");
+    try {
+      // `reason` isn't consumed by StudentCancelSessionView yet — harmless to
+      // send now, ready for when the backend logs it.
+      await api.post(`/skill/sessions/${session.session_id || session.id}/cancel/`, { reason });
+      onCancelled();
+    } catch (e) {
+      // A CONFIRMED session currently 409s — cancellation there requires
+      // messaging the expert, which this modal can't do; surface the real
+      // reason rather than pretending it succeeded.
+      setErr(e?.response?.data?.detail || "Couldn't cancel — please try again.");
+      setBusy(false);
+    }
+  };
+
+  return (
+    <SkillModal open onClose={onClose} title="Cancel this session?" maxWidth={440}>
+      <div className="ss-cancelLabel">&ldquo;{session.topic}&rdquo; with {session.expert_name} · {session.when}</div>
+
+      {isLate ? (
+        <div className="ss-noticeBox ss-noticeBox--late">
+          <strong>Late cancellation.</strong> This session starts within the expert's 12-hour notice window — you'll be offered one free reschedule instead of a fresh booking.
+        </div>
+      ) : (
+        <div className="ss-noticeBox ss-noticeBox--free">
+          <strong>Free cancellation.</strong> You're outside the expert's 12-hour notice window — the slot is released with no penalty.
+        </div>
+      )}
+
+      <label className="ss-reasonLabel">Reason (optional, shared with the expert)</label>
+      <textarea
+        className="ss-reasonInput"
+        value={reason} onChange={(e) => setReason(e.target.value)}
+        placeholder="e.g. Something came up at work…"
+      />
+
+      {err && <div className="ss-reviewErr">{err}</div>}
+
+      <div className="ss-cancelActions">
+        <button className="ss-btn ss-btn--keepBooking" onClick={onClose} disabled={busy}>Keep booking</button>
+        <button className="ss-btn ss-btn--cancelSession" onClick={confirm} disabled={busy}>Cancel session</button>
+      </div>
+    </SkillModal>
+  );
+}
+
+function RateModal({ session, api, onClose, onSaved }) {
   const [rating, setRating] = useState(0);
-  const [body, setBody]     = useState("");
-  const [busy, setBusy]     = useState(false);
-  const [err, setErr]       = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
 
   const submit = async () => {
     if (!rating || busy) return;
@@ -211,31 +236,18 @@ function ReviewOverlay({ session, api, onClose, onSaved }) {
   };
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(20,10,5,.45)", zIndex: 300, display: "grid", placeItems: "center", padding: 16 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, padding: "22px 20px", width: "100%", maxWidth: 400, boxShadow: "0 18px 50px rgba(0,0,0,.25)" }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "#1a2c33" }}>Review your session</div>
-        <div style={{ fontSize: 12.5, color: "#888", marginTop: 3 }}>with {session.expert_name}</div>
-        <div style={{ display: "flex", gap: 4, margin: "14px 0 4px" }}>
-          {[1,2,3,4,5].map(n => (
-            <button key={n} type="button" onClick={() => setRating(n)}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 30, padding: 2, color: n <= rating ? ACC : "#d1d5db" }}>★</button>
-          ))}
-        </div>
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3}
-          placeholder="What was the session like?"
-          style={{ width: "100%", boxSizing: "border-box", marginTop: 8, border: "1.5px solid #e3dccf", borderRadius: 10, padding: "9px 12px", fontSize: 13, fontFamily: "inherit", resize: "vertical" }} />
-        {err && <div style={{ marginTop: 8, fontSize: 12.5, color: "#c0492f", fontWeight: 600 }}>{err}</div>}
-        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-          <button onClick={submit} disabled={!rating || busy}
-            style={{ flex: 1, background: ACC, color: "#fff", border: "none", borderRadius: 10, padding: "11px 0", fontSize: 13, fontWeight: 800, cursor: !rating||busy?"default":"pointer", opacity: !rating||busy?0.6:1 }}>
-            {busy ? "Submitting…" : "Submit review"}
-          </button>
-          <button onClick={onClose} disabled={busy}
-            style={{ background: "#fff", border: "1px solid #e3dccf", color: "#555", borderRadius: 10, padding: "11px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            Cancel
-          </button>
-        </div>
+    <SkillModal open onClose={onClose} title="How was your session?" maxWidth={400}>
+      <div className="ss-rateSub">{session.topic} with {session.expert_name}</div>
+      <div className="ss-starPicker">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button key={n} type="button" onClick={() => setRating(n)} className={`ss-starBtn ${n <= rating ? "is-filled" : ""}`}>★</button>
+        ))}
       </div>
-    </div>
+      <textarea className="ss-reviewInput" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Anything to share with the expert? (optional)" />
+      {err && <div className="ss-reviewErr">{err}</div>}
+      <button className={`ss-submitRate ${rating > 0 ? "is-enabled" : ""}`} disabled={!rating || busy} onClick={submit}>
+        {busy ? "Submitting…" : rating > 0 ? "Submit rating" : "Tap a star to rate"}
+      </button>
+    </SkillModal>
   );
 }

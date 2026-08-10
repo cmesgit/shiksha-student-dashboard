@@ -2,26 +2,48 @@
    DASHBOARD SHELL
 ========================= */
 
+/* The content column already supplies the design's 20px 24px 28px padding
+   (studentLayout.css), and the design gives the dashboard no max-width — it
+   fills the column. */
 .dashboardShell {
-  min-height: calc(100vh - 64px);
   width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 14px 16px 18px;
   box-sizing: border-box;
-  overflow-y: auto;
+  animation: fadeUp .28s ease both;
 }
 
 .desktopOnly {
   min-height: 0;
 }
 
-/* ── Stat row (mockup) ── */
+/* ── Page heading (design dc.html lines 2121–2126) ── */
+.dashGreet {
+  margin-bottom: 16px;
+}
+.dashGreet__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-page-title);
+  letter-spacing: -.4px;
+  color: var(--ink);
+}
+.dashGreet__sub {
+  margin: 3px 0 0;
+  font-size: var(--fs-body);
+  color: var(--ink-muted);
+}
+.dashGreet__sub strong {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ── Stat row (design dc.html line 2127) ── */
 .dashStatRow {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+  width: 100%;
 }
 .dashStat {
   background: #fff;
@@ -46,6 +68,105 @@
 @media (max-width: 1024px) { .dashStatRow { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 460px)  { .dashStatRow { grid-template-columns: 1fr; } }
 
+/* =========================
+   HERO — next class card
+========================= */
+.dashHero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 22px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #425f7f 0%, #2d4560 100%);
+  box-shadow: 0 6px 18px rgba(45, 69, 96, 0.25);
+  color: #fff;
+}
+
+.dashHero__main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dashHero__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: rgba(255, 255, 255, 0.16);
+}
+.dashHero__chip--live {
+  background: #13899b;
+}
+.dashHero__chip--live::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: dashHeroLivePulse 1.4s ease-in-out infinite;
+}
+.dashHero__chip--next { background: rgba(255, 255, 255, 0.14); }
+
+@keyframes dashHeroLivePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.dashHero__relative {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.72);
+  margin-top: 2px;
+}
+
+.dashHero__topic {
+  margin: 6px 0 0;
+  font-family: Montserrat, sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #fff;
+}
+
+.dashHero__teacher {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.dashHero__cta {
+  flex-shrink: 0;
+  background: #fff;
+  color: #2d4560;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 22px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.dashHero__cta:hover {
+  background: #f1f5f9;
+}
+
+@media (max-width: 620px) {
+  .dashHero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .dashHero__cta {
+    width: 100%;
+  }
+}
+
 .mobileOnly {
   display: none;
 }
@@ -56,7 +177,7 @@
 
 .dashboardMain {
   display: grid;
-  grid-template-columns: minmax(0, 2.05fr) minmax(330px, 0.95fr);
+  grid-template-columns: minmax(0, 1fr) var(--rail-w, 348px);
   gap: 16px;
   align-items: start;
   min-height: 0;
@@ -99,11 +220,6 @@
 .dashboardCard--notifications .cardBodyScroll,
 .dashboardCard--schedule .cardBodyScroll { max-height: 340px; overflow-y: auto; }
 
-.dashboardCard--live {
-  padding: 14px 16px 12px;
-  justify-content: flex-start;
-}
-
 .dashboardCard--assignments,
 .dashboardCard--notifications,
 .dashboardCard--schedule {
@@ -139,18 +255,6 @@
 
 .cardHeader--clickable:hover {
   opacity: 0.92;
-}
-
-.liveHeader {
-  margin-bottom: 10px;
-}
-
-.sessionCountText {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 800;
-  color: #111827;
-  white-space: nowrap;
 }
 
 .selectedDateText {
@@ -202,41 +306,11 @@
 
 .liveCardsRow {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
   min-width: 0;
   min-height: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  align-items: stretch;
-  padding-bottom: 8px;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
-
-
-.liveCardsRow > * {
-  flex: 0 0 calc((100% - 24px) / 3);
-  min-width: calc((100% - 24px) / 3);
-  max-width: calc((100% - 24px) / 3);
-}
-
-.liveCardsRow::-webkit-scrollbar {
-  height: 8px;
-}
-
-.liveCardsRow::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 999px;
-}
-
-.liveCardsRow::-webkit-scrollbar-thumb {
-  background: rgba(8, 60, 69, 0.28);
-  border-radius: 999px;
-}
-
-.liveCardsRow::-webkit-scrollbar-thumb:hover {
-  background: rgba(8, 60, 69, 0.4);
 }
 
 .liveEmptyState {
@@ -338,7 +412,10 @@
 
 .dashboardRight {
   display: grid;
-  grid-template-rows: 281px minmax(0, 1fr);
+  /* Right rail order is now [Assignments/Quizzes toggle card, Month Calendar] —
+     the toggle card gets the flexible track, the calendar keeps the fixed
+     track it always had (same two values, swapped to match child order). */
+  grid-template-rows: minmax(0, 1fr) 281px;
   gap: 14px;
   min-height: 0;
 }
@@ -415,10 +492,10 @@
 .calendarGrid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-template-rows: 18px repeat(6, 25px);
-  row-gap: 5px;
+  grid-template-rows: 18px repeat(6, 1fr);
+  gap: 2px;
   width: 100%;
-  justify-items: center;
+  justify-items: stretch;
   align-content: start;
   flex: 0 1 auto;
 }
@@ -436,15 +513,15 @@
 
 .calDate {
   width: 100%;
-  height: 32px;
+  aspect-ratio: 1;
   border: none;
   background: transparent;
-  border-radius: 12px;
+  border-radius: 7px;
   padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   cursor: pointer;
   transition: transform 0.15s ease, background 0.15s ease;
 }
@@ -825,30 +902,31 @@
 .assignmentToggle {
   display: inline-flex;
   align-items: center;
-  background: #e7edf4;
-  border-radius: 999px;
-  padding: 2px;
-  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  background: #e4e9eb;
+  border-radius: 9px;
+  padding: 3px;
+  gap: 2px;
 }
 
 .assignmentToggle__btn {
   border: 0;
   outline: 0;
   cursor: pointer;
-  padding: 5px 16px;
-  border-radius: 999px;
+  padding: 5px 12px;
+  border-radius: 7px;
   background: transparent;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 700;
+  color: #6b7c83;
+  font-size: 11px;
+  font-weight: 500;
   line-height: 1;
   transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .assignmentToggle__btn--active {
   background: #425f7f;
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(26, 44, 51, 0.2);
 }
 
 .assignmentToggle__btn:hover {

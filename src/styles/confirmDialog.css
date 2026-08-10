@@ -88,22 +88,37 @@
   color: #0f172a;
 }
 
+/* Parameterized so a caller can retheme via a wrapper class (e.g. Skill Dev's
+   orange) without forking this file — defaults preserve every existing
+   caller's look exactly. */
+.cd__overlay {
+  --cd-primary: #c2410c;
+  --cd-primary-hover: #9a330a;
+  --cd-danger: #dc2626;
+  --cd-danger-hover: #b91c1c;
+}
+/* Skill Dev retint — dialog="{...dialog, tone:'skill'}" */
+.cd__overlay--skill {
+  --cd-primary: var(--skill);
+  --cd-primary-hover: var(--skill-hover);
+}
+
 .cd__btn--primary {
-  background: #c2410c;
-  border-color: #c2410c;
+  background: var(--cd-primary);
+  border-color: var(--cd-primary);
   color: #ffffff;
 }
 .cd__btn--primary:hover:not(:disabled) {
-  background: #9a330a;
-  border-color: #9a330a;
+  background: var(--cd-primary-hover);
+  border-color: var(--cd-primary-hover);
 }
 
 .cd__btn--danger {
-  background: #dc2626;
-  border-color: #dc2626;
+  background: var(--cd-danger);
+  border-color: var(--cd-danger);
   color: #ffffff;
 }
 .cd__btn--danger:hover:not(:disabled) {
-  background: #b91c1c;
-  border-color: #b91c1c;
+  background: var(--cd-danger-hover);
+  border-color: var(--cd-danger-hover);
 }

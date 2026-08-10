@@ -19,6 +19,16 @@ import { extractError } from "../shared/extractError";
 import "../styles/academyCommon.css";
 import "../styles/browseCourses.css";
 
+// A few known category slugs get a proper acronym label; anything else falls
+// back to a title-cased version of the slug so new categories never render
+// as a raw dash-separated string.
+const CATEGORY_LABELS = {
+  neet: "NEET", upsc: "UPSC", jee: "IIT-JEE", ssc: "SSC · Banking",
+  defence: "Defence", ca: "CA", olympiad: "Olympiad",
+};
+const categoryLabel = (slug) =>
+  CATEGORY_LABELS[slug] || slug.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+
 function SkeletonCard() {
   return (
     <div className="ac-card shop-skel">
@@ -41,6 +51,7 @@ export default function BrowseCourses() {
   const [query, setQuery] = useState("");
   const [board, setBoard] = useState("all");
   const [stream, setStream] = useState("all");
+  const [category, setCategory] = useState("all");
 
   const { enroll, busyId, error: enrolError, setError: setEnrolError, collectsMoney, config } = useEnroll();
 
@@ -114,12 +125,19 @@ export default function BrowseCourses() {
     return [...map.entries()].map(([id, name]) => ({ id, name }));
   }, [courses]);
 
+  const categories = useMemo(() => {
+    const slugs = new Set();
+    for (const c of courses) (c.category_slugs || []).forEach((s) => slugs.add(s));
+    return [...slugs].map((slug) => ({ slug, label: categoryLabel(slug) }));
+  }, [courses]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const streamIdOf = (c) => c.stream?.id || c.stream_name || null;
     const matched = courses.filter((c) => {
       if (board !== "all" && c.board?.id !== board) return false;
       if (stream !== "all" && streamIdOf(c) !== stream) return false;
+      if (category !== "all" && !(c.category_slugs || []).includes(category)) return false;
       if (!q) return true;
       return [c.title, c.description, c.board?.name, c.stream_name, c.lead_teacher]
         .filter(Boolean)
@@ -131,7 +149,7 @@ export default function BrowseCourses() {
       .map((c, i) => [c, i])
       .sort((a, b) => (a[0].is_enrolled ? 1 : 0) - (b[0].is_enrolled ? 1 : 0) || a[1] - b[1])
       .map(([c]) => c);
-  }, [courses, query, board, stream]);
+  }, [courses, query, board, stream, category]);
 
   return (
     <div className="ac-page">
@@ -210,6 +228,20 @@ export default function BrowseCourses() {
               </div>
             </div>
           )}
+
+          {categories.length > 1 && (
+            <div className="shop-facet">
+              <span className="shop-facet__label">Category</span>
+              <div className="shop-facet__row">
+                <button className={`shop-chip${category === "all" ? " is-active" : ""}`} onClick={() => setCategory("all")}>All</button>
+                {categories.map((c) => (
+                  <button key={c.slug} className={`shop-chip${category === c.slug ? " is-active" : ""}`} onClick={() => setCategory(c.slug)}>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -239,7 +271,7 @@ export default function BrowseCourses() {
           </div>
           <h2 className="ac-empty__title">Nothing matches that</h2>
           <p className="ac-empty__text">Try a different search term or clear the filters.</p>
-          <button className="ac-empty__cta" onClick={() => { setQuery(""); setBoard("all"); setStream("all"); }}>
+          <button className="ac-empty__cta" onClick={() => { setQuery(""); setBoard("all"); setStream("all"); setCategory("all"); }}>
             Clear filters
           </button>
         </div>

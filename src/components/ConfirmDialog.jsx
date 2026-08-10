@@ -43,6 +43,7 @@ export default function ConfirmDialog({ dialog, onClose }) {
     cancelLabel = "Cancel",
     danger = false,
     busy = false,
+    tone,   // e.g. "skill" — retints --cd-primary/--cd-danger via CSS, see confirmDialog.css
     onConfirm,
   } = dialog;
 
@@ -53,7 +54,7 @@ export default function ConfirmDialog({ dialog, onClose }) {
 
   return (
     <div
-      className="cd__overlay"
+      className={`cd__overlay${tone ? ` cd__overlay--${tone}` : ""}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="cd__title"

@@ -1,111 +1,95 @@
-// PLACEMENT: student_dashboard/src/skill/SkillBookTutor.jsx  (replace whole file)
+// skill/SkillBookTutor.jsx — Skill Dev Student.dc.html dc:488-596.
 //
-// skill/SkillBookTutor.jsx — Book a Tutor (skillTab === "book").
+// No tutor picker here anymore — this page is always reached per-teacher
+// (Explore "Book", Profile "Book a session", Dashboard "Book again"), with
+// `bookFrom` in router state driving the back-link label per WORKFLOW.md §7.
 //
-// WHAT CHANGED (free-launch cleanup + payment seam)
-// ─────────────────────────────────────────────────
-//  • Fetches GET /skill/payment-config/ on mount. In free mode (today) the UI
-//    is one-tap booking with an honest "Free during launch" summary. If a paid
-//    mode ever comes back from the config before its UI ships, the confirm
-//    button disables with "Online payment coming soon" instead of lying.
-//    This is the seam: enabling payments later = implement the paid footer
-//    branch here, nothing else moves.
-//  • The "Pricing & packages" card (5-pack / 10-pack, Save 18%) is REMOVED —
-//    it advertised purchases the platform cannot take. `packs` import dropped.
-//  • All rate/price displays are stripped — booking is free at launch and
-//    nothing in this UI implies a charge. Booking summary shows tutor + slot
-//    + a "Free during launch" note.
-//
-// Wired to:
-//   GET  /skill/payment-config/                    → live payment mode
-//   GET  /skill/student/experts/                   → expert list
-//   GET  /skill/teachers/<id>/availability/        → open/booked slots
-//   POST /skill/payments/create-order/             → create booking (reserves slot)
+// GET  /skill/teachers/<id>/               → expert (mastery_target, my_mastery_progress)
+// GET  /skill/teachers/<id>/availability/  → open/booked slots
+// GET  /skill/teachers/<id>/pricing/       → is_free/tier/unit_price/bundle_*
+// POST /skill/payments/create-order/       → create booking (reserves slot)
 
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { Icon } from "./skillIcons";
-import { Avatar, StarRow } from "./skillUI";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Avatar } from "./SkillUI";
+import MasteryBar from "../components/MasteryBar";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingState } from "../components/StateViews";
 import * as AV from "./availability";
+import "../styles/skillBookTutor.css";
 
-const ACC = "#ff8f01";
+const BACK_LABEL = { explore: "explore", profile: "profile", courses: "my courses", dashboard: "dashboard" };
 
-export default function SkillBookTutor({ openMsg = () => {} }) {
-  const { api }  = useAuth();
+const rupees = (paise) => `₹${Math.round(paise / 100)}`;
+
+export default function SkillBookTutor() {
+  const { api } = useAuth();
   const location = useLocation();
-  // Explore passes the chosen expert via nav state so the grid opens on the
-  // RIGHT tutor (was always defaulting to the first expert → wrong slots).
-  const wantedExpertId = location.state?.expertId || null;
-  const [experts,    setExperts]    = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [ti,         setTi]         = useState(0);
-  const [slot,       setSlot]       = useState(null);
-  const [avail,      setAvail]      = useState({ open: [], booked: [] });
-  const [tick,       setTick]       = useState(0);
-  const [confirmed,  setConfirmed]  = useState(null);
-  const [booking,    setBooking]    = useState(false);
-  const [bookErr,    setBookErr]    = useState("");
-  // Payment mode seam. Defaults to free so a config fetch failure never
-  // blocks booking during the free launch.
-  const [payCfg, setPayCfg] = useState({ provider: "free", is_free: true });
+  const navigate = useNavigate();
+  const { expertId, slot: presetSlot, bookFrom = "explore" } = location.state || {};
 
-  // Load payment mode + expert list
+  const [t, setT] = useState(null);
+  const [avail, setAvail] = useState({ open: [], booked: [] });
+  const [pricing, setPricing] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [slot, setSlot] = useState(presetSlot || null);
+  const [bundle, setBundle] = useState("single");
+  const [message, setMessage] = useState("");
+  const [booking, setBooking] = useState(false);
+  const [bookErr, setBookErr] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+
   useEffect(() => {
-    api.get("/skill/payment-config/")
-      .then(r => setPayCfg({ provider: r.data.provider || "free", is_free: r.data.is_free !== false }))
-      .catch(() => {}); // keep free defaults
-
-    api.get("/skill/student/experts/")
-      .then(r => {
-        const list = Array.isArray(r.data) ? r.data : [];
-        setExperts(list);
-        // If we arrived from Explore with a chosen expert, open on them.
-        if (wantedExpertId) {
-          const idx = list.findIndex(e => e.id === wantedExpertId);
-          if (idx >= 0) setTi(idx);
-        }
+    if (!expertId) { setLoading(false); return; }
+    Promise.all([
+      api.get(`/skill/teachers/${expertId}/`),
+      api.get(`/skill/teachers/${expertId}/availability/`),
+      api.get(`/skill/teachers/${expertId}/pricing/`),
+    ])
+      .then(([p, a, pr]) => {
+        setT(p.data);
+        setAvail({ open: a.data.open || [], booked: a.data.booked || [] });
+        setPricing(pr.data);
       })
-      .catch(() => {})
+      .catch(() => setT(null))
       .finally(() => setLoading(false));
-  }, []);
+  }, [expertId, api]);
 
-  const t = experts[ti];
+  if (loading) return <LoadingState label="Loading" />;
+  if (!t) {
+    return (
+      <div className="sbk-empty">
+        No tutor selected. <button className="sbk-link" onClick={() => navigate("/skill-dev/explore")}>Explore experts →</button>
+      </div>
+    );
+  }
 
-  // Load availability whenever expert changes
-  useEffect(() => {
-    if (!t) return;
-    // Real open/booked slots come from the expert's saved availability.
-    api.get(`/skill/teachers/${t.id}/availability/`)
-      .then(r => setAvail({ open: r.data.open || [], booked: r.data.booked || [] }))
-      .catch(() => setAvail({ open: [], booked: [] }));  // expert hasn't set any slots yet
-  }, [t?.id, tick]);
-
-  const canBook = payCfg.is_free; // paid checkout UI ships with the payments launch
+  const progress = t.my_mastery_progress ?? 0;
+  const remaining = Math.max(0, t.mastery_target - progress);
+  const dayLabels = AV.shortDayLabels();
+  const isTrack = pricing?.tier === "bundle" && bundle === "track";
+  const canConfirm = !!slot && !booking;
 
   const confirm = async () => {
-    if (!slot || !t || !canBook) return;
+    if (!canConfirm) return;
     setBooking(true);
     setBookErr("");
     try {
       await api.post("/skill/payments/create-order/", {
         teacherId: t.id,
         draft: {
-          topic:  `1-on-1 session with ${t.name}`,
+          topic: `1-on-1 session with ${t.name}`,
           slot,
           slotLabel: AV.label(slot),
           duration_mins: 60,
           mode: "online",
+          note: message,
+          bundle,
         },
-        method: payCfg.provider,
+        method: "free",
         amount: 0,
       });
-      // Slot is now reserved server-side; refetch availability so the grid
-      // reflects the real booked state (tick bump re-runs the load effect).
-      setConfirmed(AV.label(slot));
-      setSlot(null);
-      setTick(n => n + 1);
+      setConfirmed(true);
     } catch (e) {
       setBookErr(e?.response?.data?.detail || "Booking failed. Please try again.");
     } finally {
@@ -113,147 +97,153 @@ export default function SkillBookTutor({ openMsg = () => {} }) {
     }
   };
 
-  if (loading) {
-    return <LoadingState label="Loading experts" />;
-  }
-
-  if (experts.length === 0) {
+  if (confirmed) {
     return (
-      <div style={{ padding: "14px 18px 22px" }}>
-        <div className="rd-card" style={{ textAlign: "center", padding: "32px 16px" }}>
-          <div style={{ fontSize: 13, color: "#888" }}>No experts available right now. Check back soon.</div>
+      <div className="sbk-success">
+        <div className="sbk-successIcon">✓</div>
+        <h2>Session booked!</h2>
+        <p>{AV.label(slot)} with {t.name}. A calendar invite and reminder are on their way.</p>
+        <div className="sbk-successActions">
+          <button className="sbk-btn sbk-btn--primary" onClick={() => navigate("/skill-dev/sessions")}>View my sessions</button>
+          <button className="sbk-btn sbk-btn--secondary" onClick={() => navigate("/skill-dev/explore")}>Book another</button>
         </div>
       </div>
     );
   }
 
-  return (
-    <div style={{ padding: "14px 18px 22px", overflow: "auto", flex: 1, "--acc": ACC, "--acc-bg": "#fff8f0" }}>
-      {confirmed && (
-        <div style={{ marginBottom: 12, background: "#ecf8ee", border: "1px solid #bfe6c8", color: "#1f7a37", borderRadius: 10, padding: "10px 14px", fontSize: 12.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon.check size={15} /> Booked {confirmed} with {t?.name}. It's now locked on the tutor's calendar.
-        </div>
-      )}
-      {bookErr && (
-        <div style={{ marginBottom: 12, background: "#fef2f2", border: "1px solid #fca5a5", color: "#c0492f", borderRadius: 10, padding: "10px 14px", fontSize: 12.5 }}>
-          {bookErr}
-        </div>
-      )}
+  const priceLine = (label) => (pricing?.is_free ? "Free" : label);
 
-      {/* Tutor selector */}
-      <div className="rd-card" style={{ marginBottom: 14 }}>
-        <h4>Choose a tutor</h4>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          {experts.map((bt, i) => (
-            <button key={bt.id} onClick={() => { setTi(i); setSlot(null); setConfirmed(null); setBookErr(""); }}
-              style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, padding: "9px 13px 9px 9px", borderRadius: 12, border: `1.5px solid ${i === ti ? ACC : "#e3dccf"}`, background: i === ti ? "#fff8f0" : "#fff" }}>
-              <Avatar name={bt.name} img={bt.img} size={38} circle />
-              <div>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: "#1a1a1a" }}>{bt.name}</div>
-                <div style={{ fontSize: 10.5, color: "#999" }}>{bt.role}</div>
-              </div>
-            </button>
-          ))}
+  return (
+    <div className="sbk-screen">
+      <button className="sbk-back" onClick={() => navigate(-1)}>← Back to {BACK_LABEL[bookFrom] || "explore"}</button>
+
+      <div className="sbk-hero">
+        <Avatar name={t.name} img={t.img} size={52} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="sbk-eyebrow">Booking a session with</div>
+          <div className="sbk-heroName">{t.name}</div>
+          <div className="sbk-heroMeta">{t.title} · ★ {t.rating ?? "—"} ({t.reviews_count} reviews)</div>
         </div>
+        <button className="sbk-viewProfileBtn" onClick={() => navigate(`/skill-dev/profile/${t.id}`, { state: { bookFrom } })}>
+          View profile
+        </button>
       </div>
 
-      {t && (
-        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}>
-          {/* Availability calendar */}
-          <div className="rd-card" style={{ flex: 2, minWidth: 320 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 14 }}>
-              <Avatar name={t.name} img={t.img} size={52} radius={12} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14.5, fontWeight: 800, color: "#1a1a1a" }}>{t.name}</div>
-                <div style={{ fontSize: 11.5, color: "#888" }}>{t.role}</div>
-                <div style={{ display: "flex", gap: 12, marginTop: 4, fontSize: 11, color: "#6b7c83", alignItems: "center" }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <StarRow n={Math.round(t.rating || 4)} size={10} /> {t.rating ?? "—"}
-                  </span>
-                  <span>Replies {t.reply}</span>
-                </div>
-              </div>
-              <button onClick={() => openMsg(t.teacher_id, t.name)} disabled={!t.teacher_id} style={{ background: "#fff", border: "1px solid #f0d7b6", color: "#d97706", borderRadius: 9, padding: "9px 13px", fontSize: 12, fontWeight: 700, cursor: t.teacher_id ? "pointer" : "not-allowed", opacity: t.teacher_id ? 1 : 0.45, display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                <Icon.msg size={14} /> Message
-              </button>
-            </div>
-
-            {t.intro_video_embed_url && (
-              <div style={{ marginBottom: 14 }}>
-                <iframe
-                  src={t.intro_video_embed_url}
-                  title={`${t.name} intro`}
-                  style={{ width: "100%", aspectRatio: "16/9", border: "none", borderRadius: 10 }}
-                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                  allowFullScreen
-                />
-              </div>
-            )}
-
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#1a2c33" }}>Pick a time · this week</div>
-              <div style={{ display: "flex", gap: 12, fontSize: 10.5, color: "#6b7c83" }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 11, height: 11, borderRadius: 3, background: ACC }} /> Open</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 11, height: 11, borderRadius: 3, background: "#f0a23b" }} /> Booked</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 11, height: 11, borderRadius: 3, background: "#f5f1ea", border: "1px solid #e3dccf" }} /> Closed</span>
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: `64px repeat(${AV.DAYS.length}, 1fr)`, gap: 6, alignItems: "center" }}>
-              <div></div>
-              {AV.dateLabels().map((d) => <div key={d} style={{ fontSize: 10.5, fontWeight: 700, color: "#6b7c83", textAlign: "center" }}>{d}</div>)}
-              {AV.SLOTS.map((sl, si) => (
-                <div key={sl} style={{ display: "contents" }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 700, color: "#9aa9af", textAlign: "right", paddingRight: 4 }}>{sl}</div>
-                  {AV.DAYS.map((d, di) => {
-                    const k  = di + "-" + si;
-                    const st = avail.booked.includes(k) ? "booked" : avail.open.includes(k) ? "open" : "closed";
-                    if (st === "booked") return <button key={di} disabled className="slot booked" title="Already booked"><Icon.check size={11} /></button>;
-                    if (st === "closed") return <button key={di} disabled className="slot off">—</button>;
-                    if (AV.isPastToday(di, si)) return <button key={di} disabled className="slot off" title="Time has passed today">—</button>;
-                    return <button key={di} onClick={() => setSlot(k)} className={`slot ${slot === k ? "on" : ""}`} />;
+      <div className="sbk-cols">
+        {/* Free times */}
+        <div className="sbk-card">
+          <h3 className="sbk-cardTitle">Free times this week</h3>
+          <p className="sbk-cardSub">
+            {t.name.split(" ")[0]} has opened {avail.open.filter((k) => !avail.booked.includes(k)).length} free slots this week · all times IST · 60 min sessions
+          </p>
+          <div className="sbk-slotRows">
+            {AV.DAYS.map((d, di) => {
+              const dayOpen = AV.SLOTS.map((_, si) => di + "-" + si)
+                .filter((k) => avail.open.includes(k) && !avail.booked.includes(k));
+              return (
+                <div className="sbk-dayRow" key={d}>
+                  <div className="sbk-dayLabel">{dayLabels[di]}</div>
+                  {dayOpen.length === 0 ? (
+                    <span className="sbk-notFree">No free time</span>
+                  ) : dayOpen.map((k) => {
+                    const si = Number(k.split("-")[1]);
+                    return (
+                      <span key={k} className={`sbk-timePill ${slot === k ? "is-selected" : ""}`} onClick={() => setSlot(k)}>
+                        {AV.SLOTS[si]}
+                      </span>
+                    );
                   })}
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Booking summary */}
-          <div style={{ flex: 1, minWidth: 210, display: "flex", flexDirection: "column", gap: 14 }}>
-            <div className="rd-card" style={{ background: "#fff8f0", border: "1px solid #f3d9bd" }}>
-              <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".4px", color: "#d97706", marginBottom: 8 }}>Booking summary</div>
-              <div style={{ fontSize: 12.5, color: "#444", lineHeight: 1.8 }}>
-                <div><b>{t.name}</b> · {t.role}</div>
-                <div>{slot ? AV.label(slot) : "Pick a time slot above"}</div>
-                <div>1-on-1 session · 60 min</div>
-              </div>
-
-              {/* Free-launch note — replaces the old packages/price rows. */}
-              {canBook ? (
-                <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 7, background: "#ecf8ee", border: "1px solid #bfe6c8", color: "#1f7a37", borderRadius: 8, padding: "8px 10px", fontSize: 11.5, fontWeight: 700 }}>
-                  Free during launch — no payment needed.
-                </div>
-              ) : (
-                <div style={{ marginTop: 10, background: "#fef9ec", border: "1px solid #f3d9bd", color: "#b45309", borderRadius: 8, padding: "8px 10px", fontSize: 11.5, fontWeight: 700 }}>
-                  Online payment is coming soon. Booking will open when it launches.
-                </div>
-              )}
-
-              <button onClick={confirm} disabled={!slot || booking || !canBook}
-                style={{ width: "100%", marginTop: 12, background: slot && canBook ? ACC : "#e3dccf", color: "#fff", border: "none", borderRadius: 10, padding: "12px 0", fontSize: 13, fontWeight: 800, cursor: slot && canBook ? "pointer" : "not-allowed" }}>
-                {booking ? "Booking…" : !canBook ? "Booking opens with payments" : slot ? "Confirm free booking" : "Select a slot to continue"}
-              </button>
-            </div>
-
-            <div className="rd-card">
-              <div style={{ fontSize: 11.5, color: "#6b7c83", lineHeight: 1.7 }}>
-                The tutor reviews your request and accepts it — you'll see it move
-                from <b>Requested</b> to <b>Confirmed</b> in My Skill Sessions.
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
-      )}
+
+        {/* Summary panel */}
+        <div className="sbk-card">
+          <h3 className="sbk-cardTitle">Booking summary</h3>
+          <div className="sbk-summaryExpert">
+            <Avatar name={t.name} size={44} />
+            <div>
+              <div className="sbk-summaryName">{t.name}</div>
+              <div className="sbk-summarySkill">{t.title}</div>
+            </div>
+          </div>
+
+          <MasteryBar
+            progress={progress} target={t.mastery_target} mastered={false}
+            variant="panel" radius={12} padding="12px 13px" style={{ marginBottom: 14 }}
+            sentenceSize={11.5} sentenceWeight={600} sentenceLineHeight={1.45}
+            sentence={remaining > 0
+              ? `${remaining} more session${remaining === 1 ? "" : "s"} with ${t.name.split(" ")[0]} to become an expert in ${t.title}`
+              : `You've mastered ${t.title} with ${t.name.split(" ")[0]}.`}
+          />
+
+          {pricing?.tier === "intro" && (
+            <div className="sbk-introPanel">
+              <div className="sbk-introHead">
+                <span className="sbk-introBadge">Intro rate</span>
+                <span className="sbk-introHeadline">First session with {t.name.split(" ")[0]} is {rupees(pricing.unit_price)}</span>
+              </div>
+              <div className="sbk-introSub">
+                Try the teacher before you commit. Regular sessions are {rupees(pricing.regular_unit_price)} after this one.
+              </div>
+            </div>
+          )}
+
+          {pricing?.tier === "bundle" && (
+            <div className="sbk-bundleRows">
+              <div className={`sbk-bundleCard ${bundle === "single" ? "is-selected" : ""}`} onClick={() => setBundle("single")}>
+                <div className="sbk-bundleTop">
+                  <span className="sbk-bundleDot" />
+                  <span className="sbk-bundleTitle">Single session</span>
+                  <span className="sbk-bundlePrice">{priceLine(rupees(pricing.unit_price))}</span>
+                </div>
+                <div className="sbk-bundleBlurb">One 60-minute class</div>
+              </div>
+              <div className={`sbk-bundleCard ${bundle === "track" ? "is-selected" : ""}`} onClick={() => setBundle("track")}>
+                <div className="sbk-bundleTop">
+                  <span className="sbk-bundleDot" />
+                  <span className="sbk-bundleTitle">Complete the track</span>
+                  <span className="sbk-bundlePrice">{priceLine(rupees(pricing.bundle_total))}</span>
+                </div>
+                <div className="sbk-bundleBlurb">
+                  The {pricing.bundle_sessions} sessions left to master {t.title} — booked one at a time.
+                </div>
+                <span className="sbk-bundleSaveBadge">
+                  {pricing.is_free ? "Best value" : `Save ${rupees(pricing.bundle_savings)}`}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="sbk-summaryRows">
+            <div className="sbk-row"><span>Slot</span><b>{slot ? AV.label(slot) : "Pick a slot"}</b></div>
+            {isTrack && <div className="sbk-row"><span>Sessions</span><b>{pricing.bundle_sessions} sessions</b></div>}
+            <div className="sbk-row"><span>Duration</span><b>60 min</b></div>
+            <div className="sbk-row"><span>Price</span><b className="sbk-priceValue">{pricing?.is_free ? "Free during launch" : rupees(pricing?.unit_price ?? 0)}</b></div>
+          </div>
+
+          <textarea
+            className="sbk-msgInput"
+            placeholder="Optional message to the tutor…"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={3}
+          />
+
+          {bookErr && <div className="sbk-error">{bookErr}</div>}
+
+          <button className={`sbk-confirmBtn ${canConfirm ? "is-enabled" : ""}`} disabled={!canConfirm} onClick={confirm}>
+            {booking ? "Booking…" : !slot ? "Select a slot first" : bundle === "track" ? "Confirm track" : "Confirm booking"}
+          </button>
+          <p className="sbk-footnote">
+            {isTrack
+              ? "You'll pick the remaining slots after this one · reminder 30 min before each"
+              : "You'll get a reminder 30 min before the session"}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

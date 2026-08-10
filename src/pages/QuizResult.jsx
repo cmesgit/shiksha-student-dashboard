@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
@@ -49,6 +49,8 @@ function MistakesReview({ questions, onClose }) {
 export default function QuizResult() {
   const navigate = useNavigate();
   const { subjectId, quizId } = useParams();
+  const [searchParams] = useSearchParams();
+  const attemptId = searchParams.get("attempt");
 
   const [resultData, setResultData]       = useState(null);
   const [loading, setLoading]             = useState(true);
@@ -77,7 +79,9 @@ export default function QuizResult() {
       try {
         setLoading(true);
         setError(null);
-        const res = await api.get(`/quizzes/${quizId}/result/`);
+        const res = await api.get(`/quizzes/${quizId}/result/`, {
+          params: attemptId ? { attempt: attemptId } : {},
+        });
         setResultData(res.data);
       } catch (err) {
         console.error("Failed to load result:", err);
@@ -87,7 +91,7 @@ export default function QuizResult() {
       }
     }
     fetchResult();
-  }, [quizId]);
+  }, [quizId, attemptId]);
 
   const wrongQuestions = useMemo(() => {
     if (!resultData) return [];
@@ -114,10 +118,14 @@ export default function QuizResult() {
     (a, b) => (DIFF_ORDER[a.difficulty] ?? 9) - (DIFF_ORDER[b.difficulty] ?? 9)
   );
   const scoreTrend = resultData.score_trend || [];
+  // Retakes are unlimited, but the answer key is only revealed on the first
+  // `reveal_answers_after` attempts — a later retake's result still shows
+  // score/correctness, just not the correct-choice text or explanation.
+  const answersRevealed = resultData.answers_revealed !== false;
 
   return (
     <div className="quizResultPage">
-      <button className="quizResultBack" onClick={() => navigate(`/subjects/quiz/${subjectId}`)}>
+      <button className="quizResultBack" onClick={() => navigate(-1)}>
         &lt; Back
       </button>
 
@@ -137,7 +145,7 @@ export default function QuizResult() {
       <div className="quizResultHeaderBtns">
         <button
           className="quizResultBackBtn"
-          onClick={() => navigate(`/subjects/quiz/${subjectId}`)}
+          onClick={() => navigate(-1)}
         >
           ← Back to Quizzes
         </button>
@@ -166,25 +174,44 @@ export default function QuizResult() {
           </div>
         </div>
 
-        {/* ── Score summary cards ── */}
-        <div className="quizResultSummary">
-          {[
-            { label: "Score",     value: `${resultData.score} / ${resultData.total_marks}`, mod: "score" },
-            { label: "Correct",   value: correct,   mod: "correct" },
-            { label: "Incorrect", value: incorrect, mod: "incorrect" },
-            { label: "Accuracy",  value: `${pct}%`, mod: "accuracy" },
-          ].map(({ label, value, mod }) => (
-            <div key={label} className={`quizResultSummaryCard quizResultSummaryCard--${mod}`}>
-              <div className="quizResultSummaryValue">{value}</div>
-              <div className="quizResultSummaryLabel">{label}</div>
+        {/* ── Score hero: ring + summary cards ── */}
+        <div className="qraScoreHero">
+          <div className="qraRingWrap">
+            <svg width="128" height="128" viewBox="0 0 128 128" className="qraRingSvg">
+              <circle cx="64" cy="64" r="56" fill="none" stroke="#e5eaed" strokeWidth="10" />
+              <circle
+                cx="64" cy="64" r="56" fill="none" stroke={pct >= 75 ? "#22c55e" : pct >= 50 ? "#f59e0b" : "#ef4444"}
+                strokeWidth="10" strokeLinecap="round" transform="rotate(-90 64 64)"
+                strokeDasharray={`${(pct / 100) * (2 * Math.PI * 56)} ${2 * Math.PI * 56}`}
+              />
+            </svg>
+            <div className="qraRingOverlay">
+              <div className="qraRingPct">{pct}%</div>
+              <div className="qraRingMarks">{resultData.score} / {resultData.total_marks} marks</div>
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* ── Class comparison ── */}
-        <div className="qraCompareRow">
-          <span>Class average: <strong>{resultData.class_avg_percent}%</strong></span>
-          <span>You're in the top <strong>{resultData.percentile}%</strong> of attempts</span>
+          <div className="qraScoreHeroRight">
+            <div className="qraVerdict">
+              {pct >= 75 ? "Great job! 🎉" : pct >= 50 ? "Good effort" : "Keep practicing"}
+            </div>
+            <div className="quizResultSummary">
+              {[
+                { label: "Correct",   value: correct,   mod: "correct" },
+                { label: "Incorrect", value: incorrect, mod: "incorrect" },
+                { label: "Accuracy",  value: `${pct}%`, mod: "accuracy" },
+              ].map(({ label, value, mod }) => (
+                <div key={label} className={`quizResultSummaryCard quizResultSummaryCard--${mod}`}>
+                  <div className="quizResultSummaryValue">{value}</div>
+                  <div className="quizResultSummaryLabel">{label}</div>
+                </div>
+              ))}
+            </div>
+            <div className="qraCompareRow">
+              <span>Class average: <strong>{resultData.class_avg_percent}%</strong></span>
+              <span>You're in the top <strong>{resultData.percentile}%</strong> of attempts</span>
+            </div>
+          </div>
         </div>
 
         {/* ── Score trend ── */}
@@ -278,12 +305,19 @@ export default function QuizResult() {
         <div className="quizDetailQuestions">
           <div className="qraQuestionsHeader">
             <span>Question review</span>
-            {wrongQuestions.length > 0 && (
+            {answersRevealed && wrongQuestions.length > 0 && (
               <button className="qraRetryBtn" onClick={() => setShowMistakes(true)}>
                 ↻ Practice my {wrongQuestions.length} mistake{wrongQuestions.length > 1 ? "s" : ""}
               </button>
             )}
           </div>
+          {!answersRevealed && (
+            <p className="qraAnswersHiddenNote">
+              You've used your review attempt for this quiz — correct answers and
+              explanations are hidden on retakes so they can't be memorised for a
+              free score. Your score and correctness are still shown below.
+            </p>
+          )}
           {resultData.questions.map((q, index) => (
             <div
               key={q.id}
@@ -298,9 +332,11 @@ export default function QuizResult() {
                   </span>
                   {index + 1}. {q.text}
                 </p>
-                <span className="quizResultCorrectChip">
-                  Ans: {q.correct_choice}
-                </span>
+                {answersRevealed && (
+                  <span className="quizResultCorrectChip">
+                    Ans: {q.correct_choice}
+                  </span>
+                )}
               </div>
 
               {(q.topic || q.difficulty) && (
@@ -317,21 +353,23 @@ export default function QuizResult() {
                 {q.is_correct ? "✓" : "✗"} Your Answer: {q.selected_choice}
               </div>
 
-              <div>
-                <button
-                  onClick={() => toggleExplanation(q.id)}
-                  className={`quizResultExplainBtn ${openExplanation[q.id] ? "quizResultExplainBtn--open" : ""}`}
-                >
-                  {openExplanation[q.id] ? "Hide Explanation ▲" : "Show Explanation ▼"}
-                </button>
+              {answersRevealed && (
+                <div>
+                  <button
+                    onClick={() => toggleExplanation(q.id)}
+                    className={`quizResultExplainBtn ${openExplanation[q.id] ? "quizResultExplainBtn--open" : ""}`}
+                  >
+                    {openExplanation[q.id] ? "Hide Explanation ▲" : "Show Explanation ▼"}
+                  </button>
 
-                {openExplanation[q.id] && (
-                  <div className="quizResultExplainBox">
-                    <strong>Explanation:</strong>
-                    <p>{q.explanation}</p>
-                  </div>
-                )}
-              </div>
+                  {openExplanation[q.id] && (
+                    <div className="quizResultExplainBox">
+                      <strong>Explanation:</strong>
+                      <p>{q.explanation}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -7,8 +7,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import privateSession from "../api/privateSessionService";
 import PrivateSessionCard from "../components/PrivateSessionCard";
-import PageHeader from "../components/PageHeader";
+import { subjectChipSlot } from "../utils/subjectChips";
+import { statusLabel, statusTone } from "../utils/sessionStatus";
+import "../styles/academyScreens.css";
 import { LoadingState } from "../components/StateViews";
+import NotesViewModal from "../components/live/NotesViewModal";
 import "../styles/privateSessions.css";
 
 /* ═══════════════════════════════════════════════════════════
@@ -30,17 +33,6 @@ function TeacherAvatar({ name, size = 42 }) {
       {initials}
     </div>
   );
-}
-
-function statusLabel(st) {
-  const m = {
-    approved: "✅ Approved", pending: "⏳ Pending", ongoing: "🔴 Live",
-    needs_reconfirmation: "⚠️ Needs Confirmation",
-    completed: "✔ Completed", cancelled: "✗ Cancelled", declined: "✗ Declined",
-    expired: "⏰ Expired", withdrawn: "↩ Withdrawn",
-    teacher_no_show: "⚠ Teacher No-Show", student_no_show: "⚠ Student No-Show",
-  };
-  return m[st] || st;
 }
 
 function statusCls(st) {
@@ -101,7 +93,7 @@ function CancelModal({ session, onClose, onConfirm }) {
         <div className="ps__modalInfo">
           <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Date:</span> <strong>{formatDate(session.date)}</strong></div>
           <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Time Slot:</span> <strong>{calcDurationDisplay(session.time, session.durationMinutes) || formatTime(session.time)}</strong></div>
-          <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Duration:</span> <strong>{session.duration || `${session.durationMinutes} minutes`}</strong></div>
+          <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Duration:</span> <strong>{session.durationLabel || `${session.durationMinutes} minutes`}</strong></div>
         </div>
         <p className="ps__modalNote">
           <strong>Note:</strong> The Teacher and Group Members will be notified of the cancellation.
@@ -126,7 +118,7 @@ function ConfirmModal({ session, onClose, onConfirm }) {
         <div className="ps__modalInfo">
           <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Date:</span> <strong>{formatDate(session.rescheduledDate || session.date)}</strong></div>
           <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Timing:</span> <strong>{calcDurationDisplay(session.rescheduledTime || session.time, session.durationMinutes) || formatTime(session.rescheduledTime || session.time)}</strong></div>
-          <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Duration:</span> <strong>{session.duration || `${session.durationMinutes} minutes`}</strong></div>
+          <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Duration:</span> <strong>{session.durationLabel || `${session.durationMinutes} minutes`}</strong></div>
         </div>
         <p className="ps__modalNote">
           <strong>Note:</strong> The session will be scheduled and saved upon confirmation.
@@ -168,7 +160,7 @@ function SessionDetail({ session, onBack, onCancel, onEnterRoom }) {
             ["Teacher", session.teacher],
             ["Date", formatDate(session.date)],
             ["Time", formatTime(session.time)],
-            ["Duration", session.duration],
+            ["Duration", session.durationLabel || `${session.durationMinutes} minutes`],
             ["Type", session.sessionType === "group" ? "Group" : "One-on-One"],
           ].map(([k, v]) => (
             <div key={k} className="ps__detailRow">
@@ -228,7 +220,7 @@ function RequestDetail({ session, onBack, onCancel, onConfirmReschedule, onDecli
       </div>
       {isReconfirm && session.teacherNote && (
         <div className="ps__reschedBanner">
-          <div className="ps__reschedBannerIcon">📅</div>
+          <div className="ps__reschedBannerIcon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
           <div className="ps__reschedBannerText">
             <strong>Teacher proposed a new time</strong>
             <p>
@@ -247,7 +239,7 @@ function RequestDetail({ session, onBack, onCancel, onConfirmReschedule, onDecli
             ["Teacher", session.teacher],
             ["Date", formatDate(isReconfirm ? (session.rescheduledDate || session.date) : session.date)],
             ["Time Slot", calcDurationDisplay(isReconfirm ? (session.rescheduledTime || session.time) : session.time, session.durationMinutes) || formatTime(session.time)],
-            ["Duration", session.duration || `${session.durationMinutes} minutes`],
+            ["Duration", session.durationLabel || `${session.durationMinutes} minutes`],
             ["Type", session.sessionType === "group" ? "Group" : "One-on-One"],
           ].map(([k, v]) => (
             <div key={k} className="ps__detailRow">
@@ -282,7 +274,7 @@ function RequestDetail({ session, onBack, onCancel, onConfirmReschedule, onDecli
         <CancelModal
           session={session}
           onClose={() => setShowCancel(false)}
-          onConfirm={(id) => { setShowCancel(false); onCancel(id); onBack(); }}
+          onConfirm={(id, reason) => { setShowCancel(false); onCancel(id, reason); onBack(); }}
         />
       )}
       {showConfirm && (
@@ -300,6 +292,8 @@ function RequestDetail({ session, onBack, onCancel, onConfirmReschedule, onDecli
    HISTORY DETAIL VIEW
 ═══════════════════════════════════════════════════════════ */
 function HistoryDetail({ session, onBack }) {
+  const [showNotes, setShowNotes] = useState(false);
+
   return (
     <div className="ps__detail">
       <div className="ps__sidebarBack">
@@ -307,7 +301,15 @@ function HistoryDetail({ session, onBack }) {
       </div>
       <div className={`ps__statusBar ps__statusBar--${statusCls(session.status)}`}>
         <span>STATUS: {statusLabel(session.status).toUpperCase()}</span>
+        {session.status === "completed" && (
+          <button className="ps__joinBtn" style={{ background: "#425f7f" }} onClick={() => setShowNotes(true)}>
+            My Notes
+          </button>
+        )}
       </div>
+      {showNotes && (
+        <NotesViewModal sessionId={session.id} sessionType="private" onClose={() => setShowNotes(false)} />
+      )}
       <div className="ps__detailLabel">Session Summary:</div>
       <div className="ps__detailBody">
         <div className="ps__detailLeft">
@@ -316,7 +318,7 @@ function HistoryDetail({ session, onBack }) {
             ["Teacher", session.teacher],
             ["Date", formatDate(session.date)],
             ["Timing", calcDurationDisplay(session.time, session.durationMinutes) || formatTime(session.time)],
-            ["Duration", session.duration || `${session.durationMinutes} minutes`],
+            ["Duration", session.durationLabel || `${session.durationMinutes} minutes`],
             ["Type", session.sessionType === "group" ? "Group" : "One-on-One"],
             ["Status", statusLabel(session.status)],
           ].map(([k, v]) => (
@@ -400,7 +402,10 @@ function ScheduledTab({ onEnterRoom, searchTerm = "", registerRefresh }) {
 
   const handleConfirm = async (id) => {
     await privateSession.confirmReschedule(id);
-    setSessions((prev) => prev.map((s) => s.id === id ? { ...s, status: "approved" } : s));
+    // A confirmed reschedule moves scheduled_date/time to the proposed
+    // values server-side — a local status-only patch would leave the row
+    // showing the old time until the next reload, so refetch instead.
+    load();
   };
   const handleDecline = async (id) => {
     await privateSession.declineReschedule(id);
@@ -429,6 +434,23 @@ function ScheduledTab({ onEnterRoom, searchTerm = "", registerRefresh }) {
   ));
 
   if (selected) {
+    // A needs_reconfirmation row opened from this tab has no join/cancel
+    // action of its own — the teacher's proposed time needs an Accept/
+    // Decline, which is exactly what RequestDetail (used by the Requests
+    // tab for the identical status) already renders. Reuse it here instead
+    // of leaving this row's click-through as a dead end with no way to
+    // act on the reschedule proposal.
+    if (selected.status === "needs_reconfirmation") {
+      return (
+        <RequestDetail
+          session={selected}
+          onBack={() => setSelected(null)}
+          onCancel={(id, reason) => { handleCancel(id, reason); setSelected(null); }}
+          onConfirmReschedule={(id) => { handleConfirm(id); setSelected(null); }}
+          onDeclineReschedule={(id) => { handleDecline(id); setSelected(null); }}
+        />
+      );
+    }
     return (
       <SessionDetail
         session={selected}
@@ -443,7 +465,7 @@ function ScheduledTab({ onEnterRoom, searchTerm = "", registerRefresh }) {
     <div>
       {reconfirm.map((s) => (
         <div key={s.id} className="ps__reconfirmBanner">
-          <div className="ps__reconfirmIcon">⚠️</div>
+          <div className="ps__reconfirmIcon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
           <div className="ps__reconfirmText">
             <strong>{s.teacher} proposed a new time for your {s.subject} session</strong>
             <p>
@@ -454,14 +476,18 @@ function ScheduledTab({ onEnterRoom, searchTerm = "", registerRefresh }) {
           </div>
           <div className="ps__reconfirmActions">
             <button className="ps__confirmBtn" onClick={() => handleConfirm(s.id)}>✓ Confirm</button>
-            <button className="ps__declineBtn" onClick={() => handleDecline(s.id)}>✗ Decline</button>
+            <button className="ps__declineBtn" onClick={() => handleDecline(s.id)}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Decline</button>
           </div>
         </div>
       ))}
       {active.length === 0 ? (
-        <div className="ps__empty"><div className="ps__emptyIcon">📭</div><p>{searchTerm ? "No sessions match your search." : "No scheduled sessions."}</p></div>
+        <section className="ac-listCard">
+          <div className="ac-emptyRow">
+            {searchTerm ? "No sessions match your search." : "No sessions scheduled"}
+          </div>
+        </section>
       ) : (
-        <div className="ps__cardGrid">
+        <section className="ac-listCard ac-list">
           {active.map((s) => (
             <PrivateSessionCard
               key={s.id}
@@ -475,7 +501,7 @@ function ScheduledTab({ onEnterRoom, searchTerm = "", registerRefresh }) {
               onEnterRoom={() => onEnterRoom(s)}
             />
           ))}
-        </div>
+        </section>
       )}
     </div>
   );
@@ -484,24 +510,48 @@ function ScheduledTab({ onEnterRoom, searchTerm = "", registerRefresh }) {
 /* ═══════════════════════════════════════════════════════════
    REQUEST CARD
 ═══════════════════════════════════════════════════════════ */
+/* The design's Requests row carries Reject/Accept actions, because in the
+   prototype this tab holds INCOMING invites. Here it holds the student's own
+   OUTGOING requests awaiting a teacher's answer — there is nothing for them to
+   accept — so the row keeps the design's shape but not those buttons. Opening
+   the row still leads to the detail view, which is where a request can be
+   withdrawn. */
 function RequestedCard({ item, onClick }) {
+  const open = () => onClick && onClick();
   return (
-    <div className="ps__reqCard" onClick={onClick} role="button" tabIndex={0}>
-      <div className="ps__reqCardTop">
-        <span className="ps__reqBadge">🔒 Private</span>
-        <span className="ps__reqStatus">⏳ Pending</span>
+    <div
+      className="ac-row"
+      onClick={open}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+      }}
+    >
+      <div className="ac-row__when">
+        <div className="ac-row__time">{formatTime(item.time)}</div>
+        <div className="ac-row__day">{formatDate(item.date)}</div>
       </div>
-      <div className="ps__reqSubject">{item.subject}</div>
-      <div className="ps__reqTopic">{item.topic}</div>
-      <div className="ps__reqTeacher">👤 {item.teacher}</div>
-      {item.groupStrength > 1 && (
-        <div className="ps__reqMeta">👥 {item.groupStrength} student{item.groupStrength !== 1 ? "s" : ""}</div>
-      )}
-      <div className="ps__reqTimeRow">
-        <span>📅 {formatDate(item.date)}</span>
-        <span>🕐 {formatTime(item.time)}</span>
+      <div className="ac-row__divider" />
+      <div className="ac-row__body">
+        <div className="ac-row__meta">
+          {item.subject && (
+            <span className={`subj-chip subj-chip--${subjectChipSlot(item.subject)}`}>
+              {item.subject}
+            </span>
+          )}
+          <span className={`ac-tag ac-tag--${statusTone("pending")}`}>
+            {statusLabel("pending")}
+          </span>
+          {item.groupStrength > 1 && (
+            <span className="ac-when">
+              {item.groupStrength} students
+            </span>
+          )}
+        </div>
+        {item.topic && <div className="ac-row__topic">{item.topic}</div>}
+        <div className="ac-row__sub">{item.teacher}</div>
       </div>
-      {item.note && <div className="ps__reqNote">&quot;{item.note}&quot;</div>}
     </div>
   );
 }
@@ -509,11 +559,21 @@ function RequestedCard({ item, onClick }) {
 /* ═══════════════════════════════════════════════════════════
    REQUESTS TAB
 ═══════════════════════════════════════════════════════════ */
-function RequestsTab({ onUnreadChange, searchTerm = "", registerRefresh }) {
+function RequestsTab({ onUnreadChange, searchTerm = "", registerRefresh, forceOpenForm, onForceOpenFormHandled }) {
   const [requests, setRequests] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // The head's "+ Request session" button (design line 1623) lives outside
+  // this tab, so it asks the parent to switch here and flip this flag rather
+  // than duplicating the form.
+  useEffect(() => {
+    if (forceOpenForm) {
+      setShowForm(true);
+      onForceOpenFormHandled?.();
+    }
+  }, [forceOpenForm, onForceOpenFormHandled]);
 
   const loadRequests = useCallback(() => {
     privateSession.getSessions("requests").then((data) => {
@@ -530,8 +590,8 @@ function RequestsTab({ onUnreadChange, searchTerm = "", registerRefresh }) {
     registerRefresh?.(loadRequests);
   }, [loadRequests, registerRefresh]);
 
-  const handleCancel = async (id) => {
-    await privateSession.cancelSession(id);
+  const handleCancel = async (id, reason) => {
+    await privateSession.cancelSession(id, reason);
     setRequests((prev) => prev.filter((r) => r.id !== id));
   };
   const handleConfirmReschedule = async (id) => {
@@ -585,13 +645,17 @@ function RequestsTab({ onUnreadChange, searchTerm = "", registerRefresh }) {
         <button className="ps__requestBtn" onClick={() => setShowForm(true)}>+ Request Private Session</button>
       </div>
       {filteredRequests.length === 0 ? (
-        <div className="ps__empty"><div className="ps__emptyIcon">📋</div><p>{searchTerm ? "No requests match your search." : "No pending requests."}</p></div>
+        <section className="ac-listCard">
+          <div className="ac-emptyRow">
+            {searchTerm ? "No requests match your search." : "No pending requests"}
+          </div>
+        </section>
       ) : (
-        <div className="ps__reqGrid">
+        <section className="ac-listCard ac-list">
           {filteredRequests.map((r) => (
             <RequestedCard key={r.id} item={r} onClick={() => setSelected(r)} />
           ))}
-        </div>
+        </section>
       )}
     </div>
   );
@@ -901,7 +965,7 @@ function StudentPicker({ slot, subjectId, excludeUserIds, onSelect, onClear }) {
           )}
           {!loading && results.length === 0 && (
             <div className="ps__pickerEmpty">
-              <span className="ps__pickerEmptyIcon">👤</span>
+              <span className="ps__pickerEmptyIcon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
               {query ? `No students found for "${query}"` : "No other enrolled students"}
             </div>
           )}
@@ -1156,9 +1220,12 @@ function HistoryTab({ searchTerm = "", registerRefresh }) {
 
   return (
     <div>
-      <div className="ps__historyFilterRow">
-        <span className="ps__reqCount">{filtered.length} session{filtered.length !== 1 ? "s" : ""}</span>
-        <select className="ps__historyFilter" value={filter} onChange={(e) => setFilter(e.target.value)}>
+      {/* The design's History tab puts a right-aligned filter above the card
+          (line 1696). Keeping the count on the left — it's useful and doesn't
+          disturb the layout. */}
+      <div className="ac-filterBar">
+        <span className="ac-head__sub">{filtered.length} session{filtered.length !== 1 ? "s" : ""}</span>
+        <select className="ac-select" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filter history">
           <option value="all">All History</option>
           <option value="completed">Completed</option>
           <option value="cancelled">Cancelled</option>
@@ -1170,32 +1237,57 @@ function HistoryTab({ searchTerm = "", registerRefresh }) {
         </select>
       </div>
       {filtered.length === 0 ? (
-        <div className="ps__empty"><div className="ps__emptyIcon">📜</div><p>{searchTerm || filter !== "all" ? "No sessions match your search/filter." : "No session history yet."}</p></div>
+        <section className="ac-listCard">
+          <div className="ac-emptyRow">
+            {searchTerm || filter !== "all"
+              ? "No sessions match your search/filter."
+              : "No history yet"}
+          </div>
+        </section>
       ) : (
-        <div className="ps__historyList">
-          {filtered.map((h) => (
-            <div
-              key={h.id}
-              className="ps__historyCard ps__historyCard--clickable"
-              onClick={() => setSelected(h)}
-              role="button"
-              tabIndex={0}
-            >
-              <div className="ps__historyLeft">
-                <span className={`ps__historyBadge ps__historyBadge--${statusCls(h.status)}`}>{statusLabel(h.status)}</span>
-                <div className="ps__historySubject">{h.subject}</div>
-                <div className="ps__historyTopic">{h.topic}</div>
-                <div className="ps__historyTeacher">👤 {h.teacher}</div>
+        <section className="ac-listCard ac-list">
+          {filtered.map((h) => {
+            const open = () => setSelected(h);
+            return (
+              <div
+                key={h.id}
+                className="ac-row"
+                onClick={open}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+                }}
+              >
+                <div className="ac-row__when">
+                  <div className="ac-row__time">{formatTime(h.time)}</div>
+                  <div className="ac-row__day">{formatDate(h.date)}</div>
+                </div>
+                <div className="ac-row__divider" />
+                <div className="ac-row__body">
+                  <div className="ac-row__meta">
+                    {h.subject && (
+                      <span className={`subj-chip subj-chip--${subjectChipSlot(h.subject)}`}>
+                        {h.subject}
+                      </span>
+                    )}
+                    <span className={`ac-tag ac-tag--${statusTone(h.status)}`}>
+                      {statusLabel(h.status)}
+                    </span>
+                    <span className="ac-when">{h.durationLabel}</span>
+                  </div>
+                  {h.topic && <div className="ac-row__topic">{h.topic}</div>}
+                  <div className="ac-row__sub">
+                    {h.teacher}
+                    {h.groupStrength
+                      ? ` · ${h.groupStrength} student${h.groupStrength !== 1 ? "s" : ""}`
+                      : ""}
+                  </div>
+                </div>
               </div>
-              <div className="ps__historyRight">
-                <div className="ps__historyMeta">📅 {formatDate(h.date)}</div>
-                <div className="ps__historyMeta">🕐 {formatTime(h.time)}</div>
-                <div className="ps__historyMeta">⏱ {h.duration}</div>
-                <div className="ps__historyMeta">👥 {h.groupStrength} student{h.groupStrength !== 1 ? "s" : ""}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+            );
+          })}
+        </section>
       )}
     </div>
   );
@@ -1209,6 +1301,7 @@ export default function PrivateSessions() {
   const [activeTab, setActiveTab] = useState("scheduled");
   const [requestsUnread, setRequestsUnread] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [openRequestForm, setOpenRequestForm] = useState(false);
 
   // Callbacks registered by child tabs so WebSocket can trigger their refresh
   const refreshCallbacksRef = useRef({});
@@ -1258,33 +1351,60 @@ export default function PrivateSessions() {
   };
 
   return (
-    <div className="ps__page">
-      <div className="ps__headerBox">
-        <PageHeader title="Private Sessions" />
-      </div>
-      <div className="ps__bodyBox">
-        <div className="ps__tabs">
-          {["scheduled", "requests", "history"].map((tab) => (
-            <button
-              key={tab}
-              className={`ps__tab ${activeTab === tab ? "ps__tab--active" : ""}`}
-              onClick={() => handleTabChange(tab)}
-            >
-              <span className="ps__tabLabelWrap">
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                {tab === "requests" && requestsUnread > 0 && (
-                  <span className="ps__tabBadge">{requestsUnread}</span>
-                )}
-              </span>
-            </button>
-          ))}
+    <div className="ac-screen">
+      <div className="ac-head">
+        <div>
+          <h1 className="ac-head__title">Private Sessions</h1>
+          <p className="ac-head__sub">
+            One-to-one time with your teachers — booked, requested and past.
+          </p>
         </div>
-        <div className="ps__tabContent">
-          {activeTab === "scheduled" && <ScheduledTab onEnterRoom={handleEnterRoom} searchTerm={searchTerm} registerRefresh={(fn) => registerRefresh("scheduled", fn)} />}
-          {activeTab === "requests"  && <RequestsTab onUnreadChange={setRequestsUnread} searchTerm={searchTerm} registerRefresh={(fn) => registerRefresh("requests", fn)} />}
-          {activeTab === "history"   && <HistoryTab searchTerm={searchTerm} registerRefresh={(fn) => registerRefresh("history", fn)} />}
-        </div>
+        {/* The design puts a green "+ Request session" in the head; it's
+            student-only (teachers get no such button), and per dc.html's
+            `requestPrivSession` handler (line 1623) it opens the same
+            4-step request flow as the Requests tab's own button — it used
+            to navigate to /teachers instead, a dead end with no request
+            action on that page. */}
+        <button
+          type="button"
+          className="ac-headBtn ac-headBtn--success"
+          onClick={() => { setActiveTab("requests"); setOpenRequestForm(true); }}
+        >
+          + Request session
+        </button>
       </div>
+
+      {/* Underline tab bar (design line 1626) — NOT the segmented pill toggle,
+          which is Live Sessions only. */}
+      <div className="ac-tabs" role="tablist" aria-label="Private session view">
+        {["scheduled", "requests", "history"].map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab}
+            className={`ac-tab${activeTab === tab ? " is-active" : ""}`}
+            onClick={() => handleTabChange(tab)}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === "requests" && requestsUnread > 0 && (
+              <span className="ac-tab__count">{requestsUnread}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "scheduled" && <ScheduledTab onEnterRoom={handleEnterRoom} searchTerm={searchTerm} registerRefresh={(fn) => registerRefresh("scheduled", fn)} />}
+      {activeTab === "requests"  && (
+        <RequestsTab
+          onUnreadChange={setRequestsUnread}
+          searchTerm={searchTerm}
+          registerRefresh={(fn) => registerRefresh("requests", fn)}
+          forceOpenForm={openRequestForm}
+          onForceOpenFormHandled={() => setOpenRequestForm(false)}
+        />
+      )}
+      {activeTab === "history"   && <HistoryTab searchTerm={searchTerm} registerRefresh={(fn) => registerRefresh("history", fn)} />}
     </div>
   );
 }

@@ -32,16 +32,13 @@ import Subjects from "./pages/Subjects";
 import SubjectDetails from "./pages/SubjectDetails";
 import SubjectsAssignments from "./pages/SubjectsAssignments";
 import AssignmentDetail from "./pages/AssignmentDetail";
-import SubjectsQuiz from "./pages/SubjectsQuiz";
-import QuizList from "./pages/QuizList";
-import QuizDetail from "./pages/QuizDetail";
+import QuizHub from "./pages/QuizHub";
+import QuizMock from "./pages/QuizMock";
 import QuizPractice from "./pages/QuizPractice";
 import QuizResult from "./pages/QuizResult";
 import QuizAttempts from "./pages/QuizAttempts";
 import SubjectsRecordings from "./pages/SubjectsRecordings";
-import RecordingsList from "./pages/RecordingsList";
 import RecordingDetail from "./pages/RecordingDetail";
-import SubjectsStudyMaterial from "./pages/SubjectsStudyMaterial";
 import StudyMaterialList from "./pages/StudyMaterialList";
 import StudyMaterialDetail from "./pages/StudyMaterialDetail";
 import LiveSessionDetail from "./pages/LiveSessionDetail";
@@ -55,9 +52,9 @@ import Teachers from "./pages/Teachers";
 import TeacherDetail from "./pages/TeacherDetail";
 import MyCourseDetail from "./pages/MyCourseDetail";
 import Progress from "./pages/Progress";
-import AssignmentsSubjects from "./pages/AssignmentsSubjects";
 import MyCourses from "./pages/MyCourses";
 import BrowseCourses from "./pages/BrowseCourses";
+import BlogFeed from "./pages/BlogFeed";
 import MyCounselling from "./pages/counselling/MyCounselling";
 import CounsellingAssessment from "./pages/counselling/CounsellingAssessment";
 
@@ -66,6 +63,8 @@ import {
   SkillSessionsPage,
   SkillBookPage,
   SkillExplorePage,
+  SkillProfilePage,
+  SkillCoursesPage,
   SkillReviewsPage,
 } from "./skill/SkillRoutes";
 
@@ -117,24 +116,35 @@ export default function App() {
                   the active course when no :courseId is present. */}
               <Route path="progress" element={<Progress />} />
 
-              {/* Top-level Assignments landing (subject picker). Replaces the
-                  old redirect to /subjects so the nav item is a real page. */}
-              <Route path="assignments" element={<AssignmentsSubjects />} />
+              {/* Assignments is one flat, subject-filterable list (design
+                  screen 11) — no subject-picker step. The :subjectId variant
+                  is kept so existing deep links (and the dashboard's
+                  per-assignment links) still resolve; it renders the same
+                  screen with that subject's pill preselected. */}
+              <Route path="assignments" element={<SubjectsAssignments />} />
               <Route path="subjects/:subjectId/assignments" element={<SubjectsAssignments />} />
               <Route path="subjects/:subjectId/assignments/:assignmentId" element={<AssignmentDetail />} />
 
-              <Route path="subjects/quiz" element={<SubjectsQuiz />} />
-              <Route path="subjects/quiz/:subjectId" element={<QuizList />} />
-              <Route path="subjects/quiz/:subjectId/take/:quizId" element={<QuizDetail />} />
+              {/* Quizzes is one flat, subject-filterable list (design handoff:
+                  section 12 "Quizzes") — no picker step, matching how
+                  Assignments already collapsed. The optional :subjectId
+                  route still resolves so older deep links (and the
+                  Dashboard's per-quiz links) preselect that subject's pill. */}
+              <Route path="subjects/quiz" element={<QuizHub />} />
+              <Route path="subjects/quiz/:subjectId" element={<QuizHub />} />
+              <Route path="subjects/quiz/:subjectId/take/:quizId" element={<QuizMock />} />
               <Route path="subjects/quiz/:subjectId/practice/:quizId" element={<QuizPractice />} />
               <Route path="subjects/quiz/:subjectId/result/:quizId" element={<QuizResult />} />
               <Route path="subjects/quiz/:subjectId/attempts/:quizId" element={<QuizAttempts />} />
 
               <Route path="subjects/recordings" element={<SubjectsRecordings />} />
-              <Route path="subjects/recordings/:subjectId" element={<RecordingsList />} />
+              <Route path="subjects/recordings/:subjectId" element={<SubjectsRecordings />} />
               <Route path="subjects/recordings/:subjectId/video/:videoId" element={<RecordingDetail />} />
 
-              <Route path="study-material" element={<SubjectsStudyMaterial />} />
+              {/* Study Material is one flat, subject-filterable list (design
+                  screen 13) — no subject-picker step. The /list/:subjectId
+                  variant is kept so existing deep links still resolve. */}
+              <Route path="study-material" element={<StudyMaterialList />} />
               <Route path="study-material/list/:subjectId" element={<StudyMaterialList />} />
               <Route path="study-material/view/:id" element={<StudyMaterialDetail />} />
 
@@ -153,6 +163,7 @@ export default function App() {
               <Route path="my-courses/:courseId" element={<MyCourseDetail />} />
               <Route path="my-courses/:courseId/progress" element={<Progress />} />
               <Route path="browse-courses" element={<BrowseCourses />} />
+              <Route path="blogs" element={<BlogFeed />} />
 
               {/* ── Counselling ──
                   /counseling/* (US spelling) matches the backend's
@@ -171,6 +182,8 @@ export default function App() {
               <Route path="skill-dev/sessions/:id" element={<SkillSessionDetail />} />
               <Route path="skill-dev/book" element={<SkillBookPage />} />
               <Route path="skill-dev/explore" element={<SkillExplorePage />} />
+              <Route path="skill-dev/profile/:expertId" element={<SkillProfilePage />} />
+              <Route path="skill-dev/courses" element={<SkillCoursesPage />} />
               <Route path="skill-dev/reviews" element={<SkillReviewsPage />} />
             </Route>
 

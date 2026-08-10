@@ -164,7 +164,7 @@ export default function MyCourseDetail() {
 
       <section className="myCourseDetail__placeholderGrid">
         <ProgressCard onView={() => navigate(`/my-courses/${courseId}/progress`)} />
-        <PlaceholderCard title="Teachers" message="Coming soon" />
+        <TeachersCard onView={() => navigate("/teachers")} />
         <PaymentHistoryCard history={course.payment_history} />
       </section>
 
@@ -195,6 +195,24 @@ function ProgressCard({ onView }) {
         style={{ margin: "0 auto", display: "inline-flex", alignItems: "center", gap: 6, background: "#0a808a", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}
       >
         View progress →
+      </button>
+    </div>
+  );
+}
+
+function TeachersCard({ onView }) {
+  return (
+    <div className="myCourseDetail__placeholder">
+      <h3 className="myCourseDetail__placeholderTitle">Teachers</h3>
+      <p className="myCourseDetail__placeholderMsg" style={{ fontStyle: "normal" }}>
+        See who's teaching you this term and message them directly.
+      </p>
+      <button
+        type="button"
+        onClick={onView}
+        style={{ margin: "0 auto", display: "inline-flex", alignItems: "center", gap: 6, background: "#0a808a", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}
+      >
+        View teachers →
       </button>
     </div>
   );

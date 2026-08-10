@@ -11,10 +11,6 @@
  *   live page, which 404s on a skill-session id). The live page performs the
  *   POST /skill/sessions/<id>/join/ handshake.
  *
- * NOTE: the "Cancel this request" button posts to /skill/sessions/<id>/cancel/,
- * which has no backend route yet (there is no student-side cancel endpoint —
- * only the teacher-side decline). It fails gracefully with an alert. Add a
- * StudentCancelSessionView + url if you want learner-initiated cancellation.
  */
 
 import { useState, useEffect } from "react";
@@ -252,6 +248,35 @@ export default function SkillSessionDetail() {
           <div style={{ fontSize: 12, fontFamily: "monospace", color: T.soft }}>{s.booking_ref}</div>
         </div>
       </div>
+
+      {/* Payment — settled directly with the expert */}
+      {s.amount > 0 && (
+        <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${T.border}`, boxShadow: "0 2px 12px rgba(67,20,7,.06)", padding: "4px 20px 6px", marginBottom: 14 }}>
+          <Row
+            icon="₹"
+            label="Payment"
+            value={
+              <span>
+                ₹{s.amount_rupees} · <span style={{ color: s.payment_status === "paid" ? "#059669" : "#b45309", fontWeight: 700 }}>
+                  {s.payment_status === "paid" ? "Paid" : "Unpaid"}
+                </span>
+              </span>
+            }
+          />
+          {s.payment_status !== "paid" && s.pay_to && (
+            <Row
+              icon="💳"
+              label={`Pay ${s.pay_to.name}`}
+              value={
+                <span>
+                  UPI: <span style={{ fontFamily: "monospace" }}>{s.pay_to.upi}</span>
+                  {s.pay_to.note && <div style={{ marginTop: 4, fontWeight: 500, color: T.soft }}>{s.pay_to.note}</div>}
+                </span>
+              }
+            />
+          )}
+        </div>
+      )}
 
       {/* Expert */}
       <div style={{ marginBottom: 14 }}>

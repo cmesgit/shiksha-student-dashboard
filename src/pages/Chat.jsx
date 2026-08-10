@@ -25,8 +25,8 @@ export default function Chat() {
     : undefined;
 
   return (
-    <div style={{ padding: "20px", height: "calc(100vh - 80px)", boxSizing: "border-box" }}>
-      <ChatPanel directTo={directTo} courseRoom={courseRoom} />
+    <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
+      <ChatPanel directTo={directTo} courseRoom={courseRoom} theme="academy" />
     </div>
   );
 }
