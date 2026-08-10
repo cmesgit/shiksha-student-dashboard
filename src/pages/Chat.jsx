@@ -25,7 +25,7 @@ export default function Chat() {
     : undefined;
 
   return (
-    <div className="chat-page">
+    <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
       <ChatPanel directTo={directTo} courseRoom={courseRoom} theme="academy" />
     </div>
   );

@@ -645,7 +645,7 @@ export default function Dashboard() {
   // ── Skill Dev track — render the skill home instead ───────────────
   if (activeTrack === "skill") {
     return (
-      <div style={{ height: "100%", background: "#f3e2da", display: "flex", overflow: "hidden" }}>
+      <div style={{ height: "100%", background: "var(--page-bg, #eef1f2)", display: "flex", overflow: "hidden" }}>
         <SkillDevStudentSection data={data} />
       </div>
     );

@@ -19,11 +19,12 @@
 // pass, "strip to the mockup" was tried and explicitly reversed when it lost
 // real, working chat functionality — that lesson applies here too: this
 // keeps the full ChatPanel (categories, attachments, read receipts, etc.)
-// rather than rebuilding a minimal two-pane shell. The existing
-// `calc(100vh - 80px)` height already accounts for this app's real header
-// chrome; the design's own "150px" figure is a different app's chrome and
-// isn't a safe swap without visual verification this environment can't do
-// reliably (computer{screenshot} times out here) — left as-is.
+// rather than rebuilding a minimal two-pane shell. The wrapper below now
+// matches the flex pattern this app's own Chat.jsx and the teacher app's
+// Chat.jsx/SkillInbox.jsx both already use (`flex:1; min-height:0`) —
+// the previous `calc(100vh - 80px)` viewport hack was a stand-in chosen
+// because this environment's screenshot tool couldn't verify a swap;
+// verified via computed-style checks instead of a screenshot this time.
 
 import { useLocation, useSearchParams } from "react-router-dom";
 import ChatPanel from "../shared/ChatPanel";
@@ -41,7 +42,7 @@ export default function SkillMessages() {
   const directTo = teacherId ? { kind: "TEACHER", id: teacherId } : undefined;
 
   return (
-    <div style={{ padding: "20px", height: "calc(100vh - 80px)", boxSizing: "border-box" }}>
+    <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
       <ChatPanel directTo={directTo} initialDraft={draft} theme="skill" />
     </div>
   );
