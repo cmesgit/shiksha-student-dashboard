@@ -93,7 +93,7 @@ function CancelModal({ session, onClose, onConfirm }) {
         <div className="ps__modalInfo">
           <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Date:</span> <strong>{formatDate(session.date)}</strong></div>
           <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Time Slot:</span> <strong>{calcDurationDisplay(session.time, session.durationMinutes) || formatTime(session.time)}</strong></div>
-          <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Duration:</span> <strong>{session.duration || `${session.durationMinutes} minutes`}</strong></div>
+          <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Duration:</span> <strong>{session.durationLabel || `${session.durationMinutes} minutes`}</strong></div>
         </div>
         <p className="ps__modalNote">
           <strong>Note:</strong> The Teacher and Group Members will be notified of the cancellation.
@@ -118,7 +118,7 @@ function ConfirmModal({ session, onClose, onConfirm }) {
         <div className="ps__modalInfo">
           <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Date:</span> <strong>{formatDate(session.rescheduledDate || session.date)}</strong></div>
           <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Timing:</span> <strong>{calcDurationDisplay(session.rescheduledTime || session.time, session.durationMinutes) || formatTime(session.rescheduledTime || session.time)}</strong></div>
-          <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Duration:</span> <strong>{session.duration || `${session.durationMinutes} minutes`}</strong></div>
+          <div className="ps__modalInfoRow"><span className="ps__modalInfoLabel">Duration:</span> <strong>{session.durationLabel || `${session.durationMinutes} minutes`}</strong></div>
         </div>
         <p className="ps__modalNote">
           <strong>Note:</strong> The session will be scheduled and saved upon confirmation.
@@ -160,7 +160,7 @@ function SessionDetail({ session, onBack, onCancel, onEnterRoom }) {
             ["Teacher", session.teacher],
             ["Date", formatDate(session.date)],
             ["Time", formatTime(session.time)],
-            ["Duration", session.duration],
+            ["Duration", session.durationLabel || `${session.durationMinutes} minutes`],
             ["Type", session.sessionType === "group" ? "Group" : "One-on-One"],
           ].map(([k, v]) => (
             <div key={k} className="ps__detailRow">
@@ -239,7 +239,7 @@ function RequestDetail({ session, onBack, onCancel, onConfirmReschedule, onDecli
             ["Teacher", session.teacher],
             ["Date", formatDate(isReconfirm ? (session.rescheduledDate || session.date) : session.date)],
             ["Time Slot", calcDurationDisplay(isReconfirm ? (session.rescheduledTime || session.time) : session.time, session.durationMinutes) || formatTime(session.time)],
-            ["Duration", session.duration || `${session.durationMinutes} minutes`],
+            ["Duration", session.durationLabel || `${session.durationMinutes} minutes`],
             ["Type", session.sessionType === "group" ? "Group" : "One-on-One"],
           ].map(([k, v]) => (
             <div key={k} className="ps__detailRow">
@@ -274,7 +274,7 @@ function RequestDetail({ session, onBack, onCancel, onConfirmReschedule, onDecli
         <CancelModal
           session={session}
           onClose={() => setShowCancel(false)}
-          onConfirm={(id) => { setShowCancel(false); onCancel(id); onBack(); }}
+          onConfirm={(id, reason) => { setShowCancel(false); onCancel(id, reason); onBack(); }}
         />
       )}
       {showConfirm && (
@@ -318,7 +318,7 @@ function HistoryDetail({ session, onBack }) {
             ["Teacher", session.teacher],
             ["Date", formatDate(session.date)],
             ["Timing", calcDurationDisplay(session.time, session.durationMinutes) || formatTime(session.time)],
-            ["Duration", session.duration || `${session.durationMinutes} minutes`],
+            ["Duration", session.durationLabel || `${session.durationMinutes} minutes`],
             ["Type", session.sessionType === "group" ? "Group" : "One-on-One"],
             ["Status", statusLabel(session.status)],
           ].map(([k, v]) => (
@@ -402,7 +402,10 @@ function ScheduledTab({ onEnterRoom, searchTerm = "", registerRefresh }) {
 
   const handleConfirm = async (id) => {
     await privateSession.confirmReschedule(id);
-    setSessions((prev) => prev.map((s) => s.id === id ? { ...s, status: "approved" } : s));
+    // A confirmed reschedule moves scheduled_date/time to the proposed
+    // values server-side — a local status-only patch would leave the row
+    // showing the old time until the next reload, so refetch instead.
+    load();
   };
   const handleDecline = async (id) => {
     await privateSession.declineReschedule(id);
@@ -431,6 +434,23 @@ function ScheduledTab({ onEnterRoom, searchTerm = "", registerRefresh }) {
   ));
 
   if (selected) {
+    // A needs_reconfirmation row opened from this tab has no join/cancel
+    // action of its own — the teacher's proposed time needs an Accept/
+    // Decline, which is exactly what RequestDetail (used by the Requests
+    // tab for the identical status) already renders. Reuse it here instead
+    // of leaving this row's click-through as a dead end with no way to
+    // act on the reschedule proposal.
+    if (selected.status === "needs_reconfirmation") {
+      return (
+        <RequestDetail
+          session={selected}
+          onBack={() => setSelected(null)}
+          onCancel={(id, reason) => { handleCancel(id, reason); setSelected(null); }}
+          onConfirmReschedule={(id) => { handleConfirm(id); setSelected(null); }}
+          onDeclineReschedule={(id) => { handleDecline(id); setSelected(null); }}
+        />
+      );
+    }
     return (
       <SessionDetail
         session={selected}
@@ -539,11 +559,21 @@ function RequestedCard({ item, onClick }) {
 /* ═══════════════════════════════════════════════════════════
    REQUESTS TAB
 ═══════════════════════════════════════════════════════════ */
-function RequestsTab({ onUnreadChange, searchTerm = "", registerRefresh }) {
+function RequestsTab({ onUnreadChange, searchTerm = "", registerRefresh, forceOpenForm, onForceOpenFormHandled }) {
   const [requests, setRequests] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // The head's "+ Request session" button (design line 1623) lives outside
+  // this tab, so it asks the parent to switch here and flip this flag rather
+  // than duplicating the form.
+  useEffect(() => {
+    if (forceOpenForm) {
+      setShowForm(true);
+      onForceOpenFormHandled?.();
+    }
+  }, [forceOpenForm, onForceOpenFormHandled]);
 
   const loadRequests = useCallback(() => {
     privateSession.getSessions("requests").then((data) => {
@@ -560,8 +590,8 @@ function RequestsTab({ onUnreadChange, searchTerm = "", registerRefresh }) {
     registerRefresh?.(loadRequests);
   }, [loadRequests, registerRefresh]);
 
-  const handleCancel = async (id) => {
-    await privateSession.cancelSession(id);
+  const handleCancel = async (id, reason) => {
+    await privateSession.cancelSession(id, reason);
     setRequests((prev) => prev.filter((r) => r.id !== id));
   };
   const handleConfirmReschedule = async (id) => {
@@ -1244,7 +1274,7 @@ function HistoryTab({ searchTerm = "", registerRefresh }) {
                     <span className={`ac-tag ac-tag--${statusTone(h.status)}`}>
                       {statusLabel(h.status)}
                     </span>
-                    <span className="ac-when">{h.duration}</span>
+                    <span className="ac-when">{h.durationLabel}</span>
                   </div>
                   {h.topic && <div className="ac-row__topic">{h.topic}</div>}
                   <div className="ac-row__sub">
@@ -1271,6 +1301,7 @@ export default function PrivateSessions() {
   const [activeTab, setActiveTab] = useState("scheduled");
   const [requestsUnread, setRequestsUnread] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [openRequestForm, setOpenRequestForm] = useState(false);
 
   // Callbacks registered by child tabs so WebSocket can trigger their refresh
   const refreshCallbacksRef = useRef({});
@@ -1329,11 +1360,15 @@ export default function PrivateSessions() {
           </p>
         </div>
         {/* The design puts a green "+ Request session" in the head; it's
-            student-only (teachers get no such button). */}
+            student-only (teachers get no such button), and per dc.html's
+            `requestPrivSession` handler (line 1623) it opens the same
+            4-step request flow as the Requests tab's own button — it used
+            to navigate to /teachers instead, a dead end with no request
+            action on that page. */}
         <button
           type="button"
           className="ac-headBtn ac-headBtn--success"
-          onClick={() => navigate("/teachers")}
+          onClick={() => { setActiveTab("requests"); setOpenRequestForm(true); }}
         >
           + Request session
         </button>
@@ -1360,7 +1395,15 @@ export default function PrivateSessions() {
       </div>
 
       {activeTab === "scheduled" && <ScheduledTab onEnterRoom={handleEnterRoom} searchTerm={searchTerm} registerRefresh={(fn) => registerRefresh("scheduled", fn)} />}
-      {activeTab === "requests"  && <RequestsTab onUnreadChange={setRequestsUnread} searchTerm={searchTerm} registerRefresh={(fn) => registerRefresh("requests", fn)} />}
+      {activeTab === "requests"  && (
+        <RequestsTab
+          onUnreadChange={setRequestsUnread}
+          searchTerm={searchTerm}
+          registerRefresh={(fn) => registerRefresh("requests", fn)}
+          forceOpenForm={openRequestForm}
+          onForceOpenFormHandled={() => setOpenRequestForm(false)}
+        />
+      )}
       {activeTab === "history"   && <HistoryTab searchTerm={searchTerm} registerRefresh={(fn) => registerRefresh("history", fn)} />}
     </div>
   );
