@@ -138,7 +138,7 @@ function isSameDay(a, b) {
 }
 
 export default function Dashboard() {
-  const { activeCourse, activeTrack, subjects } = useCourse();
+  const { activeCourse, activeTrack, subjects, loading: courseLoading } = useCourse();
   const { user, activeProfile } = useAuth();
   const navigate = useNavigate();
 
@@ -651,7 +651,12 @@ export default function Dashboard() {
     );
   }
 
-  if (loading) return <LoadingState label="Loading dashboard" />;
+  // `loading` alone isn't enough: fetchDashboard sees a still-null
+  // `activeCourse` before CourseContext's own fetch resolves and immediately
+  // sets loading=false, so without courseLoading this briefly rendered the
+  // "no courses" empty state below for every enrolled student on every load,
+  // before flashing to the real dashboard once activeCourse populated.
+  if (loading || courseLoading) return <LoadingState label="Loading dashboard" />;
 
   if (!activeCourse) {
     // No Academy enrolment on THIS profile — onboarding placeholder.
