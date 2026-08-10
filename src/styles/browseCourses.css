@@ -121,6 +121,16 @@
 .shop-card--owned { border-color: var(--success-border, #bfe6c8); }
 .shop-card--soon { opacity: 0.88; }
 
+/* Real Course.thumbnail (CMS-uploaded, 16:9) — bleeds to the card's edges
+   above the padded content, since .shop-card applies uniform 18px padding. */
+.shop-card__thumb {
+  width: calc(100% + 36px);
+  height: 120px;
+  margin: -18px -18px 12px;
+  border-radius: 16px 16px 0 0;
+  object-fit: cover;
+}
+
 .shop-card__pills {
   display: flex;
   align-items: center;
