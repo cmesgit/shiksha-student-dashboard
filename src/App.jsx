@@ -38,7 +38,6 @@ import QuizPractice from "./pages/QuizPractice";
 import QuizResult from "./pages/QuizResult";
 import QuizAttempts from "./pages/QuizAttempts";
 import SubjectsRecordings from "./pages/SubjectsRecordings";
-import RecordingsList from "./pages/RecordingsList";
 import RecordingDetail from "./pages/RecordingDetail";
 import StudyMaterialList from "./pages/StudyMaterialList";
 import StudyMaterialDetail from "./pages/StudyMaterialDetail";
@@ -139,7 +138,7 @@ export default function App() {
               <Route path="subjects/quiz/:subjectId/attempts/:quizId" element={<QuizAttempts />} />
 
               <Route path="subjects/recordings" element={<SubjectsRecordings />} />
-              <Route path="subjects/recordings/:subjectId" element={<RecordingsList />} />
+              <Route path="subjects/recordings/:subjectId" element={<SubjectsRecordings />} />
               <Route path="subjects/recordings/:subjectId/video/:videoId" element={<RecordingDetail />} />
 
               {/* Study Material is one flat, subject-filterable list (design

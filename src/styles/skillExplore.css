@@ -1,54 +1,43 @@
-/* src/styles/skillExplore.css — design_handoff_skilldev README "2. Explore experts" */
+/* src/styles/skillExplore.css — Skill Dev Student.dc.html dc:182-226 */
 
 .se-screen {
-  padding: 24px 22px 40px;
   max-width: 1080px;
-  margin: 0 auto;
   animation: fadeUp .35s ease both;
 }
 
-.se-title {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: var(--fs-page-title);
-  color: var(--ink);
-  margin: 0 0 18px;
+.se-filterRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 18px;
 }
 
-.se-filterRow { margin-bottom: 20px; }
-
-.se-searchBox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.se-search {
+  flex: 1;
+  min-width: 240px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 9px 14px;
-  max-width: 420px;
-  margin-bottom: 12px;
-  color: var(--ink-muted);
-}
-.se-searchBox input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 12.5px;
+  border-radius: var(--r-lg);
+  padding: 12px 16px;
   font-family: var(--font-body);
+  font-size: 13px;
   color: var(--ink);
+  outline: none;
+}
+.se-search:focus {
+  border-color: var(--skill);
+  box-shadow: 0 0 0 3px rgba(255, 143, 1, .15);
 }
 
-.se-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .se-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 13px;
+  padding: 9px 16px;
   border-radius: var(--r-pill);
   font-size: 12px;
   font-weight: 600;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   background: var(--surface);
   color: var(--ink-muted);
   cursor: pointer;
@@ -59,8 +48,12 @@
   border-color: var(--skill);
   color: #fff;
 }
+.se-chip--fav:not(.is-active) {
+  background: var(--surface);
+  color: var(--skill-ink);
+  border-color: var(--skill-border);
+}
 .se-pincodeInput {
-  margin-top: 8px;
   width: 180px;
   border: 1px solid var(--border);
   outline: none;
@@ -68,8 +61,7 @@
   font-size: 12.5px;
   font-family: var(--font-body);
   border-radius: var(--r-md);
-  padding: 7px 12px;
-  display: block;
+  padding: 9px 12px;
 }
 
 /* ── Card grid ── */
@@ -80,44 +72,49 @@
 }
 .se-card {
   background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 18px 20px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border: 1px solid var(--border);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.se-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(26, 44, 51, .10);
 }
 .se-cardHead {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
+.se-nameRow { display: flex; align-items: center; gap: 7px; }
 .se-name {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 700;
-  font-size: 13.5px;
+  font-size: 14.5px;
   color: var(--ink);
 }
-.se-rating {
+.se-sub {
   font-size: 11.5px;
-  color: var(--skill-ink);
-  font-weight: 700;
-  margin-top: 2px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.se-reviewsCount { color: var(--ink-faint); font-weight: 400; }
+.se-reviewsCount { color: var(--ink-faint); font-size: 11.5px; }
 .se-favBtn {
   all: unset;
   cursor: pointer;
-  font-size: 16px;
-  color: var(--ink-faint);
+  font-size: 20px;
   line-height: 1;
   flex-shrink: 0;
+  align-self: flex-start;
+  color: var(--border-strong);
   transition: color .15s ease;
 }
-.se-favBtn.is-fav { color: var(--skill-ink); }
+.se-favBtn.is-fav { color: var(--danger); }
 
 .se-thumb {
   position: relative;
@@ -125,32 +122,33 @@
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
 }
 .se-thumbFrame { width: 100%; height: 100%; border: none; }
 .se-thumbPill {
   position: absolute;
   font-size: 9px;
   font-weight: 800;
-  letter-spacing: .4px;
+  letter-spacing: .5px;
   text-transform: uppercase;
-  color: #fff;
-  background: rgba(0,0,0,.4);
+  color: var(--sk-accent-light);
+  background: rgba(0, 0, 0, .5);
   padding: 3px 8px;
   border-radius: var(--r-pill);
 }
-.se-thumbPill--top { top: 8px; left: 8px; }
+.se-thumbPill--top { top: 9px; left: 9px; }
 .se-playDisc {
+  position: relative;
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: var(--skill);
+  background: rgba(255, 143, 1, .95);
   color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 15px;
+  display: grid;
+  place-items: center;
 }
 
 .se-bio {
@@ -159,38 +157,50 @@
   color: var(--ink-2);
   margin: 0;
   text-wrap: pretty;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .se-pledge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: var(--skill-soft);
   border: 1px solid var(--skill-border);
   border-radius: 10px;
-  padding: 8px 12px;
-  font-size: 12px;
+  padding: 8px 11px;
+}
+.se-pledgeGlyph { font-size: 13px; color: var(--skill-ink); }
+.se-pledge span:last-child {
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--sk-accent-text-on-tint);
 }
 
-.se-actions { display: flex; gap: 8px; margin-top: auto; }
+.se-actions { display: flex; align-items: center; gap: 10px; margin-top: auto; }
+.se-actionsRating {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--skill-ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 .se-btn {
-  flex: 1;
   border: none;
   border-radius: var(--r-md);
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 12.5px;
-  padding: 9px 0;
   cursor: pointer;
   transition: all .15s ease;
 }
-.se-btn--primary { background: var(--skill); color: #fff; }
+.se-btn--primary {
+  background: var(--skill); color: #fff;
+  font-size: 12px; font-weight: 700; padding: 8px 16px;
+}
 .se-btn--primary:hover { background: var(--skill-hover); }
-.se-btn--secondary { background: var(--surface); border: 1px solid var(--border); color: var(--ink-2); }
-.se-btn--secondary:hover { background: var(--surface-muted); }
+.se-btn--secondary {
+  background: var(--surface); border: 1px solid var(--border); color: var(--ink-2);
+  font-size: 12px; font-weight: 600; padding: 8px 14px;
+}
+.se-btn--secondary:hover { border-color: var(--border-strong); }
 
 .se-empty {
   text-align: center;

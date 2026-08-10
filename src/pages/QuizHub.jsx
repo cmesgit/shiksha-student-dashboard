@@ -142,6 +142,8 @@ export default function QuizHub() {
         &lt; Back
       </button>
 
+      <h1 className="qhTitle">Quizzes</h1>
+
       {resumeAttempt && (
         <div className="qhResumeBanner">
           <span className="qhResumeIcon">⏸</span>

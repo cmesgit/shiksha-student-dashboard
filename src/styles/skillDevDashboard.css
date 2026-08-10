@@ -12,8 +12,6 @@
 
 .sd-main {
   max-width: 1080px;
-  margin: 0 auto;
-  padding: 24px 22px 40px;
   animation: fadeUp .35s ease both;
 }
 
@@ -31,24 +29,36 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
-  margin: 20px 0 22px;
+  margin-bottom: 20px;
 }
 .sd-statTile {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 15px 17px;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--sh-card);
+}
+.sd-statIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--skill-soft);
+  color: var(--skill-ink);
+  display: grid;
+  place-items: center;
+  margin-bottom: 12px;
 }
 .sd-statValue {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 21px;
+  font-weight: 900;
+  font-size: 28px;
+  letter-spacing: -.8px;
   color: var(--ink);
 }
 .sd-statLabel {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-muted);
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 /* ── Rebook card (amber tint) ── */
@@ -58,10 +68,11 @@
   border-radius: 18px;
   padding: 22px 24px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 18px;
   flex-wrap: wrap;
-  margin-bottom: 26px;
+  margin-bottom: 20px;
+  box-shadow: var(--sh-card);
 }
 .sd-eyebrow {
   font-size: 10.5px;
@@ -97,7 +108,6 @@
   gap: 6px;
   transition: all .15s ease;
 }
-.sd-btn--sm { padding: 8px 14px; font-size: 12.5px; }
 .sd-btn--primary {
   background: var(--skill);
   color: #fff;
@@ -109,21 +119,21 @@
   color: var(--ink-2);
 }
 .sd-btn--secondary:hover { background: var(--surface-muted); }
-.sd-btn--outline {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--ink-muted);
-}
-.sd-btn--outline:hover { border-color: var(--border-strong); }
 
 /* ── Two-column layout ── */
 .sd-twoCol {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
-  gap: 20px;
+  gap: 16px;
 }
 @media (max-width: 880px) {
   .sd-twoCol { grid-template-columns: 1fr; }
+}
+.sd-col {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
 }
 
 .sd-sectionHead {
@@ -150,10 +160,9 @@
 
 /* ── Session row ── */
 .sd-sessionRow {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--divider);
   border-radius: 14px;
-  padding: 14px 16px;
+  padding: 14px;
   margin-bottom: 10px;
   display: flex;
   align-items: center;
@@ -175,31 +184,27 @@
 }
 
 .sd-tag {
-  font-size: 9.5px;
-  font-weight: 800;
+  font-size: 10.5px;
+  font-weight: 700;
   letter-spacing: .4px;
   text-transform: uppercase;
-  padding: 3px 8px;
+  padding: 5px 11px;
   border-radius: var(--r-pill);
   flex-shrink: 0;
 }
-.sd-tag--requested { color: var(--st-requested); background: var(--st-requested-bg); }
-.sd-tag--confirmed { color: var(--st-confirmed); background: var(--st-confirmed-bg); }
+/* dc:1099-1104 — Skill Dev's own teal/amber vocabulary, not the app-wide
+   warning/success ramp (which reads orange/green here, not teal). */
+.sd-tag--requested { color: var(--skill-ink); background: var(--skill-soft); }
+.sd-tag--confirmed { color: var(--side-accent); background: var(--teal-soft); }
 
-/* ── Expert row (Top experts rail) ── */
+/* ── Expert row (Top experts rail) — borderless, inside .sd-col ── */
 .sd-expertRow {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px 13px;
-  margin-bottom: 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   cursor: pointer;
-  transition: border-color .15s ease;
 }
-.sd-expertRow:hover { border-color: var(--border-strong); }
+.sd-expertRow + .sd-expertRow { margin-top: 12px; }
 .sd-expertName {
   font-size: 13px;
   font-weight: 700;
@@ -211,7 +216,6 @@
 .sd-expertSkill {
   font-size: 11px;
   color: var(--ink-muted);
-  margin-top: 1px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -219,7 +223,7 @@
 .sd-expertRating {
   font-size: 12px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--skill-ink);
   flex-shrink: 0;
 }
 
@@ -252,6 +256,3 @@
   font-weight: 700;
 }
 
-@media (max-width: 880px) {
-  .sd-main { padding: 18px 16px 30px; }
-}

@@ -17,6 +17,7 @@
  */
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCourse } from "../contexts/CourseContext";
+import { useAuth } from "../contexts/AuthContext";
 import { HiOutlineMenu, HiOutlineX } from "react-icons/hi";
 import { RiDashboardLine, RiBookOpenLine } from "react-icons/ri";
 import ProfileSwitcher from "../shared/ProfileSwitcher";
@@ -26,6 +27,7 @@ import "../shared/ProfileSwitcher.css";
 import MessageIcon from "./MessageIcon";
 import NotificationBell from "./NotificationBell";
 import { pageTitleFor } from "../utils/academyNav";
+import { pageTitleForSkill, firstName } from "../utils/skillNav";
 import { HOME_URL, TEACHER_DASHBOARD_URL as TEACHER_URL } from "../config/urls";
 
 // "Saturday, 25 July 2026" — en-GB, matching the design's date sub-line.
@@ -33,11 +35,14 @@ const DATE_FMT = { weekday: "long", day: "numeric", month: "long", year: "numeri
 
 export default function Header({ toggleMenu, menuOpen }) {
   const { activeTrack } = useCourse();
+  const { activeProfile, user } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
   const isSkill = activeTrack === "skill";
-  const title = isSkill ? "Skill Development" : pageTitleFor(pathname);
+  const title = isSkill
+    ? pageTitleForSkill(pathname, firstName(activeProfile, user))
+    : pageTitleFor(pathname);
   const todayLong = new Date().toLocaleDateString("en-GB", DATE_FMT);
 
   return (

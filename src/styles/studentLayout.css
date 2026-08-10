@@ -34,10 +34,12 @@
   background: var(--page-bg);
 }
 
-/* Content column — the design's padding is 20px 24px 28px. */
+/* Content column — Academy's design pads 20px 24px 28px; Skill Dev's own
+   design pads 26px 30px 40px (dc:104) via the [data-track="skill"] override
+   on --content-pad. Screens must not re-pad their own root. */
 .studentLayout__page {
   flex: 1;
-  padding: 20px 24px 28px;
+  padding: var(--content-pad);
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;

@@ -143,6 +143,7 @@
   --sidebar-w:   240px;
   --header-h:    60px;
   --app-min-w:   1240px;
+  --content-pad: 20px 24px 28px;  /* Academy Dashboard.dc.html line 559 */
   --rail-w:      348px;  /* dashboard right rail */
   --rail-w-alt:  320px;  /* detail-page right rail */
   --msg-pane-w:  300px;  /* Messages conversation list */
@@ -230,6 +231,8 @@
      the next person's grep. */
   --side-bg:     #425f7f;
   --side-accent: #ff8f01;
+  --sidebar-w:   248px;             /* Skill Dev Student.dc.html dc:28 */
+  --content-pad: 26px 30px 40px;    /* dc:104 — the layout pads once; screens no longer re-pad */
 
   /* design_handoff_skilldev: the redesign's single brand accent (#ff8f01) is
      used identically on student + expert dashboards, so --action/--primary

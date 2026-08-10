@@ -1,120 +1,161 @@
-/* src/styles/skillSessions.css — design_handoff_skilldev README "6. My sessions" */
+/* src/styles/skillSessions.css — Skill Dev Student.dc.html dc:601-647, 754-798 */
 
 .ss-screen {
-  padding: 24px 22px 40px;
   max-width: 900px;
-  margin: 0 auto;
   animation: fadeUp .35s ease both;
-}
-
-.ss-title {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: var(--fs-page-title);
-  color: var(--ink);
-  margin: 0 0 16px;
 }
 
 .ss-seg {
   display: inline-flex;
-  background: var(--toggle-track);
-  border-radius: var(--r-pill);
-  padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
   margin-bottom: 18px;
 }
 .ss-seg__btn {
   all: unset;
   cursor: pointer;
-  padding: 7px 18px;
-  border-radius: var(--r-pill);
+  padding: 9px 20px;
+  border-radius: 9px;
   font-size: 12.5px;
   font-weight: 700;
   color: var(--ink-muted);
+  transition: all .15s ease;
 }
 .ss-seg__btn.is-active { background: var(--skill); color: #fff; }
 
-.ss-rowWrap { margin-bottom: 10px; }
+.ss-rows { display: flex; flex-direction: column; gap: 12px; }
 .ss-row {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 14px 16px;
+  border-radius: 16px;
+  padding: 18px 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
-/* .ss-reschedPanel glues directly under this row (border-top:none, margin-top:
-   -1px) to read as one continuous card — flatten the row's own bottom corners
-   to match, otherwise its 14px curve pokes past the panel's square top edge. */
-.ss-row--resched { border-radius: 14px 14px 0 0; }
-.ss-topic { font-family: var(--font-display); font-weight: 700; font-size: 13.5px; color: var(--ink); }
+.ss-body { flex: 1; min-width: 200px; }
+.ss-topic { font-size: 14px; font-weight: 700; color: var(--ink); }
 .ss-meta { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
 
 .ss-tag {
-  font-size: 9.5px;
-  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
   letter-spacing: .4px;
   text-transform: uppercase;
-  padding: 3px 8px;
+  padding: 5px 11px;
   border-radius: var(--r-pill);
   flex-shrink: 0;
 }
-.ss-tag--requested { color: var(--st-requested); background: var(--st-requested-bg); }
-.ss-tag--confirmed { color: var(--st-confirmed); background: var(--st-confirmed-bg); }
+.ss-tag--confirmed { color: var(--teal); background: var(--teal-soft); }
+.ss-tag--requested { color: var(--skill-ink); background: var(--skill-soft); }
+.ss-tag--completed { color: var(--success); background: var(--success-soft); }
+.ss-tag--cancelled { color: var(--danger); background: var(--danger-soft); }
 
-.ss-actions { display: flex; gap: 8px; flex-shrink: 0; }
 .ss-btn {
   border: none;
   border-radius: var(--r-md);
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 12px;
-  padding: 8px 14px;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   white-space: nowrap;
   transition: all .15s ease;
 }
 .ss-btn:disabled { opacity: .5; cursor: not-allowed; }
-.ss-btn--primary { background: var(--skill); color: #fff; }
-.ss-btn--primary:hover:not(:disabled) { background: var(--skill-hover); }
-.ss-btn--live { background: var(--danger); color: #fff; }
-.ss-btn--outline { background: var(--surface); border: 1px solid var(--border); color: var(--ink-2); }
-.ss-reviewedTag { font-size: 11.5px; font-weight: 700; color: var(--success); display: inline-flex; align-items: center; gap: 5px; }
+.ss-btn--join { background: var(--teal); color: #fff; font-size: 12.5px; font-weight: 700; padding: 10px 18px; }
+.ss-btn--cancel { background: var(--surface); border: 1px solid var(--border); color: var(--ink-muted); font-size: 12px; font-weight: 600; padding: 10px 16px; }
+.ss-btn--cancel:hover { border-color: #fca5a5; color: var(--danger); }
+.ss-btn--rate { background: var(--skill-soft); border: 1px solid var(--skill-border); color: var(--skill-ink); font-size: 12.5px; font-weight: 700; padding: 10px 18px; }
+.ss-myStars { font-size: 13px; font-weight: 700; color: var(--skill-ink); }
 
+/* Reschedule panel is a flex child of .ss-row itself (flex-basis:100%), not
+   a separate glued-on card — it inherits the row's own border/radius. */
 .ss-reschedPanel {
+  flex-basis: 100%;
   background: var(--skill-soft);
   border: 1px solid var(--skill-border);
-  border-top: none;
-  border-radius: 0 0 14px 14px;
-  padding: 12px 16px;
-  margin-top: -1px;
+  border-radius: 13px;
+  padding: 14px 16px;
+  margin-top: 4px;
 }
-.ss-reschedTitle { font-size: 10.5px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: var(--sk-accent-text-on-tint); margin-bottom: 4px; }
-.ss-reschedLine { font-size: 12.5px; color: var(--ink); }
-.ss-reschedReason { font-size: 12px; color: var(--ink-muted); font-style: italic; margin-top: 4px; }
-.ss-reschedActions { display: flex; gap: 8px; margin-top: 10px; }
+.ss-reschedTitle { font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--skill-ink); margin-bottom: 4px; }
+.ss-reschedLine { font-size: 12.5px; color: var(--ink-2); }
+.ss-reschedReason { font-size: 11.5px; color: var(--ink-muted); font-style: italic; margin-top: 4px; }
+.ss-reschedActions { display: flex; gap: 8px; margin-top: 12px; }
+.ss-btn--accept { background: var(--success); color: #fff; font-size: 12px; font-weight: 700; padding: 9px 18px; }
+.ss-btn--accept:hover { background: #278a39; }
+.ss-btn--keep { background: var(--surface); border: 1px solid var(--border); color: var(--ink-2); font-size: 12px; font-weight: 600; padding: 9px 16px; }
+.ss-btn--keep:hover { border-color: var(--border-strong); }
 
 .ss-empty { text-align: center; padding: 26px; color: var(--sk-meta); font-size: 12.5px; border: 1px dashed var(--border); border-radius: 14px; }
 .ss-link { all: unset; cursor: pointer; color: var(--skill-ink); font-weight: 600; }
 
-/* ── Review modal ── */
-.ss-reviewSub { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 4px; }
-.ss-starPicker { display: flex; gap: 4px; margin: 12px 0; }
-.ss-starBtn { all: unset; cursor: pointer; font-size: 28px; color: var(--border-strong); }
-.ss-starBtn.is-filled { color: var(--skill-ink); }
+/* ── Cancel modal ── */
+.ss-cancelLabel { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 16px; }
+.ss-noticeBox {
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.ss-noticeBox--late { background: #fef9ec; border: 1px solid #f5d788; color: #b45309; }
+.ss-noticeBox--free { background: var(--success-soft); border: 1px solid var(--success-border); color: var(--success); }
+.ss-reasonLabel { display: block; font-size: 11.5px; font-weight: 700; color: var(--ink-muted); margin-bottom: 6px; }
+.ss-reasonInput {
+  width: 100%;
+  box-sizing: border-box;
+  height: 60px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 11px 14px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+}
+.ss-reasonInput:focus { border-color: var(--skill); }
+.ss-cancelActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.ss-btn--keepBooking { background: var(--surface); border: 1px solid var(--border); color: var(--ink-2); font-size: 12.5px; font-weight: 600; padding: 11px 18px; border-radius: 11px; }
+.ss-btn--cancelSession { background: var(--danger); border: none; color: #fff; font-size: 12.5px; font-weight: 700; padding: 11px 20px; border-radius: 11px; box-shadow: 0 5px 14px rgba(220, 38, 38, .25); }
+.ss-btn--cancelSession:hover:not(:disabled) { background: var(--danger-hover); }
+
+/* ── Rate modal ── */
+.ss-rateSub { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 18px; text-align: center; }
+.ss-starPicker { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+.ss-starBtn { all: unset; cursor: pointer; font-size: 34px; line-height: 1; color: var(--border-strong); transition: transform .1s ease; }
+.ss-starBtn.is-filled { color: var(--skill); }
 .ss-reviewInput {
   width: 100%;
   box-sizing: border-box;
+  height: 70px;
   border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 10px 12px;
-  font-size: 13px;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 12.5px;
   font-family: var(--font-body);
-  resize: vertical;
+  resize: none;
+  outline: none;
 }
 .ss-reviewErr { margin-top: 8px; font-size: 12px; color: var(--danger); font-weight: 600; }
-.ss-reviewActions { display: flex; gap: 8px; margin-top: 14px; }
-.ss-reviewActions .ss-btn { flex: 1; justify-content: center; padding: 10px 0; }
+.ss-submitRate {
+  width: 100%;
+  margin-top: 14px;
+  border: none;
+  border-radius: 12px;
+  padding: 13px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  transition: all .15s ease;
+  background: var(--surface-alt);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+.ss-submitRate.is-enabled { background: var(--skill); color: #fff; cursor: pointer; }

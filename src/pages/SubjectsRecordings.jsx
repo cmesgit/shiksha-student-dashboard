@@ -13,7 +13,7 @@
 // ──────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
 import { LoadingState, EmptyState } from "../components/StateViews";
@@ -51,12 +51,18 @@ const RECORDING_STATUS_FINISHED = 4;
 export default function SubjectsRecordings() {
   const navigate = useNavigate();
   const { activeCourse } = useCourse();
+  // Reachable either at /subjects/recordings (browse all, filter via pills)
+  // or /subjects/recordings/:subjectId (deep link from SubjectDetails /
+  // LiveSessions "see recordings") — same hub, just pre-filtered.
+  const { subjectId: subjectIdParam } = useParams();
+  const [searchParams] = useSearchParams();
+  const preselectSubject = subjectIdParam || searchParams.get("subject") || null;
 
   const [subjects, setSubjects] = useState([]);
   const [recordings, setRecordings] = useState([]);
   const [progressMap, setProgressMap] = useState({});
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState(preselectSubject || "all");
 
   useEffect(() => {
     if (!activeCourse) {
@@ -66,7 +72,7 @@ export default function SubjectsRecordings() {
 
     let cancelled = false;
     setLoading(true);
-    setActiveFilter("all");
+    setActiveFilter(preselectSubject || "all");
 
     const fetchAll = async () => {
       try {
@@ -121,7 +127,7 @@ export default function SubjectsRecordings() {
     return () => {
       cancelled = true;
     };
-  }, [activeCourse]);
+  }, [activeCourse, preselectSubject]);
 
   // Only show a pill for subjects that actually have a recording.
   const subjectsWithRecordings = useMemo(() => {
@@ -135,7 +141,7 @@ export default function SubjectsRecordings() {
 
   const filtered = useMemo(() => {
     if (activeFilter === "all") return recordings;
-    return recordings.filter((r) => r.subjectId === activeFilter);
+    return recordings.filter((r) => String(r.subjectId) === String(activeFilter));
   }, [recordings, activeFilter]);
 
   const handleOpen = (rec) => {
@@ -181,7 +187,7 @@ export default function SubjectsRecordings() {
               <button
                 key={s.id}
                 type="button"
-                className={`recChip${activeFilter === s.id ? " is-active" : ""}`}
+                className={`recChip${String(activeFilter) === String(s.id) ? " is-active" : ""}`}
                 onClick={() => setActiveFilter(s.id)}
               >
                 {s.name}

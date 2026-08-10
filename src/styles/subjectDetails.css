@@ -99,7 +99,7 @@
 
 .sd-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) var(--rail-w-alt, 320px);
   gap: 16px;
   align-items: start;
 }

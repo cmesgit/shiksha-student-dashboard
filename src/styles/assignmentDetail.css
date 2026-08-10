@@ -561,9 +561,9 @@
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
-.asg-statusChip--due { background: #e8edfb; color: #1d4ed8; }
-.asg-statusChip--overdue { background: #fef2f2; color: #dc2626; }
-.asg-statusChip--submitted { background: #ecf8ee; color: #2f9d42; }
+.asg-statusChip--due { background: var(--success-soft, #ecf8ee); color: var(--success, #2f9d42); }
+.asg-statusChip--overdue { background: var(--danger-soft, #fef2f2); color: var(--danger, #dc2626); }
+.asg-statusChip--submitted { background: var(--info-soft, #e8edfb); color: var(--info, #1d4ed8); }
 
 .asg-detailTitle {
   margin: 8px 0 0;

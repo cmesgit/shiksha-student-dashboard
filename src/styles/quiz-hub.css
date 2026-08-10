@@ -1,4 +1,6 @@
-.qhPage { max-width: 1060px; margin: 0 auto; padding: 22px; font-family: var(--font-body); color: var(--ink); }
+.qhPage { width: 100%; box-sizing: border-box; padding: 22px; font-family: var(--font-body); color: var(--ink); }
+
+.qhTitle { margin: 0 0 16px; font-family: var(--font-display); font-weight: 800; font-size: var(--fs-page-title); color: var(--ink); }
 
 .qhBack {
   border: 1px solid var(--card-border); background: #fff; border-radius: var(--radius-btn);
@@ -51,7 +53,9 @@
   padding: 8px 12px; font: 500 12px var(--font-body); color: var(--ink-2); background: #fff; cursor: pointer;
 }
 
-.qhGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--gap); }
+.qhGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); }
+@media (max-width: 900px) { .qhGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .qhGrid { grid-template-columns: 1fr; } }
 
 .qhCard { padding: 16px; display: flex; flex-direction: column; gap: 10px; transition: box-shadow .15s, border-color .15s; }
 .qhCard:hover { border-color: var(--acc-border, #cfdbe6); box-shadow: 0 3px 10px rgba(26,44,51,.09); }

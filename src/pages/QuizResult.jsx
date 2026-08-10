@@ -118,6 +118,10 @@ export default function QuizResult() {
     (a, b) => (DIFF_ORDER[a.difficulty] ?? 9) - (DIFF_ORDER[b.difficulty] ?? 9)
   );
   const scoreTrend = resultData.score_trend || [];
+  // Retakes are unlimited, but the answer key is only revealed on the first
+  // `reveal_answers_after` attempts — a later retake's result still shows
+  // score/correctness, just not the correct-choice text or explanation.
+  const answersRevealed = resultData.answers_revealed !== false;
 
   return (
     <div className="quizResultPage">
@@ -301,12 +305,19 @@ export default function QuizResult() {
         <div className="quizDetailQuestions">
           <div className="qraQuestionsHeader">
             <span>Question review</span>
-            {wrongQuestions.length > 0 && (
+            {answersRevealed && wrongQuestions.length > 0 && (
               <button className="qraRetryBtn" onClick={() => setShowMistakes(true)}>
                 ↻ Practice my {wrongQuestions.length} mistake{wrongQuestions.length > 1 ? "s" : ""}
               </button>
             )}
           </div>
+          {!answersRevealed && (
+            <p className="qraAnswersHiddenNote">
+              You've used your review attempt for this quiz — correct answers and
+              explanations are hidden on retakes so they can't be memorised for a
+              free score. Your score and correctness are still shown below.
+            </p>
+          )}
           {resultData.questions.map((q, index) => (
             <div
               key={q.id}
@@ -321,9 +332,11 @@ export default function QuizResult() {
                   </span>
                   {index + 1}. {q.text}
                 </p>
-                <span className="quizResultCorrectChip">
-                  Ans: {q.correct_choice}
-                </span>
+                {answersRevealed && (
+                  <span className="quizResultCorrectChip">
+                    Ans: {q.correct_choice}
+                  </span>
+                )}
               </div>
 
               {(q.topic || q.difficulty) && (
@@ -340,21 +353,23 @@ export default function QuizResult() {
                 {q.is_correct ? "✓" : "✗"} Your Answer: {q.selected_choice}
               </div>
 
-              <div>
-                <button
-                  onClick={() => toggleExplanation(q.id)}
-                  className={`quizResultExplainBtn ${openExplanation[q.id] ? "quizResultExplainBtn--open" : ""}`}
-                >
-                  {openExplanation[q.id] ? "Hide Explanation ▲" : "Show Explanation ▼"}
-                </button>
+              {answersRevealed && (
+                <div>
+                  <button
+                    onClick={() => toggleExplanation(q.id)}
+                    className={`quizResultExplainBtn ${openExplanation[q.id] ? "quizResultExplainBtn--open" : ""}`}
+                  >
+                    {openExplanation[q.id] ? "Hide Explanation ▲" : "Show Explanation ▼"}
+                  </button>
 
-                {openExplanation[q.id] && (
-                  <div className="quizResultExplainBox">
-                    <strong>Explanation:</strong>
-                    <p>{q.explanation}</p>
-                  </div>
-                )}
-              </div>
+                  {openExplanation[q.id] && (
+                    <div className="quizResultExplainBox">
+                      <strong>Explanation:</strong>
+                      <p>{q.explanation}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

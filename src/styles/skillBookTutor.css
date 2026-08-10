@@ -1,41 +1,71 @@
-/* src/styles/skillBookTutor.css — design_handoff_skilldev README "4. Book a session" */
+/* src/styles/skillBookTutor.css — Skill Dev Student.dc.html dc:488-596 */
 
 .sbk-screen {
-  padding: 24px 22px 40px;
   max-width: 1080px;
-  margin: 0 auto;
   animation: fadeUp .35s ease both;
 }
 
 .sbk-back {
-  all: unset;
-  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 14px;
+  font-family: var(--font-body);
   font-size: 12.5px;
   font-weight: 600;
   color: var(--ink-muted);
-  margin-bottom: 16px;
-  display: inline-block;
+  cursor: pointer;
 }
 .sbk-back:hover { color: var(--ink); }
 
 .sbk-hero {
+  display: flex;
+  align-items: center;
+  gap: 15px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 18px 20px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 20px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
 }
-.sbk-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--skill-ink); }
-.sbk-heroName { font-family: var(--font-display); font-weight: 800; font-size: 20px; color: var(--ink); }
-.sbk-heroMeta { font-size: 12px; color: var(--ink-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+.sbk-eyebrow {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--skill-ink);
+}
+.sbk-heroName {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  margin-top: 3px;
+  color: var(--ink);
+}
+.sbk-heroMeta {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+.sbk-viewProfileBtn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 9px 15px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sbk-viewProfileBtn:hover { border-color: var(--border-strong); }
 
 .sbk-cols {
   display: grid;
   grid-template-columns: 1fr 320px;
-  gap: 20px;
+  gap: 16px;
+  align-items: start;
 }
 @media (max-width: 900px) { .sbk-cols { grid-template-columns: 1fr; } }
 
@@ -43,37 +73,54 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 20px 22px;
+  padding: 22px;
 }
-.sbk-cardTitle { font-family: var(--font-display); font-weight: 800; font-size: 14px; color: var(--ink); margin: 0 0 4px; }
-.sbk-cardSub { font-size: 11.5px; color: var(--ink-muted); margin: 0 0 14px; }
+.sbk-cardTitle {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0 0 4px;
+  color: var(--ink);
+}
+.sbk-cardSub {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin: 0 0 16px;
+}
 
-.sbk-dayRow { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; gap: 10px; border-bottom: 1px solid var(--divider); }
-.sbk-dayRow:last-child { border-bottom: none; }
-.sbk-dayLabel { font-size: 12px; font-weight: 700; color: var(--ink); width: 62px; flex-shrink: 0; }
-.sbk-dayPills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+/* ── Free times ── */
+.sbk-slotRows { display: flex; flex-direction: column; gap: 12px; }
+.sbk-dayRow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sbk-dayLabel {
+  width: 70px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
 .sbk-timePill {
+  padding: 8px 14px;
+  border-radius: var(--r-md);
   font-size: 12px;
   font-weight: 600;
-  padding: 6px 12px;
-  border-radius: var(--r-pill);
-  background: var(--skill-soft);
-  color: var(--sk-accent-text-on-tint);
-  border: 1px solid var(--skill-border);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--ink-2);
   cursor: pointer;
   transition: all .15s ease;
 }
-.sbk-timePill:hover { border-color: var(--skill); }
-.sbk-timePill.is-selected { background: var(--skill); color: #fff; border-color: var(--skill); }
-.sbk-notFree { font-size: 11.5px; font-style: italic; color: var(--sk-meta-faint); }
+.sbk-timePill.is-selected {
+  background: var(--skill);
+  border-color: var(--skill);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(255, 143, 1, .35);
+}
+.sbk-notFree { font-size: 11.5px; color: var(--sk-meta-faint); font-style: italic; }
 
-.sbk-summary { position: sticky; top: 12px; align-self: start; }
-
-.sbk-summaryExpert { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
-.sbk-summaryName { font-size: 13px; font-weight: 700; color: var(--ink); }
-.sbk-summarySkill { font-size: 11px; color: var(--ink-muted); }
-.sbk-summaryProgress { font-size: 11.5px; font-weight: 700; color: var(--ink-muted); margin-top: 4px; }
-.sbk-summarySentence { font-size: 12px; color: var(--ink-2); line-height: 1.5; margin: 4px 0 14px; text-wrap: pretty; }
+/* ── Summary panel ── */
+.sbk-summaryExpert { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.sbk-summaryName { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.sbk-summarySkill { font-size: 11.5px; color: var(--ink-muted); }
 
 .sbk-introPanel {
   background: var(--success-soft);
@@ -82,104 +129,177 @@
   padding: 12px 13px;
   margin-bottom: 14px;
 }
-.sbk-introEyebrow {
-  display: inline-flex;
-  align-items: center;
+.sbk-introHead { display: flex; align-items: flex-start; gap: 8px; }
+.sbk-introBadge {
   font-size: 9.5px;
   font-weight: 800;
   letter-spacing: .4px;
   text-transform: uppercase;
-  color: #fff;
   background: var(--success);
+  color: #fff;
   border-radius: var(--r-pill);
-  padding: 3px 9px;
-  margin-bottom: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.sbk-introLine { font-size: 12.5px; font-weight: 700; color: var(--sk-success-deep); }
-/* design_handoff_skilldev's muted-green sub-copy on the intro-rate panel — no
-   shared token covers this exact shade, only used here. */
-.sbk-introSub { font-size: 11.5px; color: #4b7a56; margin-top: 3px; line-height: 1.5; }
+.sbk-introHeadline { font-size: 12.5px; font-weight: 700; color: var(--sk-success-deep); }
+.sbk-introSub { font-size: 11px; color: #4b7a56; margin-top: 6px; line-height: 1.5; }
 
-.sbk-bundleRow { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.sbk-bundleRows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
 .sbk-bundleCard {
   position: relative;
-  display: block;
-  border: 1.5px solid var(--border);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 12px 13px;
   cursor: pointer;
   transition: all .15s ease;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
-.sbk-bundleCard.is-selected { border-color: var(--skill); background: var(--skill-soft); }
-.sbk-bundleCard input { display: none; }
-.sbk-bundleLabel { font-size: 12.5px; font-weight: 700; color: var(--ink); }
-.sbk-bundlePrice { font-family: var(--font-display); font-weight: 800; font-size: 15px; color: var(--ink); margin-top: 2px; }
-.sbk-bundleSub { font-size: 11px; color: var(--ink-muted); margin-top: 3px; line-height: 1.4; }
-.sbk-savingsBadge {
+.sbk-bundleCard.is-selected {
+  border-color: var(--skill);
+  background: var(--skill-soft);
+}
+.sbk-bundleTop { display: flex; align-items: center; gap: 9px; }
+.sbk-bundleDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid var(--border-strong);
+  background: var(--surface);
+}
+.sbk-bundleCard.is-selected .sbk-bundleDot {
+  border-color: var(--skill);
+  background: var(--skill);
+  box-shadow: inset 0 0 0 2px #fff;
+}
+.sbk-bundleTitle { flex: 1; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.sbk-bundlePrice { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.sbk-bundleBlurb { font-size: 11px; color: var(--ink-muted); margin-top: 5px; padding-left: 21px; }
+.sbk-bundleSaveBadge {
   position: absolute;
   top: -8px;
   right: 11px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
   background: var(--success);
   color: #fff;
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: .4px;
-  text-transform: uppercase;
-  padding: 3px 8px;
   border-radius: var(--r-pill);
-}
-.sbk-bestValue {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: .4px;
-  text-transform: uppercase;
-  color: var(--skill-ink);
+  padding: 3px 8px;
 }
 
-.sbk-row { display: flex; justify-content: space-between; font-size: 12px; padding: 7px 0; border-top: 1px solid var(--divider); }
+.sbk-summaryRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  border-top: 1px solid var(--divider);
+  padding-top: 14px;
+}
+.sbk-row { display: flex; justify-content: space-between; }
 .sbk-row span { color: var(--ink-muted); }
-.sbk-row b { color: var(--ink); font-weight: 700; }
+.sbk-row b { font-weight: 700; }
+.sbk-priceValue { color: var(--success) !important; }
 
 .sbk-msgInput {
   width: 100%;
-  margin-top: 12px;
+  margin-top: 14px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   padding: 10px 12px;
-  font-size: 12px;
   font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink);
   resize: vertical;
-  box-sizing: border-box;
+  outline: none;
+}
+.sbk-msgInput:focus { border-color: var(--skill); }
+
+.sbk-error {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--danger);
 }
 
-.sbk-error { margin-top: 10px; font-size: 11.5px; color: var(--danger); }
-
-.sbk-btn {
+.sbk-confirmBtn {
+  width: 100%;
+  margin-top: 18px;
   border: none;
-  border-radius: var(--r-md);
+  border-radius: 12px;
+  padding: 14px;
   font-family: var(--font-body);
+  font-size: 13.5px;
   font-weight: 700;
-  font-size: 13px;
-  padding: 10px 18px;
-  cursor: pointer;
   transition: all .15s ease;
+  background: var(--surface-alt);
+  color: var(--ink-faint);
+  cursor: not-allowed;
 }
-.sbk-btn--full { width: 100%; margin-top: 14px; padding: 12px 0; }
-.sbk-btn--primary { background: var(--skill); color: #fff; }
-.sbk-btn--primary:hover:not(:disabled) { background: var(--skill-hover); transform: translateY(-2px); }
-.sbk-btn--primary:disabled { background: var(--border-strong); cursor: not-allowed; }
-.sbk-btn--secondary { background: var(--surface-muted); color: var(--ink-2); }
-.sbk-btn--outline { background: var(--surface); border: 1px solid var(--border); color: var(--ink-2); flex-shrink: 0; }
+.sbk-confirmBtn.is-enabled {
+  background: var(--skill);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(255, 143, 1, .3);
+}
+.sbk-footnote {
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-align: center;
+  margin-top: 10px;
+}
 
-.sbk-footnote { font-size: 10.5px; color: var(--ink-faint); text-align: center; margin: 10px 0 0; }
+/* ── Success state ── */
+.sbk-success {
+  background: var(--surface);
+  border: 1px solid var(--success-border);
+  border-radius: 18px;
+  padding: 40px;
+  text-align: center;
+  max-width: 520px;
+  margin: 40px auto;
+  animation: popIn .3s ease both;
+}
+.sbk-successIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--success-soft);
+  color: var(--success);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  font-size: 28px;
+}
+.sbk-success h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+.sbk-success p {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin: 0;
+}
+.sbk-successActions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 22px;
+}
+.sbk-btn {
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+}
+.sbk-btn--primary { background: var(--skill); border: none; color: #fff; font-weight: 700; }
+.sbk-btn--secondary { background: var(--surface); border: 1px solid var(--border); color: var(--ink-2); font-weight: 600; }
 
-.sbk-success { text-align: center; padding: 60px 20px; background: var(--surface); border-radius: 18px; border: 1px solid var(--border); }
-.sbk-success h2 { font-family: var(--font-display); font-weight: 800; font-size: 20px; color: var(--ink); margin: 0 0 8px; }
-.sbk-success p { font-size: 13px; color: var(--ink-muted); }
-.sbk-successActions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; }
-
-.sbk-empty { text-align: center; padding: 60px; color: var(--ink-muted); }
+.sbk-empty { text-align: center; padding: 40px; color: var(--sk-meta); }
 .sbk-link { all: unset; cursor: pointer; color: var(--skill-ink); font-weight: 600; }

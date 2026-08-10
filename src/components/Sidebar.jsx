@@ -61,23 +61,32 @@ const SD_NAV = [
   { id: "reviews",  label: "Reviews",         Icon: FiStar,          to: "/skill-dev/reviews"   },
 ];
 
-/* ── Skill Dev sidebar ───────────────────────────────────────────── */
+/* ── Skill Dev sidebar — Skill Dev Student.dc.html dc:28-58 ──────────
+   248px, aside padding 20/14. Brand row padding 4/10/18 with a bottom
+   rule; nav gap 4 margin-top 16; active pill gets the amber glow shadow;
+   user footer (avatar/name/"Learner") sits above the app's own
+   Return-to-Homepage link, which the design doesn't show (real nav
+   need, not in the single-role mockup). */
 function SkillDevSidebar({ setMenuOpen }) {
   const location = useLocation();
+  const { user, activeProfile } = useAuth();
+  const userName =
+    activeProfile?.display_name || user?.name || user?.full_name ||
+    user?.username || (user?.email ? user.email.split("@")[0] : "") || "Learner";
 
   return (
-    <aside style={{ width: "100%", height: "100%", background: SD.bg, display: "flex", flexDirection: "column", fontFamily: SD.MP }}>
+    <aside style={{ width: "100%", height: "100%", background: SD.bg, display: "flex", flexDirection: "column", padding: "20px 14px", fontFamily: SD.MP }}>
       {/* Brand */}
-      <div style={{ padding: "18px 16px 14px", borderBottom: `1px solid ${SD.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ padding: "4px 10px 18px", borderBottom: `1px solid ${SD.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 9, background: SD.forest, border: "2px solid rgba(255,255,255,.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: SD.forest, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2">
               <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
           </div>
           <div>
-            <div style={{ color: "#fff", fontFamily: SD.MH, fontWeight: 800, fontSize: 14, letterSpacing: "-.3px", lineHeight: 1.15 }}>ShikshaCom</div>
-            <div style={{ color: SD.brand, fontSize: 8.5, fontWeight: 700, letterSpacing: ".7px", textTransform: "uppercase", marginTop: 2 }}>Skill Development</div>
+            <div style={{ color: "#fff", fontFamily: SD.MH, fontWeight: 800, fontSize: 15, letterSpacing: "-.2px", lineHeight: 1.15 }}>ShikshaCom</div>
+            <div style={{ color: SD.brand, fontSize: 10.5, fontWeight: 600, letterSpacing: ".8px", textTransform: "uppercase", marginTop: 2 }}>Skill Dev</div>
           </div>
         </div>
         <button className="sidebar__closeBtn" onClick={() => setMenuOpen(false)} type="button" aria-label="Close sidebar">
@@ -86,22 +95,18 @@ function SkillDevSidebar({ setMenuOpen }) {
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: "8px", overflowY: "auto" }}>
-        {SD_NAV.map((item, i) => {
-          if (item.section) return (
-            <div key={i} style={{ fontSize: 9, fontWeight: 700, color: SD.section, letterSpacing: ".8px", textTransform: "uppercase", padding: "12px 8px 4px" }}>
-              {item.section}
-            </div>
-          );
+      <nav style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 16, flex: 1, overflowY: "auto" }}>
+        {SD_NAV.map((item) => {
           const active = location.pathname === item.to || (item.to !== "/" && location.pathname.startsWith(item.to));
           return (
             <NavLink key={item.id} to={item.to} onClick={() => setMenuOpen(false)} style={{ textDecoration: "none" }}>
               <div style={{
-                display: "flex", alignItems: "center", gap: 9,
-                padding: "9px 10px", fontSize: 12.5, fontWeight: active ? 700 : 500,
-                color: active ? SD.txtOn : SD.txt,
+                display: "flex", alignItems: "center", gap: 11,
+                padding: "11px 12px", fontSize: 13, fontWeight: active ? 700 : 600,
+                color: active ? SD.txtOn : "rgba(255,255,255,.82)",
                 background: active ? SD.bgItem : "transparent",
-                borderRadius: 8, marginBottom: 1, transition: "all .15s",
+                boxShadow: active ? "0 4px 12px rgba(255,143,1,.35)" : "none",
+                borderRadius: 11, transition: "background .15s ease",
               }}>
                 <item.Icon size={14} />
                 {item.label}
@@ -111,8 +116,19 @@ function SkillDevSidebar({ setMenuOpen }) {
         })}
       </nav>
 
-      {/* Return to Homepage */}
-      <div style={{ padding: "10px", borderTop: `1px solid ${SD.border}` }}>
+      {/* User footer — dc:51-57 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 10px 4px", borderTop: `1px solid ${SD.border}` }}>
+        <div style={{ width: 34, height: 34, borderRadius: "50%", background: SD.brand, color: "#6b2410", display: "grid", placeItems: "center", fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
+          {initialsOf(userName)}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userName}</div>
+          <div style={{ fontSize: 10.5, color: "rgba(255,255,255,.6)" }}>Learner</div>
+        </div>
+      </div>
+
+      {/* Return to Homepage — real nav need, the design's single-role mockup has no equivalent */}
+      <div style={{ padding: "10px 10px 0" }}>
         <a href={HOME_URL} style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 7, color: "rgba(255,255,255,.42)", fontSize: 11.5, padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,.1)", fontFamily: SD.MP }}>
           <FiHome size={13} /> Return to Homepage
         </a>

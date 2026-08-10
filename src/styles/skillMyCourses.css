@@ -1,19 +1,29 @@
-/* src/styles/skillMyCourses.css — design_handoff_skilldev README "5. My courses" */
+/* src/styles/skillMyCourses.css — Skill Dev Student.dc.html dc:371-451 */
 
 .smc-screen {
-  padding: 24px 22px 40px;
   max-width: 1080px;
-  margin: 0 auto;
   animation: fadeUp .35s ease both;
 }
 
-.smc-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--skill-ink); }
-.smc-explainer { font-size: 12.5px; color: var(--ink-muted); line-height: 1.6; margin: 6px 0 0; max-width: 640px; }
-.smc-divider { border: none; border-top: 1px solid var(--divider); margin: 20px 0; }
+.smc-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--divider);
+  margin-bottom: 20px;
+}
+.smc-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--skill-ink); }
+.smc-explainer { font-size: 13px; color: var(--ink-muted); line-height: 1.65; margin: 6px 0 0; max-width: 620px; text-wrap: pretty; }
 
-.smc-sectionHead { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+.smc-sectionHead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 0; }
 .smc-sectionHead h3 { font-family: var(--font-display); font-weight: 800; font-size: 15px; color: var(--ink); margin: 0; }
-.smc-count { font-size: 12px; color: var(--ink-muted); }
+.smc-count { font-size: 11.5px; font-weight: 600; color: var(--ink-faint); }
+.smc-sectionSub { font-size: 12.5px; color: var(--ink-muted); margin: 0 0 14px; }
+
+.smc-doneSection { margin-top: 32px; padding-top: 26px; border-top: 1px solid var(--divider); }
 
 .smc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
 
@@ -21,46 +31,62 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 18px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
 }
-.smc-cardHead { display: flex; align-items: center; gap: 10px; }
-.smc-title { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
-.smc-by { font-size: 11.5px; color: var(--ink-muted); margin-top: 1px; }
+.smc-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(26, 44, 51, .10);
+}
+.smc-banner {
+  height: 110px;
+  background: linear-gradient(120deg, var(--skill), var(--skill-hover));
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 30px;
+  color: rgba(255, 255, 255, .9);
+}
+.smc-body { padding: 18px 20px 20px; }
+.smc-title { font-family: var(--font-display); font-weight: 800; font-size: 15px; color: var(--ink); }
+.smc-byRow { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.smc-by { font-size: 11.5px; color: var(--ink-muted); }
 .smc-masteredPill {
-  background: var(--success);
-  color: #fff;
+  background: var(--success-soft);
+  color: var(--sk-success-deep);
+  border: 1px solid var(--success-border);
   font-size: 9.5px;
   font-weight: 800;
   letter-spacing: .4px;
   text-transform: uppercase;
-  padding: 3px 9px;
+  padding: 2px 8px;
   border-radius: var(--r-pill);
 }
 
-.smc-btn {
+.smc-continueBtn {
   width: 100%;
+  margin-top: 11px;
   border: none;
   border-radius: var(--r-md);
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 12.5px;
-  padding: 10px 0;
+  padding: 10px;
   cursor: pointer;
-  transition: all .15s ease;
+  color: #fff;
+  background: var(--skill);
 }
-.smc-btn--primary { background: var(--skill); color: #fff; }
-.smc-btn--primary:hover { background: var(--skill-hover); }
-.smc-btn--success { background: var(--success); color: #fff; }
-.smc-btn--success:hover { background: var(--sk-success-deep); }
+.smc-continueBtn:hover { background: var(--skill-hover); }
+.smc-continueBtn.is-mastered { background: var(--success); }
+.smc-continueBtn.is-mastered:hover { background: var(--sk-success-deep); }
 
 .smc-emptyBox {
   border: 1px dashed var(--border);
   border-radius: 14px;
-  padding: 32px;
+  padding: 26px;
   text-align: center;
   font-size: 12.5px;
-  color: var(--ink-muted);
+  color: var(--ink-faint);
 }

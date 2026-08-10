@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { useCourse } from "../contexts/CourseContext";
 import api from "../api/apiClient";
 import SubjectCard from "../components/SubjectCard";
-import PageHeader from "../components/PageHeader";
 import { LoadingState, EmptyState } from "../components/StateViews";
+import "../styles/academyScreens.css";
 import "../styles/subjects.css";
 
 export default function Subjects() {
@@ -115,15 +115,17 @@ export default function Subjects() {
     );
 
   return (
-    <div className="subjectsPage">
-      <div className="subjectsHeaderBox">
+    <div className="ac-screen subjectsPage">
+      <div className="ac-head">
         <div>
-          <PageHeader title="Subjects" />
-          <p className="subjectsSub">Your syllabus coverage, subject by subject.</p>
+          <h1 className="ac-head__title">Subjects</h1>
+          <p className="ac-head__sub">Your syllabus coverage, subject by subject.</p>
         </div>
-        <Link to={`/my-courses/${activeCourse.id}/progress`} className="subjectsFullProgressLink">
-          View full progress →
-        </Link>
+        <div className="ac-head__actions">
+          <Link to={`/my-courses/${activeCourse.id}/progress`} className="subjectsFullProgressLink">
+            View full progress →
+          </Link>
+        </div>
       </div>
 
       <div className="subjectsBodyBox">

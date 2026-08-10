@@ -7,35 +7,6 @@
   gap: 2px;
 }
 
-.subjectsHeaderBox {
-  width: 100%;
-  background: var(--card-bg, #fff);
-  border-radius: 18px 18px 0 0;
-  padding: 20px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.subjectsHeaderBox .pageHeader {
-  padding-bottom: 0;
-  margin-bottom: 0;
-  border-bottom: none;
-}
-
-.subjectsHeaderBox .pageHeaderTitle {
-  font-size: 22px;
-  letter-spacing: -0.4px;
-}
-
-.subjectsSub {
-  margin: 3px 0 0;
-  font-size: 12.5px;
-  color: var(--ink-3, #6b7c83);
-}
-
 .subjectsFullProgressLink {
   margin-top: 4px;
   font-size: 12.5px;
@@ -83,11 +54,6 @@
 /* ================= MOBILE ================= */
 
 @media (max-width: 600px) {
-  .subjectsHeaderBox {
-    padding: 14px 16px;
-    border-radius: 0;
-  }
-
   .subjectsBodyBox {
     padding: 16px;
     border-radius: 0;

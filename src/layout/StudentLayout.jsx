@@ -68,7 +68,9 @@ export default function StudentLayout() {
           menuOpen={menuOpen}
         />
         <div className="studentLayout__page page-fade" key={`${identityKey}:${location.pathname}`}>
-          <Breadcrumbs />
+          {/* Skill Dev screens are shallow (2 levels deep, max) and the
+              design has no breadcrumb anywhere — Academy keeps it. */}
+          {activeTrack !== "skill" && <Breadcrumbs />}
           {/* Mounted app-wide (this layout serves both Academy and Skill
               tracks, no separate Skill Dev layout component exists here)
               rather than adding a new wrapper — Academy pages simply never

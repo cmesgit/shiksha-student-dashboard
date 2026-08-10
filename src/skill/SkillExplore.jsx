@@ -10,7 +10,6 @@
 // state key implies.
 
 import { useState, useEffect, useCallback } from "react";
-import { Icon } from "./skillIcons";
 import { Avatar, StarRow } from "./SkillUI";
 import { avatarColor } from "./SkillUI";
 import { useAuth } from "../contexts/AuthContext";
@@ -27,28 +26,29 @@ const saveFavs = (set) => localStorage.setItem(FAVS_KEY, JSON.stringify([...set]
 function ExpertCard({ t, favs, toggleFav, onBook, onView }) {
   const [playing, setPlaying] = useState(false);
   const remaining = t.mastery_target ?? 3;
+  const isFav = favs.has(t.id);
 
   return (
     <div className="se-card">
       <div className="se-cardHead">
         <Avatar name={t.name} img={t.img} size={48} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="se-name">{t.name}</div>
-          <div className="se-rating">
-            <StarRow n={Math.round(t.rating || 0)} size={11} /> {t.rating ?? "—"}
-            {t.reviews_count != null && <span className="se-reviewsCount"> ({t.reviews_count} reviews)</span>}
+          <div className="se-nameRow">
+            <span className="se-name">{t.name}</span>
           </div>
+          <div className="se-sub">{t.role}{t.sessions != null && ` · ${t.sessions} sessions`}</div>
         </div>
         <button
-          className={`se-favBtn ${favs.has(t.id) ? "is-fav" : ""}`}
+          className={`se-favBtn ${isFav ? "is-fav" : ""}`}
           onClick={() => toggleFav(t.id)}
-          aria-label="Favourite"
-        >{favs.has(t.id) ? "♥" : "♡"}</button>
+          aria-label="Save to favorites"
+          title="Save to favorites"
+        >{isFav ? "♥" : "♡"}</button>
       </div>
 
       <div
         className="se-thumb"
-        style={playing ? undefined : { background: `linear-gradient(135deg, ${avatarColor(t.name)}, #1a2c33)` }}
+        style={playing ? undefined : { background: `linear-gradient(135deg, ${avatarColor(t.name)}cc, #1a2c33)` }}
         onClick={() => t.intro_video_embed_url && setPlaying((p) => !p)}
       >
         {playing && t.intro_video_embed_url ? (
@@ -61,8 +61,10 @@ function ExpertCard({ t, favs, toggleFav, onBook, onView }) {
           />
         ) : (
           <>
-            <span className="se-thumbPill se-thumbPill--top">INTRO VIDEO</span>
-            <span className="se-playDisc"><Icon.vid size={20} /></span>
+            <span className="se-playDisc">▶</span>
+            <span className="se-thumbPill se-thumbPill--top">Intro video</span>
+            {/* No duration pill: unlike the mockup's fixture data, no backend
+                field stores the intro video's actual length. */}
           </>
         )}
       </div>
@@ -70,12 +72,16 @@ function ExpertCard({ t, favs, toggleFav, onBook, onView }) {
       <p className="se-bio">{t.bio || t.subject_description || ""}</p>
 
       <div className="se-pledge">
-        Complete {remaining} session{remaining === 1 ? "" : "s"} with me to master {t.role}
+        <span className="se-pledgeGlyph">◆</span>
+        <span>Complete {remaining} session{remaining === 1 ? "" : "s"} with me to master {t.role}</span>
       </div>
 
       <div className="se-actions">
-        <button className="se-btn se-btn--primary" onClick={() => onBook(t.id)}>Book</button>
+        <span className="se-actionsRating"><StarRow n={Math.round(t.rating || 0)} size={11} /> {t.rating ?? "—"}</span>
+        {t.reviews_count != null && <span className="se-reviewsCount">({t.reviews_count} reviews)</span>}
+        <span style={{ flex: 1 }} />
         <button className="se-btn se-btn--secondary" onClick={() => onView(t.id)}>View profile</button>
+        <button className="se-btn se-btn--primary" onClick={() => onBook(t.id)}>Book</button>
       </div>
     </div>
   );
@@ -143,33 +149,30 @@ export default function SkillExplore({ setTab = () => {} }) {
 
   return (
     <div className="se-screen">
-      <h1 className="se-title">Explore experts</h1>
-
       <div className="se-filterRow">
-        <div className="se-searchBox">
-          <Icon.search size={14} />
-          <input
-            value={search} onChange={handleSearch}
-            placeholder="Search by name or skill…"
-          />
-        </div>
-        <div className="se-chips">
-          <span className={`se-chip ${activeCat === "all" ? "is-active" : ""}`} onClick={() => handleCat("all")}>All</span>
-          {categories.map((c) => {
-            const id = c.slug || c.id;
-            return (
-              <span key={id} className={`se-chip ${activeCat === id ? "is-active" : ""}`} onClick={() => handleCat(id)}>
-                {c.label}
-              </span>
-            );
-          })}
-          <span className={`se-chip se-chip--fav ${favsOnly ? "is-active" : ""}`} onClick={() => setFavsOnly((v) => !v)}>
-            ♥ Favorites
-          </span>
-          <span className={`se-chip ${offlineOnly ? "is-active" : ""}`} onClick={toggleOffline}>
-            📍 Offline near me
-          </span>
-        </div>
+        <input
+          className="se-search"
+          value={search} onChange={handleSearch}
+          placeholder="Search experts or skills…"
+        />
+        <span className={`se-chip ${activeCat === "all" ? "is-active" : ""}`} onClick={() => handleCat("all")}>All</span>
+        {categories.map((c) => {
+          const id = c.slug || c.id;
+          return (
+            <span key={id} className={`se-chip ${activeCat === id ? "is-active" : ""}`} onClick={() => handleCat(id)}>
+              {c.label}
+            </span>
+          );
+        })}
+        <span className={`se-chip se-chip--fav ${favsOnly ? "is-active" : ""}`} onClick={() => setFavsOnly((v) => !v)}>
+          ♥ Favorites
+        </span>
+        {/* Real, backend-wired discovery filter (location/class_mode already
+            exist server-side) — the design's own fixture screen is silent on
+            it, but it's working functionality worth keeping. */}
+        <span className={`se-chip ${offlineOnly ? "is-active" : ""}`} onClick={toggleOffline}>
+          📍 Offline near me
+        </span>
         {offlineOnly && (
           <input
             className="se-pincodeInput"

@@ -1,8 +1,4 @@
-// skill/SkillBookTutor.jsx — Book a session (design_handoff_skilldev
-// README.md "4. Book a session"), rebuilt to the design's exact shape,
-// verified against the live standalone prototype (hero strip, free-times
-// grid restricted to THIS teacher's own slots, sticky summary panel with
-// intro-rate panel / bundle selector, success state).
+// skill/SkillBookTutor.jsx — Skill Dev Student.dc.html dc:488-596.
 //
 // No tutor picker here anymore — this page is always reached per-teacher
 // (Explore "Book", Profile "Book a session", Dashboard "Book again"), with
@@ -15,7 +11,8 @@
 
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Avatar, StarRow } from "./SkillUI";
+import { Avatar } from "./SkillUI";
+import MasteryBar from "../components/MasteryBar";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingState } from "../components/StateViews";
 import * as AV from "./availability";
@@ -70,9 +67,11 @@ export default function SkillBookTutor() {
   const progress = t.my_mastery_progress ?? 0;
   const remaining = Math.max(0, t.mastery_target - progress);
   const dayLabels = AV.shortDayLabels();
+  const isTrack = pricing?.tier === "bundle" && bundle === "track";
+  const canConfirm = !!slot && !booking;
 
   const confirm = async () => {
-    if (!slot || booking) return;
+    if (!canConfirm) return;
     setBooking(true);
     setBookErr("");
     try {
@@ -100,14 +99,13 @@ export default function SkillBookTutor() {
 
   if (confirmed) {
     return (
-      <div className="sbk-screen">
-        <div className="sbk-success">
-          <h2>Session booked!</h2>
-          <p>{AV.label(slot)} with {t.name}. A calendar invite and reminder are on their way.</p>
-          <div className="sbk-successActions">
-            <button className="sbk-btn sbk-btn--primary" onClick={() => navigate("/skill-dev/sessions")}>View my sessions</button>
-            <button className="sbk-btn sbk-btn--secondary" onClick={() => navigate("/skill-dev/explore")}>Book another</button>
-          </div>
+      <div className="sbk-success">
+        <div className="sbk-successIcon">✓</div>
+        <h2>Session booked!</h2>
+        <p>{AV.label(slot)} with {t.name}. A calendar invite and reminder are on their way.</p>
+        <div className="sbk-successActions">
+          <button className="sbk-btn sbk-btn--primary" onClick={() => navigate("/skill-dev/sessions")}>View my sessions</button>
+          <button className="sbk-btn sbk-btn--secondary" onClick={() => navigate("/skill-dev/explore")}>Book another</button>
         </div>
       </div>
     );
@@ -124,11 +122,9 @@ export default function SkillBookTutor() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="sbk-eyebrow">Booking a session with</div>
           <div className="sbk-heroName">{t.name}</div>
-          <div className="sbk-heroMeta">
-            {t.title} · <StarRow n={Math.round(t.rating || 0)} size={10} /> {t.rating ?? "—"} ({t.reviews_count} reviews)
-          </div>
+          <div className="sbk-heroMeta">{t.title} · ★ {t.rating ?? "—"} ({t.reviews_count} reviews)</div>
         </div>
-        <button className="sbk-btn sbk-btn--outline" onClick={() => navigate(`/skill-dev/profile/${t.id}`, { state: { bookFrom } })}>
+        <button className="sbk-viewProfileBtn" onClick={() => navigate(`/skill-dev/profile/${t.id}`, { state: { bookFrom } })}>
           View profile
         </button>
       </div>
@@ -136,17 +132,17 @@ export default function SkillBookTutor() {
       <div className="sbk-cols">
         {/* Free times */}
         <div className="sbk-card">
-          <h4 className="sbk-cardTitle">Free times this week</h4>
+          <h3 className="sbk-cardTitle">Free times this week</h3>
           <p className="sbk-cardSub">
             {t.name.split(" ")[0]} has opened {avail.open.filter((k) => !avail.booked.includes(k)).length} free slots this week · all times IST · 60 min sessions
           </p>
-          {AV.DAYS.map((d, di) => {
-            const dayOpen = AV.SLOTS.map((_, si) => di + "-" + si)
-              .filter((k) => avail.open.includes(k) && !avail.booked.includes(k));
-            return (
-              <div className="sbk-dayRow" key={d}>
-                <div className="sbk-dayLabel">{dayLabels[di]}</div>
-                <div className="sbk-dayPills">
+          <div className="sbk-slotRows">
+            {AV.DAYS.map((d, di) => {
+              const dayOpen = AV.SLOTS.map((_, si) => di + "-" + si)
+                .filter((k) => avail.open.includes(k) && !avail.booked.includes(k));
+              return (
+                <div className="sbk-dayRow" key={d}>
+                  <div className="sbk-dayLabel">{dayLabels[di]}</div>
                   {dayOpen.length === 0 ? (
                     <span className="sbk-notFree">No free time</span>
                   ) : dayOpen.map((k) => {
@@ -158,79 +154,94 @@ export default function SkillBookTutor() {
                     );
                   })}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
         {/* Summary panel */}
-        <div className="sbk-summary">
-          <div className="sbk-card">
-            <h4 className="sbk-cardTitle">Booking summary</h4>
-            <div className="sbk-summaryExpert">
-              <Avatar name={t.name} size={36} />
-              <div>
-                <div className="sbk-summaryName">{t.name}</div>
-                <div className="sbk-summarySkill">{t.title}</div>
-              </div>
+        <div className="sbk-card">
+          <h3 className="sbk-cardTitle">Booking summary</h3>
+          <div className="sbk-summaryExpert">
+            <Avatar name={t.name} size={44} />
+            <div>
+              <div className="sbk-summaryName">{t.name}</div>
+              <div className="sbk-summarySkill">{t.title}</div>
             </div>
-            <div className="sbk-summaryProgress">{progress}/{t.mastery_target} sessions</div>
-            <div className="sbk-summarySentence">
-              {remaining > 0
-                ? `${remaining} more session${remaining === 1 ? "" : "s"} with ${t.name.split(" ")[0]} to become an expert in ${t.title}`
-                : `You've mastered ${t.title} with ${t.name.split(" ")[0]}.`}
-            </div>
-
-            {pricing?.tier === "intro" && (
-              <div className="sbk-introPanel">
-                <div className="sbk-introEyebrow">Intro rate</div>
-                <div className="sbk-introLine">First session with {t.name.split(" ")[0]} is {rupees(pricing.unit_price)}</div>
-                <div className="sbk-introSub">
-                  Try the teacher before you commit. Regular sessions are {rupees(pricing.regular_unit_price)} after this one.
-                </div>
-              </div>
-            )}
-
-            {pricing?.tier === "bundle" && (
-              <div className="sbk-bundleRow">
-                <label className={`sbk-bundleCard ${bundle === "single" ? "is-selected" : ""}`}>
-                  <input type="radio" name="bundle" checked={bundle === "single"} onChange={() => setBundle("single")} />
-                  <div className="sbk-bundleLabel">Single session</div>
-                  <div className="sbk-bundlePrice">{priceLine(rupees(pricing.unit_price))}</div>
-                  <div className="sbk-bundleSub">One 60-minute class</div>
-                </label>
-                <label className={`sbk-bundleCard ${bundle === "track" ? "is-selected" : ""}`}>
-                  {!pricing.is_free && <span className="sbk-savingsBadge">Save {rupees(pricing.bundle_savings)}</span>}
-                  <span className="sbk-bestValue">Best value</span>
-                  <input type="radio" name="bundle" checked={bundle === "track"} onChange={() => setBundle("track")} />
-                  <div className="sbk-bundleLabel">Complete the track</div>
-                  <div className="sbk-bundlePrice">{priceLine(rupees(pricing.bundle_total))}</div>
-                  <div className="sbk-bundleSub">
-                    The {pricing.bundle_sessions} sessions left to master {t.title} — booked one at a time.
-                  </div>
-                </label>
-              </div>
-            )}
-
-            <div className="sbk-row"><span>Slot</span><b>{slot ? AV.label(slot) : "Pick a slot"}</b></div>
-            <div className="sbk-row"><span>Duration</span><b>60 min</b></div>
-            <div className="sbk-row"><span>Price</span><b>{pricing?.is_free ? "Free during launch" : rupees(pricing?.unit_price ?? 0)}</b></div>
-
-            <textarea
-              className="sbk-msgInput"
-              placeholder="Optional message to the tutor…"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={3}
-            />
-
-            {bookErr && <div className="sbk-error">{bookErr}</div>}
-
-            <button className="sbk-btn sbk-btn--primary sbk-btn--full" disabled={!slot || booking} onClick={confirm}>
-              {booking ? "Booking…" : !slot ? "Select a slot first" : bundle === "track" ? "Confirm track" : "Confirm booking"}
-            </button>
-            <p className="sbk-footnote">You'll get a reminder 30 min before the session</p>
           </div>
+
+          <MasteryBar
+            progress={progress} target={t.mastery_target} mastered={false}
+            variant="panel" radius={12} padding="12px 13px" style={{ marginBottom: 14 }}
+            sentenceSize={11.5} sentenceWeight={600} sentenceLineHeight={1.45}
+            sentence={remaining > 0
+              ? `${remaining} more session${remaining === 1 ? "" : "s"} with ${t.name.split(" ")[0]} to become an expert in ${t.title}`
+              : `You've mastered ${t.title} with ${t.name.split(" ")[0]}.`}
+          />
+
+          {pricing?.tier === "intro" && (
+            <div className="sbk-introPanel">
+              <div className="sbk-introHead">
+                <span className="sbk-introBadge">Intro rate</span>
+                <span className="sbk-introHeadline">First session with {t.name.split(" ")[0]} is {rupees(pricing.unit_price)}</span>
+              </div>
+              <div className="sbk-introSub">
+                Try the teacher before you commit. Regular sessions are {rupees(pricing.regular_unit_price)} after this one.
+              </div>
+            </div>
+          )}
+
+          {pricing?.tier === "bundle" && (
+            <div className="sbk-bundleRows">
+              <div className={`sbk-bundleCard ${bundle === "single" ? "is-selected" : ""}`} onClick={() => setBundle("single")}>
+                <div className="sbk-bundleTop">
+                  <span className="sbk-bundleDot" />
+                  <span className="sbk-bundleTitle">Single session</span>
+                  <span className="sbk-bundlePrice">{priceLine(rupees(pricing.unit_price))}</span>
+                </div>
+                <div className="sbk-bundleBlurb">One 60-minute class</div>
+              </div>
+              <div className={`sbk-bundleCard ${bundle === "track" ? "is-selected" : ""}`} onClick={() => setBundle("track")}>
+                <div className="sbk-bundleTop">
+                  <span className="sbk-bundleDot" />
+                  <span className="sbk-bundleTitle">Complete the track</span>
+                  <span className="sbk-bundlePrice">{priceLine(rupees(pricing.bundle_total))}</span>
+                </div>
+                <div className="sbk-bundleBlurb">
+                  The {pricing.bundle_sessions} sessions left to master {t.title} — booked one at a time.
+                </div>
+                <span className="sbk-bundleSaveBadge">
+                  {pricing.is_free ? "Best value" : `Save ${rupees(pricing.bundle_savings)}`}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="sbk-summaryRows">
+            <div className="sbk-row"><span>Slot</span><b>{slot ? AV.label(slot) : "Pick a slot"}</b></div>
+            {isTrack && <div className="sbk-row"><span>Sessions</span><b>{pricing.bundle_sessions} sessions</b></div>}
+            <div className="sbk-row"><span>Duration</span><b>60 min</b></div>
+            <div className="sbk-row"><span>Price</span><b className="sbk-priceValue">{pricing?.is_free ? "Free during launch" : rupees(pricing?.unit_price ?? 0)}</b></div>
+          </div>
+
+          <textarea
+            className="sbk-msgInput"
+            placeholder="Optional message to the tutor…"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={3}
+          />
+
+          {bookErr && <div className="sbk-error">{bookErr}</div>}
+
+          <button className={`sbk-confirmBtn ${canConfirm ? "is-enabled" : ""}`} disabled={!canConfirm} onClick={confirm}>
+            {booking ? "Booking…" : !slot ? "Select a slot first" : bundle === "track" ? "Confirm track" : "Confirm booking"}
+          </button>
+          <p className="sbk-footnote">
+            {isTrack
+              ? "You'll pick the remaining slots after this one · reminder 30 min before each"
+              : "You'll get a reminder 30 min before the session"}
+          </p>
         </div>
       </div>
     </div>

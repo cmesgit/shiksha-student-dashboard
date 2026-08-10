@@ -722,31 +722,31 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
-        {heroSession && (() => {
-          const { chip, relative } = heroStatus(heroSession);
-          return (
-            <section className="dashHero">
-              <div className="dashHero__main">
-                <span className={`dashHero__chip dashHero__chip--${chip === "LIVE NOW" ? "live" : "next"}`}>
-                  {chip}
-                </span>
-                <span className="dashHero__relative">{relative}</span>
-                <h3 className="dashHero__topic">{heroSession.subject} — {heroSession.topic}</h3>
-                <p className="dashHero__teacher">with {heroSession.teacher}</p>
-              </div>
-              <button
-                type="button"
-                className="dashHero__cta"
-                onClick={() => navigate(`/live/${heroSession.id}`)}
-              >
-                {chip === "LIVE NOW" ? "Join class" : "Set reminder"}
-              </button>
-            </section>
-          );
-        })()}
-
         <div className="dashboardMain">
           <div className="dashboardLeft">
+            {heroSession && (() => {
+              const { chip, relative } = heroStatus(heroSession);
+              return (
+                <section className="dashHero">
+                  <div className="dashHero__main">
+                    <span className={`dashHero__chip dashHero__chip--${chip === "LIVE NOW" ? "live" : "next"}`}>
+                      {chip}
+                    </span>
+                    <span className="dashHero__relative">{relative}</span>
+                    <h3 className="dashHero__topic">{heroSession.subject} — {heroSession.topic}</h3>
+                    <p className="dashHero__teacher">with {heroSession.teacher}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="dashHero__cta"
+                    onClick={() => navigate(`/live/${heroSession.id}`)}
+                  >
+                    {chip === "LIVE NOW" ? "Join class" : "Set reminder"}
+                  </button>
+                </section>
+              );
+            })()}
+
             <section className="dashboardCard dashboardCard--live">
               <div className="cardHeader liveHeader">
                 <h3>Upcoming Live Sessions</h3>

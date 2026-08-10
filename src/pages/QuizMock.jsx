@@ -106,9 +106,17 @@ export default function QuizMock() {
         setLoading(true);
         setError(null);
         let attemptNumber = "1";
+        // started_at/expires_at come from the server (QuizAttempt.started_at
+        // + Quiz.time_limit_minutes) — the source of truth for the deadline.
+        // Previously the countdown was seeded from a localStorage timestamp
+        // the student could clear to reset their own clock; the server now
+        // enforces the same deadline independently on submit, so resetting
+        // this display value no longer buys extra time.
+        let serverStartedAt = null;
         try {
           const startRes = await api.post(`/quizzes/${quizId}/start/`);
           if (startRes.data?.attempt_id) attemptNumber = String(startRes.data.attempt_id).slice(-8);
+          if (startRes.data?.started_at) serverStartedAt = new Date(startRes.data.started_at).getTime();
         } catch (err) {
           const msg = err.response?.data?.detail;
           if (msg) { setError(msg); setLoading(false); return; }
@@ -121,19 +129,15 @@ export default function QuizMock() {
         setQuestions(shuffled);
         setVisited({ [shuffled[0]?.id]: true });
 
-        let st = localStorage.getItem(`quiz_${quizId}_start`);
-        if (!st) { st = Date.now(); localStorage.setItem(`quiz_${quizId}_start`, String(st)); }
-        else st = parseInt(st, 10);
-        startTimeRef.current = st;
+        startTimeRef.current = serverStartedAt || Date.now();
         durationRef.current = (res.data.time_limit_minutes || 45) * 60;
 
-        const elapsed = Math.floor((Date.now() - st) / 1000);
+        const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
         const remaining = durationRef.current - elapsed;
         if (remaining <= 0) {
           setTimeLeft(0);
           setLoading(false);
           submittedRef.current = true;
-          localStorage.removeItem(`quiz_${quizId}_start`);
           await autoSubmitImmediate(Object.entries(answersRef.current));
           return;
         }
@@ -198,7 +202,6 @@ export default function QuizMock() {
     try {
       const formatted = Object.entries(answersRef.current).map(([q, c]) => ({ question: q, selected_choice: c }));
       await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
-      localStorage.removeItem(`quiz_${quizId}_start`);
       navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
     } catch (err) {
       setTimeout(async () => {
@@ -206,7 +209,6 @@ export default function QuizMock() {
         try {
           const formatted = Object.entries(answersRef.current).map(([q, c]) => ({ question: q, selected_choice: c }));
           await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
-          localStorage.removeItem(`quiz_${quizId}_start`);
           navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
         } catch (retryErr) {
           console.error("Auto submit retry failed", retryErr);
@@ -266,7 +268,6 @@ export default function QuizMock() {
   }
   function handleExit() {
     submittedRef.current = true;
-    localStorage.removeItem(`quiz_${quizId}_start`);
     navigate(`/subjects/quiz/${subjectId}`);
   }
 
@@ -276,7 +277,6 @@ export default function QuizMock() {
       setError(null);
       const formatted = Object.entries(answers).map(([q, c]) => ({ question: q, selected_choice: c }));
       await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
-      localStorage.removeItem(`quiz_${quizId}_start`);
       submittedRef.current = true;
       navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
     } catch (err) {

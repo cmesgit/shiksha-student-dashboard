@@ -1,63 +1,71 @@
 // components/MasteryBar.jsx
 //
-// The mastery progress bar + sentence, reused verbatim across the Skill Dev
-// Dashboard rebook card, Explore's pledge strip, and My courses cards
-// (design_handoff_skilldev/README.md — "Book another session" / "My courses").
-//
-// Two variants, per the README's own two treatments of the same concept:
-//   "hero"    — dashboard rebook card: track --skill-border, fill --skill.
-//   "card"    — My courses card: amber (--skill-soft/--skill-border, fill
-//               --skill-ink) while in progress, green (--success-soft/
-//               --success-border, fill --success) once mastered.
+// The mastery progress bar, ported per-instance from
+// design_handoff_skilldev/Skill Dev Student.dc.html. The 4 call sites each
+// specify their own panel size, colour and element order — dashboard rebook
+// (dc:120-134, unwrapped hero), Book-a-tutor summary (dc:531-539, radius 12
+// pad 12/13, bar-then-note), Expert profile (dc:336-344, radius 18 pad
+// 18/20, note-then-bar) and My courses (dc:1195-1201, radius 12 pad 11/12,
+// bar-then-note-then-button) — so this takes them as explicit props instead
+// of guessing one shared shape.
 export default function MasteryBar({
-  progress, target, mastered, variant = "card", sentence, height = 7,
+  progress, target, mastered,
+  variant = "panel",        // "hero" (no wrapping panel) | "panel" (tinted box)
+  radius = 12,
+  padding = "12px 13px",
+  noteFirst = false,
+  countFormat = "slash",     // "slash" → "N/M sessions" (dc:1199) · "of" → "N of M" (dc:1403)
+  sentence,
+  sentenceSize = 11,
+  sentenceWeight = 600,
+  sentenceLineHeight = 1.45,
+  footer,
+  style,
 }) {
   const pct = target > 0 ? Math.min(100, Math.round((progress / target) * 100)) : 0;
-  const track = variant === "hero" ? "var(--skill-border)"
-    : mastered ? "var(--success-border)" : "var(--skill-border)";
-  const fill = variant === "hero" ? "var(--skill)"
-    : mastered ? "var(--success)" : "var(--skill-ink)";
-  // Card variant renders standalone on a plain white course card, so it needs
-  // its own tinted panel — the hero variant already sits inside one
-  // (Dashboard's amber "Book another session" card) and would double up.
-  const labelColor = mastered ? "var(--sk-success-deep)" : "var(--sk-accent-text-on-tint)";
+  const track = mastered ? "var(--success-border)" : "var(--skill-border)";
+  const fill = variant === "hero" ? "var(--skill)" : mastered ? "var(--success)" : "var(--skill-ink)";
+  const textColor = mastered ? "var(--sk-success-deep)" : "var(--sk-accent-text-on-tint)";
+  const countText = countFormat === "of" ? `${progress} of ${target}` : `${progress}/${target} sessions`;
 
-  const bar = (
-    <div>
-      <div style={{
-        display: "flex", justifyContent: "space-between", alignItems: "baseline",
-        marginBottom: 6, fontSize: 10.5, fontWeight: 700, whiteSpace: "nowrap",
-        color: variant === "card" ? labelColor : "var(--ink-muted)",
-      }}>
-        <span>{progress}/{target} sessions</span>
+  const barRow = (
+    <div style={{ display: "flex", alignItems: "center", gap: variant === "hero" ? 10 : 9 }}>
+      <div style={{ flex: 1, height: variant === "hero" ? 7 : 6, borderRadius: 100, overflow: "hidden", background: track }}>
+        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 100, background: fill }} />
       </div>
-      <div style={{
-        height, borderRadius: "var(--r-pill)", background: track, overflow: "hidden",
-      }}>
-        <div style={{
-          height: "100%", width: `${pct}%`, borderRadius: "var(--r-pill)",
-          background: fill, transition: "width .3s ease",
-        }} />
-      </div>
-      {sentence && (
-        <p style={{
-          margin: "7px 0 0", fontSize: 11, fontWeight: 600, lineHeight: 1.45,
-          color: variant === "card" ? labelColor : "var(--ink-2)",
-          textWrap: "pretty",
-        }}>{sentence}</p>
-      )}
+      <span style={{ fontSize: variant === "hero" ? 11 : 10.5, fontWeight: 700, whiteSpace: "nowrap", color: textColor }}>
+        {countText}
+      </span>
     </div>
   );
 
-  if (variant !== "card") return bar;
+  const note = sentence != null && (
+    <p style={{
+      margin: noteFirst ? 0 : "7px 0 0",
+      fontSize: sentenceSize, fontWeight: sentenceWeight, lineHeight: sentenceLineHeight,
+      color: textColor,
+    }}>{sentence}</p>
+  );
+
+  if (variant === "hero") {
+    return (
+      <div style={style}>
+        <div style={{ maxWidth: 420 }}>{barRow}</div>
+        {note && <div style={{ marginTop: 7 }}>{note}</div>}
+      </div>
+    );
+  }
 
   return (
     <div style={{
       background: mastered ? "var(--success-soft)" : "var(--skill-soft)",
       border: `1px solid ${mastered ? "var(--success-border)" : "var(--skill-border)"}`,
-      borderRadius: 12, padding: "11px 12px",
+      borderRadius: radius, padding, ...style,
     }}>
-      {bar}
+      {noteFirst && note}
+      <div style={{ marginTop: noteFirst ? 12 : 0 }}>{barRow}</div>
+      {!noteFirst && note}
+      {footer}
     </div>
   );
 }
