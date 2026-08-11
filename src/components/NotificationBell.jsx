@@ -69,14 +69,32 @@ export default function NotificationBell() {
   };
 
   const handleNotifClick = (notif) => {
-    const { type, subject_id, id, is_private_session, is_group_session, is_skill_session, link_url } = notif;
+    const { type, subject_id, id, object_id, is_private_session, is_group_session, is_skill_session, link_url } = notif;
     if (id) markOneRead(id);
 
     // Notifications from the notifications app (counseling.*, forum.*, and
     // future verbs) carry a link_url — trust it for in-app routing before
-    // falling through to the older per-type logic below.
+    // falling through to the older per-type logic below. Chat links are a
+    // bare conversation path (/chat/<id>) that doesn't match any route —
+    // ChatPanel opens a conversation via router state, not a URL param.
     if (link_url && link_url.startsWith("/")) {
+      const chatMatch = link_url.match(/^\/chat\/([^/?]+)/);
+      if (chatMatch) {
+        navigate("/chat", { state: { conversationId: chatMatch[1] } });
+        setOpen(false);
+        return;
+      }
       navigate(link_url);
+      setOpen(false);
+      return;
+    }
+
+    // Live session (scheduled or "now LIVE") notifications carry the real
+    // LiveSession id as object_id (activity/signals.py's session_created,
+    // or livestream/views.py's go-live push) — route straight into it
+    // instead of the bare list.
+    if (type === "SESSION" && !is_group_session && !is_private_session && !is_skill_session && object_id) {
+      navigate(`/live/${object_id}`);
       setOpen(false);
       return;
     }
