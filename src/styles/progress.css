@@ -36,6 +36,9 @@
   font-weight: 800; font-size: 19px; line-height: 1; color: var(--ink, #1a2c33);
 }
 .progStat__label { font-size: 10.5px; color: var(--ink-3, #6b7c83); margin-top: 3px; }
+/* "—" for not-yet-available data was rendered at the same weight/color as a
+   real number, making it hard to tell "no data yet" from "value is zero". */
+.progStat__value--empty { color: #b7c0c4; font-weight: 600; }
 
 /* ── Syllabus Progress card ── */
 .progSyllabusCard {

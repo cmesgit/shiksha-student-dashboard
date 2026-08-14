@@ -14,6 +14,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Avatar } from "./SkillUI";
 import MasteryBar from "../components/MasteryBar";
 import { useAuth } from "../contexts/AuthContext";
+import { useCourse } from "../contexts/CourseContext";
 import { LoadingState } from "../components/StateViews";
 import * as AV from "./availability";
 import "../styles/skillBookTutor.css";
@@ -24,6 +25,7 @@ const rupees = (paise) => `₹${Math.round(paise / 100)}`;
 
 export default function SkillBookTutor() {
   const { api } = useAuth();
+  const { setTrack } = useCourse();
   const location = useLocation();
   const navigate = useNavigate();
   const { expertId, slot: presetSlot, bookFrom = "explore" } = location.state || {};
@@ -89,6 +91,12 @@ export default function SkillBookTutor() {
         method: "free",
         amount: 0,
       });
+      // A learner who has never explicitly switched tracks defaults to
+      // "academy" (CourseContext's DEFAULT_TRACK) — without this, the
+      // generic "Dashboard" nav (sidebar/tab-bar) would send them to the
+      // Academy dashboard right after booking, which has no idea this
+      // session exists.
+      setTrack("skill");
       setConfirmed(true);
     } catch (e) {
       setBookErr(e?.response?.data?.detail || "Booking failed. Please try again.");

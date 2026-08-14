@@ -156,6 +156,7 @@ export default function SkillSessionLive() {
         audio={true}
         style={liveKitWrap}
         onDisconnected={goBack}
+        onError={(err) => setError(err?.message || "Lost connection to the skill session.")}
       >
         <ReconnectingBanner />
         <PrivateClassroomUI role="STUDENT" sessionId={id} onLeave={goBack} unrestricted />

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import { LoadingState } from "../components/StateViews";
+import { useToast } from "../contexts/ToastContext";
 import "../styles/private-details.css";
 
 const GENDER_OPTIONS = ["male", "female", "other"];
@@ -50,6 +51,7 @@ function formatDob(dob) {
 
 export default function PrivateDetails() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -94,7 +96,7 @@ export default function PrivateDetails() {
       setForm(res.data);
       setIsEditing(false);
     } catch (err) {
-      alert(err?.response?.data?.detail || "Save failed");
+      showToast({ type: "error", message: err?.response?.data?.detail || "Save failed" });
     } finally {
       setSaving(false);
     }

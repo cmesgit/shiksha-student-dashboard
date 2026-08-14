@@ -26,6 +26,9 @@ export default function CourseShopCard({ course, busy, collectsMoney, onEnrol })
 
   return (
     <article className={`shop-card${course.is_enrolled ? " shop-card--owned" : ""}${course.is_coming_soon ? " shop-card--soon" : ""}`}>
+      {course.thumbnail && (
+        <img src={course.thumbnail} alt="" className="shop-card__thumb" />
+      )}
       <div className="shop-card__pills">
         {course.board?.name && <Pill>{course.board.name}</Pill>}
         {course.stream_name && <Pill>{course.stream_name}</Pill>}

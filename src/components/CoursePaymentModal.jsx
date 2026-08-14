@@ -23,7 +23,7 @@ import api from "../api/apiClient";
 import { formatPrice } from "../api/catalog";
 import "../styles/renewSubscriptionModal.css";
 
-export default function CoursePaymentModal({ course, config, onClose, onSubmitted }) {
+export default function CoursePaymentModal({ course, config, batchId, onClose, onSubmitted }) {
   const requiresManualProof = !!config?.requires_manual_proof;
   const isGatewayStub = !!config?.collects_money && !requiresManualProof;
 
@@ -48,6 +48,7 @@ export default function CoursePaymentModal({ course, config, onClose, onSubmitte
 
     const fd = new FormData();
     fd.append("course", course.id);
+    if (batchId) fd.append("batch", batchId);
     fd.append("payment_method", paymentMethod);
     fd.append("utr_number", utr.trim());
     fd.append("payment_date", paymentDate);

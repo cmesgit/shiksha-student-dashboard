@@ -23,6 +23,12 @@ export const getCourseCatalog = (params = {}) => {
   return api.get(`/courses/catalog/${qs ? `?${qs}` : ""}`).then((r) => r.data);
 };
 
+// Full course detail incl. `batches` — the catalog list above doesn't carry
+// per-batch data, so the batch picker fetches this on demand. Public/AllowAny
+// on the backend, so no auth wrinkle here.
+export const getCoursePublic = (courseId) =>
+  api.get(`/courses/${courseId}/public/`).then((r) => r.data);
+
 export const getPaymentConfig = () =>
   api
     .get("/enrollments/payment-config/")
@@ -36,8 +42,16 @@ export const getPaymentConfig = () =>
       collects_money: false,
     }));
 
-export const freeEnroll = (courseId) =>
-  api.post("/enrollments/free-enroll/", { course: courseId }).then((r) => r.data);
+export const freeEnroll = (courseId, batchId) =>
+  api.post("/enrollments/free-enroll/", {
+    course: courseId,
+    ...(batchId ? { batch: batchId } : {}),
+  }).then((r) => r.data);
+
+// Student picks their own batch after already being enrolled without one
+// (e.g. enrolled before the course had batches, or skipped the picker).
+export const selectEnrollmentBatch = (courseId, batchId) =>
+  api.post("/enrollments/select-batch/", { course: courseId, batch: batchId }).then((r) => r.data);
 
 // Rupee formatting from the paise the API returns (₹1 = 100 paise).
 export const formatPrice = (paise) => {

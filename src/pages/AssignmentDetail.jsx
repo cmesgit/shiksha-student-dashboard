@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/apiClient";
 import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import { subjectChipSlot } from "../utils/subjectChips";
+import { useToast } from "../contexts/ToastContext";
 import "../styles/academyCommon.css";
 import "../styles/assignmentDetail.css";
 
@@ -17,6 +18,7 @@ const fmtDueShort = (d) =>
 export default function AssignmentDetail() {
   const navigate = useNavigate();
   const { subjectId, assignmentId } = useParams();
+  const { showToast } = useToast();
 
   const [assignment, setAssignment] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -80,7 +82,7 @@ export default function AssignmentDetail() {
     const isValidExtension = allowedExtensions.some((ext) => fileName.endsWith(ext));
 
     if (!isValidMime && !isValidExtension) {
-      alert("Only PDF, DOC, and DOCX files are allowed.");
+      showToast({ type: "error", message: "Only PDF, DOC, and DOCX files are allowed." });
       return;
     }
 
@@ -110,7 +112,7 @@ export default function AssignmentDetail() {
       setUploadedFile(null);
     } catch (err) {
       console.error("Submission error:", err);
-      alert(err.response?.data?.detail || "Submission failed.");
+      showToast({ type: "error", message: err.response?.data?.detail || "Submission failed." });
     } finally {
       setSubmitting(false);
     }

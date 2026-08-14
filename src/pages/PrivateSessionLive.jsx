@@ -145,6 +145,7 @@ export default function PrivateSessionLive() {
         audio={true}
         style={liveKitWrap}
         onDisconnected={handleControlBarLeave}
+        onError={(err) => setError(err?.message || "Lost connection to the private session.")}
       >
         <ReconnectingBanner />
         <PrivateClassroomUI

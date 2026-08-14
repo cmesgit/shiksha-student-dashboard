@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import { getPublicProfile, savePublicProfile } from "../utils/profileStorage";
-import { LoadingState } from "../components/StateViews";
+import { LoadingState, EmptyState } from "../components/StateViews";
 import "../styles/profile.css";
 
 export default function Profile() {
@@ -494,38 +494,28 @@ export default function Profile() {
           </>
         )}
 
-        {/* Private Session Activity — view mode only */}
-        {!isEditing && (
-          <>
-            <hr className="profileDivider" />
-            <div className="profileSection">
-              <h3 className="profileSection__title">Private Session Activity</h3>
-              <ul className="activity__list">
-                <li><strong>24/25</strong> Private Sessions Attended</li>
-                <li><strong>95%</strong> Attendance Rate</li>
-              </ul>
-            </div>
-          </>
-        )}
-
         <hr className="profileDivider" />
       </div>
 
       <div className="coursesSection">
-        <div className="coursesSection__table">
-          <div className="coursesSection__header">
-            <span className="coursesSection__headerItem">COURSES ENROLLED</span>
-            <span className="coursesSection__headerItem">BATCH CODE</span>
+        {courses.length === 0 ? (
+          <EmptyState icon="book" title="No courses enrolled" message="Enrolled courses and their batch codes will show up here." plain />
+        ) : (
+          <div className="coursesSection__table">
+            <div className="coursesSection__header">
+              <span className="coursesSection__headerItem">COURSES ENROLLED</span>
+              <span className="coursesSection__headerItem">BATCH CODE</span>
+            </div>
+            <div className="coursesSection__body">
+              {courses.map((item) => (
+                <div key={item.id} className="coursesSection__row">
+                  <span className="coursesSection__course">{item.course_title}</span>
+                  <span className="coursesSection__batch">{item.batch_code}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="coursesSection__body">
-            {courses.map((item) => (
-              <div key={item.id} className="coursesSection__row">
-                <span className="coursesSection__course">{item.course_title}</span>
-                <span className="coursesSection__batch">{item.batch_code}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

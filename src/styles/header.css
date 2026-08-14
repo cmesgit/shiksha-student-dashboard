@@ -297,12 +297,6 @@
   }
 }
 
-@media (max-width: 768px) {
-  .header__hamburger,
-  .header__hamburger * {
-    color: #ffffff !important;
-  }
-}
 /* ── Notification Bell ── */
 .notif-bell-wrap {
   position: relative;

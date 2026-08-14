@@ -14,6 +14,7 @@ import { getCourseCatalog } from "../api/catalog";
 import useEnroll from "../hooks/useEnroll";
 import CourseShopCard from "../components/CourseShopCard";
 import CoursePaymentModal from "../components/CoursePaymentModal";
+import BatchPickerModal from "../components/BatchPickerModal";
 import Skeleton from "../components/Skeleton";
 import { extractError } from "../shared/extractError";
 import "../styles/academyCommon.css";
@@ -57,6 +58,8 @@ export default function BrowseCourses() {
 
   const [toast, setToast] = useState("");
   const [payCourse, setPayCourse] = useState(null);   // course awaiting in-app payment
+  const [payBatchId, setPayBatchId] = useState(null); // batch chosen before payCourse opened
+  const [batchPrompt, setBatchPrompt] = useState(null); // { course, batches } awaiting a pick
   const toastTimer = useRef(null);
 
   const load = async () => {
@@ -83,8 +86,9 @@ export default function BrowseCourses() {
     toastTimer.current = setTimeout(() => setToast(""), 2600);
   };
 
-  const handleEnrol = async (course) => {
+  const handleEnrol = async (course, batchId) => {
     const res = await enroll(course, {
+      batchId,
       onEnrolled: (c) => {
         // Reflect ownership right away so the card flips to "Enrolled" without
         // waiting for a catalog re-fetch.
@@ -93,9 +97,19 @@ export default function BrowseCourses() {
         );
         showToast(`You're enrolled in ${c.title}.`);
       },
-      onNeedsPayment: (c) => setPayCourse(c),
+      onNeedsPayment: (c, chosenBatchId) => {
+        setPayCourse(c);
+        setPayBatchId(chosenBatchId || null);
+      },
+      onNeedsBatch: (c, batches) => setBatchPrompt({ course: c, batches }),
     });
-    if (res?.needsPayment) setPayCourse(course);
+    if (res?.needsPayment) { setPayCourse(course); setPayBatchId(batchId || null); }
+  };
+
+  const handleBatchChosen = async (chosenBatchId) => {
+    const course = batchPrompt.course;
+    setBatchPrompt(null);
+    await handleEnrol(course, chosenBatchId);
   };
 
   // Manual-proof payment submitted → mark the card as pending admin approval.
@@ -294,11 +308,21 @@ export default function BrowseCourses() {
         {toast}
       </div>
 
+      {batchPrompt && (
+        <BatchPickerModal
+          course={batchPrompt.course}
+          batches={batchPrompt.batches}
+          onClose={() => setBatchPrompt(null)}
+          onChoose={handleBatchChosen}
+        />
+      )}
+
       {payCourse && (
         <CoursePaymentModal
           course={payCourse}
           config={config}
-          onClose={() => setPayCourse(null)}
+          batchId={payBatchId}
+          onClose={() => { setPayCourse(null); setPayBatchId(null); }}
           onSubmitted={handlePaymentSubmitted}
         />
       )}

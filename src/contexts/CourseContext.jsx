@@ -104,10 +104,15 @@ export function CourseProvider({ children }) {
       const res = await api.get("/courses/my/");
       const list = res.data || [];
       setCourses(list);
-      // Keep the previous selection ONLY if this profile actually has
-      // it; otherwise fall to the profile's first course (or none).
+      // Keep the previous SELECTION (by id) ONLY if this profile still has
+      // it — but swap in the freshly-fetched object, not the stale one, so
+      // refreshCourses() (e.g. right after picking a batch, or enrolling)
+      // actually reflects on the active course instead of silently no-op'ing.
       setActiveCourse((prev) => {
-        if (prev && list.some((c) => c.id === prev.id)) return prev;
+        if (prev) {
+          const fresh = list.find((c) => c.id === prev.id);
+          if (fresh) return fresh;
+        }
         return list.length > 0 ? list[0] : null;
       });
       return list;

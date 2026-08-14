@@ -16,6 +16,7 @@ import { getCourseCatalog } from "../api/catalog";
 import useEnroll from "../hooks/useEnroll";
 import CourseShopCard from "./CourseShopCard";
 import CoursePaymentModal from "./CoursePaymentModal";
+import BatchPickerModal from "./BatchPickerModal";
 import Skeleton from "./Skeleton";
 import "../styles/academyCommon.css";
 import "../styles/browseCourses.css";
@@ -55,6 +56,8 @@ export default function AcademyEmptyState({ variant = "dashboard" }) {
 
   const [toast, setToast] = useState("");
   const [payCourse, setPayCourse] = useState(null);
+  const [payBatchId, setPayBatchId] = useState(null);
+  const [batchPrompt, setBatchPrompt] = useState(null);
   const toastTimer = useRef(null);
 
   useEffect(() => {
@@ -79,12 +82,23 @@ export default function AcademyEmptyState({ variant = "dashboard" }) {
     toastTimer.current = setTimeout(() => setToast(""), 2600);
   };
 
-  const handleEnrol = async (course) => {
+  const handleEnrol = async (course, batchId) => {
     const res = await enroll(course, {
+      batchId,
       onEnrolled: (c) => showToast(`You're enrolled in ${c.title}.`),
-      onNeedsPayment: (c) => setPayCourse(c),
+      onNeedsPayment: (c, chosenBatchId) => {
+        setPayCourse(c);
+        setPayBatchId(chosenBatchId || null);
+      },
+      onNeedsBatch: (c, batches) => setBatchPrompt({ course: c, batches }),
     });
-    if (res?.needsPayment) setPayCourse(course);
+    if (res?.needsPayment) { setPayCourse(course); setPayBatchId(batchId || null); }
+  };
+
+  const handleBatchChosen = async (chosenBatchId) => {
+    const course = batchPrompt.course;
+    setBatchPrompt(null);
+    await handleEnrol(course, chosenBatchId);
   };
 
   const handlePaymentSubmitted = (c) => {
@@ -173,11 +187,21 @@ export default function AcademyEmptyState({ variant = "dashboard" }) {
         {toast}
       </div>
 
+      {batchPrompt && (
+        <BatchPickerModal
+          course={batchPrompt.course}
+          batches={batchPrompt.batches}
+          onClose={() => setBatchPrompt(null)}
+          onChoose={handleBatchChosen}
+        />
+      )}
+
       {payCourse && (
         <CoursePaymentModal
           course={payCourse}
           config={config}
-          onClose={() => setPayCourse(null)}
+          batchId={payBatchId}
+          onClose={() => { setPayCourse(null); setPayBatchId(null); }}
           onSubmitted={handlePaymentSubmitted}
         />
       )}
