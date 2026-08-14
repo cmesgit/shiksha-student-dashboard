@@ -13,7 +13,7 @@ export default function Subjects() {
 
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm] = useState("");
   const [taskCounts, setTaskCounts] = useState({});
   const [taskCountsReady, setTaskCountsReady] = useState(false);
   // keyed by subject id -> { percent, chapters_done, chapters_total }

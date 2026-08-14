@@ -15,7 +15,7 @@
 //   /counseling/appointments/<id>  → opens with that card expanded
 //   /counseling/reports            → opens the Reports tab
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import PageHeader from "../../components/PageHeader";
 import ConfirmDialog from "../../components/ConfirmDialog";

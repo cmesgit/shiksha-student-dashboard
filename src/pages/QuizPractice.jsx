@@ -20,7 +20,7 @@ export default function QuizPractice() {
   const [feedback, setFeedback] = useState(null); // { is_correct, correct_choice, explanation }
   const [checking, setChecking] = useState(false);
   const [streak, setStreak] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
+  const [, setCorrectCount] = useState(0);
   const [finishing, setFinishing] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
 
