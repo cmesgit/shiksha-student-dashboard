@@ -82,5 +82,7 @@
 .qhModalBox { background: #fff; border-radius: 14px; padding: 26px; width: 400px; max-width: 92vw; box-shadow: 0 20px 50px rgba(26,44,51,.25); }
 .qhModalBox h3 { font: 700 16px var(--font-display); margin: 0 0 8px; }
 .qhModalBox p { font: 400 13px var(--font-body); color: var(--ink-2); margin: 0 0 10px; }
-.qhModalRules { font: 400 12.5px/1.8 var(--font-body); color: var(--ink-2); margin: 0 0 18px; padding-left: 18px; }
+.qhModalRules { font: 400 12.5px/1.8 var(--font-body); color: var(--ink-2); margin: 0 0 18px; padding: 0; list-style: none; }
+.qhModalRules li { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+.qhModalRules__icon { flex-shrink: 0; margin-top: 3px; color: var(--ink-faint, #8b9090); }
 .qhModalActions { display: flex; gap: 10px; justify-content: flex-end; }

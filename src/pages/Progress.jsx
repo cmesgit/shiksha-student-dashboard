@@ -60,7 +60,7 @@ function StatCard({ icon, iconBg, iconColor, value, label }) {
         <NavIcon name={icon} size={18} color={iconColor} />
       </div>
       <div>
-        <div className="progStat__value">{value}</div>
+        <div className={`progStat__value${value === "—" ? " progStat__value--empty" : ""}`}>{value}</div>
         <div className="progStat__label">{label}</div>
       </div>
     </div>

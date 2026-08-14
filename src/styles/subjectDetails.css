@@ -96,6 +96,14 @@
   font-size: 10.5px;
   color: #6b7c83;
 }
+/* "—" for not-yet-available data was rendered at the same weight/color as a
+   real number, making it hard to tell "no data yet" from "value is zero".
+   Specificity must beat `.sd-stat strong` above (0,1,1) — a lone class
+   (0,1,0) loses that cascade regardless of source order. */
+.sd-stat strong.sd-stat__value--empty {
+  color: #b7c0c4;
+  font-weight: 600;
+}
 
 .sd-grid {
   display: grid;

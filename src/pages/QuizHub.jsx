@@ -4,6 +4,23 @@ import api from "../api/apiClient";
 import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import "../styles/quiz-hub.css";
 
+// Small Feather-style rule icons for the "start mock test" modal — matches
+// the stroke conventions used app-wide (NavIcon.jsx, StateViews.jsx) instead
+// of the raw emoji this modal used before.
+const RULE_ICON_PATHS = {
+  timer: '<circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path><path d="M9 2h6"></path>',
+  flag: '<path d="M4 22V4a1 1 0 0 1 1-1h13.5a1 1 0 0 1 .8 1.6L16 9l3.3 4.4a1 1 0 0 1-.8 1.6H5"></path>',
+  edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"></path>',
+  check: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>',
+};
+function RuleIcon({ name }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="qhModalRules__icon"
+      dangerouslySetInnerHTML={{ __html: RULE_ICON_PATHS[name] }} />
+  );
+}
+
 // Redesigned quiz hub: Practice (untimed, instant feedback) vs Mock (timed,
 // exam-style) vs Completed, with a stat strip and resume-in-progress banner.
 // Replaces QuizList.jsx. quiz.quiz_type is the backend's mode field
@@ -227,10 +244,10 @@ export default function QuizHub() {
               You are about to start <b>{selectedQuiz?.title}</b>
             </p>
             <ul className="qhModalRules">
-              <li>⏱ Timer starts immediately and cannot be paused</li>
-              <li>🚩 Mark questions for review and jump between them freely</li>
-              <li>📝 Unanswered questions are scored 0</li>
-              <li>✅ Results and full analytics appear right after submission</li>
+              <li><RuleIcon name="timer" /> Timer starts immediately and cannot be paused</li>
+              <li><RuleIcon name="flag" /> Mark questions for review and jump between them freely</li>
+              <li><RuleIcon name="edit" /> Unanswered questions are scored 0</li>
+              <li><RuleIcon name="check" /> Results and full analytics appear right after submission</li>
             </ul>
             <div className="qhModalActions">
               <button className="tk-btn" onClick={confirmStartQuiz}>

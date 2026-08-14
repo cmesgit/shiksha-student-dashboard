@@ -160,19 +160,19 @@ export default function SubjectDetails() {
 
       <div className="sd-statRow">
         <div className="sd-stat">
-          <strong>{chapterProgress ? `${chapterProgress.percent}%` : "—"}</strong>
+          <strong className={chapterProgress ? "" : "sd-stat__value--empty"}>{chapterProgress ? `${chapterProgress.percent}%` : "—"}</strong>
           <span>Syllabus covered</span>
         </div>
         <div className="sd-stat">
-          <strong>{chapterProgress ? chapterProgress.chaptersDone : "—"}</strong>
+          <strong className={chapterProgress ? "" : "sd-stat__value--empty"}>{chapterProgress ? chapterProgress.chaptersDone : "—"}</strong>
           <span>Chapters done</span>
         </div>
         <div className="sd-stat">
-          <strong>{subjectDetails.quizAvgPct != null ? `${subjectDetails.quizAvgPct}%` : "—"}</strong>
+          <strong className={subjectDetails.quizAvgPct != null ? "" : "sd-stat__value--empty"}>{subjectDetails.quizAvgPct != null ? `${subjectDetails.quizAvgPct}%` : "—"}</strong>
           <span>Avg quiz score</span>
         </div>
         <div className="sd-stat">
-          <strong>
+          <strong className={subjectDetails.upcomingSessions?.length ? "" : "sd-stat__value--empty"}>
             {subjectDetails.upcomingSessions?.length
               ? dayLabel(new Date(subjectDetails.upcomingSessions[0].start_time))
               : "—"}
@@ -294,7 +294,7 @@ export default function SubjectDetails() {
                     id={a.id}
                     subjectId={subjectId}
                     title={a.title}
-                    teacher={a.teacher || "—"}
+                    teacher={a.teacher || primaryTeacher?.name || "—"}
                     due={a.due_date}
                   />
                 ))}
