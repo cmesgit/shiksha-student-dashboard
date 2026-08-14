@@ -16,7 +16,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useCourse } from "../contexts/CourseContext";
-import { getPaymentConfig, freeEnroll } from "../api/catalog";
+import { getPaymentConfig, freeEnroll, getCoursePublic } from "../api/catalog";
 import { extractError } from "../shared/extractError";
 
 export default function useEnroll() {
@@ -35,18 +35,36 @@ export default function useEnroll() {
   const collectsMoney = !!config?.collects_money;
 
   const enroll = useCallback(
-    async (course, { onEnrolled, onNeedsPayment } = {}) => {
+    async (course, { onEnrolled, onNeedsPayment, onNeedsBatch, batchId } = {}) => {
       setError("");
+
+      // The catalog list this hook is normally called from carries no
+      // per-batch data, so the first pass here fetches it. Skip once the
+      // caller already resolved a batch choice (re-invoking `enroll` after
+      // the picker) to avoid re-fetching and re-prompting.
+      if (!batchId) {
+        try {
+          const detail = await getCoursePublic(course.id);
+          const batches = Array.isArray(detail?.batches) ? detail.batches : [];
+          if (batches.length > 0) {
+            onNeedsBatch?.(course, batches);
+            return { needsBatch: true };
+          }
+        } catch {
+          // Batch lookup failing shouldn't block enrollment — fall through
+          // as if the course simply has no batches configured.
+        }
+      }
 
       if (collectsMoney) {
         // Open the in-dashboard payment flow instead of redirecting out.
-        onNeedsPayment?.(course);
+        onNeedsPayment?.(course, batchId);
         return { needsPayment: true };
       }
 
       try {
         setBusyId(course.id);
-        await freeEnroll(course.id);
+        await freeEnroll(course.id, batchId);
         await refreshCourses();
         onEnrolled?.(course);
         return { enrolled: true };

@@ -611,6 +611,7 @@ function RequestsTab({ onUnreadChange, searchTerm = "", registerRefresh, forceOp
       loadRequests();
     } catch (err) {
       showToast({ type: "error", message: err?.response?.data?.error || "Failed to submit request. Please try again." });
+      throw err;
     }
   };
 

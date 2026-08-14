@@ -44,6 +44,7 @@ import TopSliderTabs from "../components/TopSliderTabs";
 import NavIcon from "../components/NavIcon";
 import SkillDevStudentSection from "../components/SkillDevStudentSection";
 import AcademyEmptyState from "../components/AcademyEmptyState";
+import ChooseBatchBanner from "../components/ChooseBatchBanner";
 import { LoadingState } from "../components/StateViews";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
@@ -712,6 +713,8 @@ export default function Dashboard() {
           )}
         </p>
       </header>
+
+      <ChooseBatchBanner course={activeCourse} />
 
       <div className="desktopOnly">
         <div className="dashStatRow">
