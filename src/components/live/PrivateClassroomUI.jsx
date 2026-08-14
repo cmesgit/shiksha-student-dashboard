@@ -15,7 +15,7 @@ export default function PrivateClassroomUI({
   onLeave,
   unrestricted = false,   // 1-on-1 skill call → both sides publish freely
 }) {
-  const [raisedHands, setRaisedHands] = useState({});
+  const [, setRaisedHands] = useState({});
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);

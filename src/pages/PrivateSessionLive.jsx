@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
-import { useAuth } from "../contexts/AuthContext";
 import privateSession from "../api/privateSessionService";
 import PrivateClassroomUI from "../components/live/PrivateClassroomUI";
 import ReconnectingBanner from "../components/live/ReconnectingBanner";
@@ -41,9 +40,8 @@ const centerMsg = {
 export default function PrivateSessionLive() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
 
-  const [sessionData, setSessionData] = useState(null);
+  const [, setSessionData] = useState(null);
   const [livekitData, setLivekitData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);

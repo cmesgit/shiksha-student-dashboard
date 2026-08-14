@@ -199,7 +199,7 @@ function SessionDetail({ session, onBack, onCancel, onEnterRoom }) {
 /* ═══════════════════════════════════════════════════════════
    REQUEST DETAIL VIEW (Requests tab)
 ═══════════════════════════════════════════════════════════ */
-function RequestDetail({ session, onBack, onCancel, onConfirmReschedule, onDeclineReschedule }) {
+function RequestDetail({ session, onBack, onCancel, onConfirmReschedule }) {
   const [showCancel, setShowCancel] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const isPending = session.status === "pending";
@@ -972,7 +972,7 @@ function StudentPicker({ slot, subjectId, excludeUserIds, onSelect, onClear }) {
               {query ? `No students found for "${query}"` : "No other enrolled students"}
             </div>
           )}
-          {results.map((s, idx) => (
+          {results.map((s) => (
             <div
               key={s.user_id}
               className="ps__pickerOption"
@@ -1303,7 +1303,7 @@ export default function PrivateSessions() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("scheduled");
   const [requestsUnread, setRequestsUnread] = useState(0);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm] = useState("");
   const [openRequestForm, setOpenRequestForm] = useState(false);
 
   // Callbacks registered by child tabs so WebSocket can trigger their refresh
