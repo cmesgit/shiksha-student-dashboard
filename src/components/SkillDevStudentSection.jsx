@@ -19,6 +19,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { LoadingState } from "./StateViews";
 import { Avatar } from "../skill/SkillUI";
 import MasteryBar from "./MasteryBar";
+import SkillReviewModal from "./SkillReviewModal";
 import "../styles/skillDevDashboard.css";
 
 const daysAgo = (iso) => {
@@ -85,6 +86,11 @@ export default function SkillDevStudentSection() {
           <button className="sd-retryBtn" onClick={() => { setLoading(true); load(); }}>Retry</button>
         </div>
       )}
+
+      {/* Review prompt for any completed session still awaiting a review —
+          same component (and /skill/my-reviewable-sessions/ source) the My
+          Sessions page uses, so the dashboard is no longer a dead end. */}
+      {!loading && <SkillReviewModal onDone={load} />}
 
       {/* Stat grid */}
       <div className="sd-statGrid">

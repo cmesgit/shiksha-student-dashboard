@@ -249,9 +249,25 @@ export default function AssignmentDetail() {
               <div className="asg-submittedHero">
                 <div className="asg-submittedTick">✓</div>
                 <div className="asg-submittedLabel">Submitted</div>
-                <p className="asg-submittedText">
-                  Your work has been submitted. You'll receive feedback once graded.
-                </p>
+                {assignment.marks_obtained != null ? (
+                  <div className="asg-gradedBlock">
+                    <div style={{ fontSize: 22, fontWeight: 700 }}>
+                      {assignment.marks_obtained}/{assignment.max_marks}
+                    </div>
+                    {assignment.feedback && (
+                      <p className="asg-submittedText">{assignment.feedback}</p>
+                    )}
+                    {assignment.graded_at && (
+                      <p className="asg-submittedText" style={{ fontSize: 12, opacity: 0.7 }}>
+                        Graded {fmtDate(assignment.graded_at)}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="asg-submittedText">
+                    Your work has been submitted. You'll receive feedback once graded.
+                  </p>
+                )}
 
                 {submittedAt && (
                   <div className="asg-submittedMetaRow">

@@ -9,12 +9,14 @@
 
 import { useState } from "react";
 import { useCourse } from "../contexts/CourseContext";
+import { useAuth } from "../contexts/AuthContext";
 import { selectEnrollmentBatch } from "../api/catalog";
 import BatchPickerModal from "./BatchPickerModal";
 import "../styles/chooseBatchBanner.css";
 
 export default function ChooseBatchBanner({ course }) {
   const { refreshCourses } = useCourse();
+  const { activeProfile } = useAuth();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,7 +26,7 @@ export default function ChooseBatchBanner({ course }) {
   const handleChoose = async (batchId) => {
     setError("");
     try {
-      await selectEnrollmentBatch(course.id, batchId);
+      await selectEnrollmentBatch(course.id, batchId, activeProfile?.id);
       await refreshCourses();
       setOpen(false);
     } catch (e) {

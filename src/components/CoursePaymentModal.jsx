@@ -21,9 +21,11 @@
 import { useState } from "react";
 import api from "../api/apiClient";
 import { formatPrice } from "../api/catalog";
+import { useAuth } from "../contexts/AuthContext";
 import "../styles/renewSubscriptionModal.css";
 
 export default function CoursePaymentModal({ course, config, batchId, onClose, onSubmitted }) {
+  const { activeProfile } = useAuth();
   const requiresManualProof = !!config?.requires_manual_proof;
   const isGatewayStub = !!config?.collects_money && !requiresManualProof;
 
@@ -54,6 +56,7 @@ export default function CoursePaymentModal({ course, config, batchId, onClose, o
     fd.append("payment_date", paymentDate);
     fd.append("amount_paid", String(Math.round(parseFloat(amount) * 100)));
     fd.append("receipt", receipt);
+    if (activeProfile?.id) fd.append("active_profile_id", activeProfile.id);
 
     try {
       await api.post("/enrollments/requests/", fd, {

@@ -106,6 +106,14 @@ export default function QuizResult() {
     return Math.max(1, ...resultData.questions.map((q) => q.time_spent_seconds || 0));
   }, [resultData]);
 
+  // Per-question dwell time is only captured for practice attempts; graded/mock
+  // attempts don't record it, so it comes back as all-zeros. Only surface the
+  // timing UI when there's real data to show instead of a row of fake "0s".
+  const hasTimingData = useMemo(() => {
+    if (!resultData) return false;
+    return resultData.questions.some((q) => (q.time_spent_seconds || 0) > 0);
+  }, [resultData]);
+
   if (loading) return <LoadingState label="Loading result" />;
   if (error)   return <div className="quizResultPage">{error}</div>;
   if (!resultData) return null;
@@ -211,7 +219,7 @@ export default function QuizResult() {
             </div>
             <div className="qraCompareRow">
               <span>Class average: <strong>{resultData.class_avg_percent}%</strong></span>
-              <span>You're in the top <strong>{resultData.percentile}%</strong> of attempts</span>
+              <span>You scored higher than <strong>{resultData.scored_higher_than ?? 0}%</strong> of attempts</span>
             </div>
           </div>
         </div>
@@ -284,6 +292,7 @@ export default function QuizResult() {
             </div>
           )}
 
+          {hasTimingData && (
           <div className="qraCard">
             <div className="qraCardTitle">Time per question</div>
             <div className="qraTimeList">
@@ -301,6 +310,7 @@ export default function QuizResult() {
               ))}
             </div>
           </div>
+          )}
         </div>
 
         {/* ── Questions ── */}
@@ -345,7 +355,7 @@ export default function QuizResult() {
                 <div className="qraQuestionMeta">
                   {q.topic && <span className="qraMetaChip">{q.topic}</span>}
                   {q.difficulty && <span className="qraMetaChip qraMetaChip--muted">{DIFF_LABEL[q.difficulty] || q.difficulty}</span>}
-                  {typeof q.time_spent_seconds === "number" && (
+                  {hasTimingData && typeof q.time_spent_seconds === "number" && (
                     <span className="qraMetaChip qraMetaChip--muted">{q.time_spent_seconds}s</span>
                   )}
                 </div>
