@@ -16,11 +16,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useCourse } from "../contexts/CourseContext";
+import { useAuth } from "../contexts/AuthContext";
 import { getPaymentConfig, freeEnroll, getCoursePublic } from "../api/catalog";
 import { extractError } from "../shared/extractError";
 
 export default function useEnroll() {
   const { refreshCourses } = useCourse();
+  const { activeProfile } = useAuth();
   const [config, setConfig] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
@@ -64,7 +66,7 @@ export default function useEnroll() {
 
       try {
         setBusyId(course.id);
-        await freeEnroll(course.id, batchId);
+        await freeEnroll(course.id, batchId, activeProfile?.id);
         await refreshCourses();
         onEnrolled?.(course);
         return { enrolled: true };
@@ -76,7 +78,7 @@ export default function useEnroll() {
         setBusyId(null);
       }
     },
-    [collectsMoney, refreshCourses]
+    [collectsMoney, refreshCourses, activeProfile]
   );
 
   return { enroll, busyId, error, setError, config, collectsMoney };

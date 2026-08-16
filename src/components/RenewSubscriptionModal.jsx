@@ -1,8 +1,10 @@
 import { useState } from "react";
 import api from "../api/apiClient";
+import { useAuth } from "../contexts/AuthContext";
 import "../styles/renewSubscriptionModal.css";
 
 export default function RenewSubscriptionModal({ course, onClose, onSubmitted }) {
+  const { activeProfile } = useAuth();
   const defaultAmount = course?.price ? String(course.price / 100) : "";
 
   const [paymentMethod, setPaymentMethod] = useState("UPI");
@@ -32,6 +34,7 @@ export default function RenewSubscriptionModal({ course, onClose, onSubmitted })
     fd.append("payment_date", paymentDate);
     fd.append("amount_paid", String(Math.round(parseFloat(amount) * 100)));
     fd.append("receipt", receipt);
+    if (activeProfile?.id) fd.append("active_profile_id", activeProfile.id);
 
     try {
       await api.post("/enrollments/requests/", fd, {

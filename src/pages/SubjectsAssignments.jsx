@@ -37,7 +37,7 @@ import "../styles/academyScreens.css";
 const STATUS_FILTERS = ["All", "Due", "Overdue", "Submitted"];
 
 // Status → shared .ac-tag--* variant.
-const STATUS_TONE = { due: "success", overdue: "danger", submitted: "info" };
+const STATUS_TONE = { due: "success", overdue: "danger", submitted: "info", graded: "success" };
 
 const fmtDue = (d) =>
   d
@@ -149,16 +149,19 @@ export default function SubjectsAssignments() {
   const decorated = useMemo(
     () =>
       assignments.map((a) => {
-        const isSubmitted = a.status === "SUBMITTED";
+        const isGraded = a.status === "GRADED";
+        const isSubmitted = a.status === "SUBMITTED" || isGraded;
         const isOverdue =
           !isSubmitted && a.due_date && new Date(a.due_date).getTime() < now;
-        const stKey = isSubmitted ? "submitted" : isOverdue ? "overdue" : "due";
+        const stKey = isGraded ? "graded" : isSubmitted ? "submitted" : isOverdue ? "overdue" : "due";
         const subject = bySubjectId.get(String(a.subjectId));
         return {
           ...a,
           stKey,
           stLabel:
-            stKey === "submitted"
+            stKey === "graded"
+              ? `Graded ${a.marks_obtained}/${a.max_marks}`
+              : stKey === "submitted"
               ? "Submitted"
               : stKey === "overdue"
               ? "Overdue"

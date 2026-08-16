@@ -117,9 +117,11 @@ export default function NotificationBell() {
     }
 
     // Skill-Dev (1-on-1 expert) session notifications — confirm/decline/
-    // cancel/complete/reschedule all carry this flag.
+    // cancel/complete/reschedule all carry this flag. subject_id is the
+    // SkillSession id (see skills/notifications.push_skill_bell); `id` here
+    // is the Activity row id and does NOT match /skill-dev/sessions/:id.
     if (is_skill_session) {
-      navigate(id ? `/skill-dev/sessions/${id}` : "/skill-dev/sessions");
+      navigate(subject_id ? `/skill-dev/sessions/${subject_id}` : "/skill-dev/sessions");
       setOpen(false);
       return;
     }
@@ -150,6 +152,12 @@ export default function NotificationBell() {
   // Derive display type — backend sends SESSION with is_private_session flag
   const getDisplayType = (notif) =>
     notif.is_private_session ? "PRIVATE_SESSION" : notif.type;
+
+  // Skill-Dev bookings (confirmed/declined/reschedule/completed) are calendar
+  // events, not a live video call — reserve 🎥 for actual join-now live/group
+  // sessions so the icon matches the event.
+  const iconFor = (notif) =>
+    notif.is_skill_session ? "📅" : (TYPE_ICONS[getDisplayType(notif)] || "🔔");
 
   return (
     <div className="notif-bell-wrap" ref={ref}>
@@ -196,7 +204,7 @@ export default function NotificationBell() {
                     }}
                   >
                     <span className="notif-bell-icon" style={{ fontSize: 16 }}>
-                      {TYPE_ICONS[displayType] || "🔔"}
+                      {iconFor(notif)}
                     </span>
                     <div className="notif-bell-content">
                       <p className="notif-bell-title">{notif.title}</p>

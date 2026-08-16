@@ -97,7 +97,12 @@ export default function SkillSessions({ setTab = () => {} }) {
                 <Avatar name={s.expert_name} img={s.expert_img} size={46} />
                 <div className="ss-body">
                   <div className="ss-topic">{s.topic}</div>
-                  <div className="ss-meta">with {s.expert_name} · {s.when}</div>
+                  <div className="ss-meta">
+                    with {s.expert_name} · {s.when}
+                    {s.status !== "cancelled" && (
+                      <> · ₹{s.amount_rupees} {s.payment_status === "paid" ? "· Paid ✓" : "· Payment pending"}</>
+                    )}
+                  </div>
                 </div>
                 <span className={`ss-tag ss-tag--${s.status}`}>{STATUS_LABEL[s.status] || s.status}</span>
 

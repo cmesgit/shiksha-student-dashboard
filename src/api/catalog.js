@@ -42,16 +42,25 @@ export const getPaymentConfig = () =>
       collects_money: false,
     }));
 
-export const freeEnroll = (courseId, batchId) =>
+// `activeProfileId` is optional (from useAuth()'s `activeProfile?.id`) — when
+// passed, the backend cross-checks it against its own active-profile claim
+// and rejects with a clear "profile changed" error if a different tab
+// switched profiles in between, instead of silently enrolling the wrong one.
+export const freeEnroll = (courseId, batchId, activeProfileId) =>
   api.post("/enrollments/free-enroll/", {
     course: courseId,
     ...(batchId ? { batch: batchId } : {}),
+    ...(activeProfileId ? { active_profile_id: activeProfileId } : {}),
   }).then((r) => r.data);
 
 // Student picks their own batch after already being enrolled without one
 // (e.g. enrolled before the course had batches, or skipped the picker).
-export const selectEnrollmentBatch = (courseId, batchId) =>
-  api.post("/enrollments/select-batch/", { course: courseId, batch: batchId }).then((r) => r.data);
+export const selectEnrollmentBatch = (courseId, batchId, activeProfileId) =>
+  api.post("/enrollments/select-batch/", {
+    course: courseId,
+    batch: batchId,
+    ...(activeProfileId ? { active_profile_id: activeProfileId } : {}),
+  }).then((r) => r.data);
 
 // Rupee formatting from the paise the API returns (₹1 = 100 paise).
 export const formatPrice = (paise) => {

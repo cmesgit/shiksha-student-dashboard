@@ -6,11 +6,12 @@
 // PATCH  /skill/my-reviews/<id>/         → edit rating + body
 // DELETE /skill/my-reviews/<id>/         → permanent delete
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Avatar } from "./SkillUI";
 import { useAuth } from "../contexts/AuthContext";
 import { LoadingState } from "../components/StateViews";
 import { useSkillToast } from "../components/useSkillToast";
+import SkillReviewModal from "../components/SkillReviewModal";
 import "../styles/skillReviews.css";
 
 function fmtDate(iso) {
@@ -45,13 +46,24 @@ export default function SkillReviews() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  // Sessions completed but not yet reviewed — the Reviews page used to have no
+  // way to START a review, only to edit existing ones.
+  const [pendingCount, setPendingCount] = useState(0);
 
-  useEffect(() => {
+  const loadReviews = useCallback(() => {
     api.get("/skill/my-reviews/")
       .then(r => setReviews(r.data.reviews || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [api]);
+
+  const loadPending = useCallback(() => {
+    api.get("/skill/my-reviewable-sessions/")
+      .then(r => setPendingCount((r.data || []).length))
+      .catch(() => {});
+  }, [api]);
+
+  useEffect(() => { loadReviews(); loadPending(); }, [loadReviews, loadPending]);
 
   const startEdit = (r) => { setEditId(r.id); setDeleteId(null); setDraft({ rating: r.rating, body: r.body || "" }); };
   const cancelEdit = () => { setEditId(null); setSaving(false); };
@@ -85,6 +97,14 @@ export default function SkillReviews() {
   return (
     <div className="sr-screen">
       <div className="sr-gridWrap">
+      {pendingCount > 0 && (
+        <div className="sr-outerCard">
+          <h3 className="sr-subhead">Sessions awaiting your review</h3>
+          {/* Same modal/flow the My Sessions page uses; onDone refreshes both
+              the pending prompt and the list of written reviews below. */}
+          <SkillReviewModal onDone={() => { loadPending(); loadReviews(); }} />
+        </div>
+      )}
       <div className="sr-outerCard">
         <h3 className="sr-subhead">My reviews</h3>
 

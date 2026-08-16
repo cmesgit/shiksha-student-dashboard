@@ -24,7 +24,7 @@ const BACK_LABEL = { explore: "explore", profile: "profile", courses: "my course
 const rupees = (paise) => `₹${Math.round(paise / 100)}`;
 
 export default function SkillBookTutor() {
-  const { api } = useAuth();
+  const { api, activeProfile } = useAuth();
   const { setTrack } = useCourse();
   const location = useLocation();
   const navigate = useNavigate();
@@ -90,6 +90,7 @@ export default function SkillBookTutor() {
         },
         method: "free",
         amount: 0,
+        ...(activeProfile?.id ? { active_profile_id: activeProfile.id } : {}),
       });
       // A learner who has never explicitly switched tracks defaults to
       // "academy" (CourseContext's DEFAULT_TRACK) — without this, the
@@ -142,12 +143,25 @@ export default function SkillBookTutor() {
         <div className="sbk-card">
           <h3 className="sbk-cardTitle">Free times this week</h3>
           <p className="sbk-cardSub">
-            {t.name.split(" ")[0]} has opened {avail.open.filter((k) => !avail.booked.includes(k)).length} free slots this week · all times IST · 60 min sessions
+            {t.name.split(" ")[0]} has opened {avail.open.filter((k) => {
+              const [kdi, ksi] = k.split("-").map(Number);
+              return !avail.booked.includes(k) && !AV.isPastToday(kdi, ksi);
+            }).length} free slots this week · all times IST · 60 min sessions
           </p>
           <div className="sbk-slotRows">
             {AV.DAYS.map((d, di) => {
+              // BUG FIX: this filter used to only check open/booked, so an
+              // hour that had already elapsed TODAY still rendered as a
+              // clickable pill. Since these columns are already relabelled to
+              // each weekday's NEXT occurrence (see AV.shortDayLabels), the
+              // only elapsed case left to guard is today's already-passed
+              // hours — AV.isPastToday(di, si) exists for exactly this and
+              // was defined but never called here.
               const dayOpen = AV.SLOTS.map((_, si) => di + "-" + si)
-                .filter((k) => avail.open.includes(k) && !avail.booked.includes(k));
+                .filter((k) => {
+                  const si = Number(k.split("-")[1]);
+                  return avail.open.includes(k) && !avail.booked.includes(k) && !AV.isPastToday(di, si);
+                });
               return (
                 <div className="sbk-dayRow" key={d}>
                   <div className="sbk-dayLabel">{dayLabels[di]}</div>
