@@ -68,7 +68,7 @@ export default function MyCourseDetail() {
             <p className="myCourseDetail__desc">{course.description}</p>
           )}
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }} data-tour="course-detail.quick-actions">
             <button
               type="button"
               onClick={() => navigate("/chat", { state: { courseId, courseTitle: course.title } })}
@@ -184,7 +184,7 @@ export default function MyCourseDetail() {
 
 function ProgressCard({ onView }) {
   return (
-    <div className="myCourseDetail__placeholder">
+    <div className="myCourseDetail__placeholder" data-tour="course-detail.progress-card">
       <h3 className="myCourseDetail__placeholderTitle">Progress</h3>
       <p className="myCourseDetail__placeholderMsg" style={{ fontStyle: "normal" }}>
         See how much of the syllabus your teachers have covered.

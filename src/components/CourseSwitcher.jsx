@@ -83,6 +83,7 @@ export default function CourseSwitcher({ setMenuOpen }) {
         aria-haspopup={multiple ? "listbox" : undefined}
         aria-expanded={multiple ? open : undefined}
         title={displayCourse.title}
+        data-tour="sidebar.course-switcher"
       >
         <span className="acad-side__wellText">
           <span className="acad-side__wellLabel">Active course</span>

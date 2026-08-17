@@ -5,6 +5,7 @@ import { ToastProvider } from "./contexts/ToastContext.jsx";
 import "./shared/tokens.css";
 import "./index.css";
 import "./styles/live.css";
+import "./tour/tours.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

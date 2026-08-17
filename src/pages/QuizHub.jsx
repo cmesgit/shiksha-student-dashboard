@@ -194,12 +194,13 @@ export default function QuizHub() {
       )}
 
       <div className="qhToolbar">
-        <div className="qhTabs">
+        <div className="qhTabs" data-tour="quiz-hub.tabs">
           {TABS.map((t) => (
             <button
               key={t.key}
               className={`qhTab ${activeTab === t.key ? "qhTabActive" : ""}`}
               onClick={() => setActiveTab(t.key)}
+              data-tour={`quiz-hub.tab-${t.key}`}
             >
               {t.label} <span className="qhTabCount">{tabCounts[t.key]}</span>
             </button>
@@ -217,7 +218,7 @@ export default function QuizHub() {
         )}
       </div>
 
-      <div className="qhGrid">
+      <div className="qhGrid" data-tour="quiz-hub.grid">
         {filtered.length === 0 ? (
           <EmptyState
             plain

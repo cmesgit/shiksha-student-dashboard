@@ -13,9 +13,11 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { CourseProvider } from "./contexts/CourseContext";
+import { CourseProvider, useCourse } from "./contexts/CourseContext";
 import DocumentTitle from "./components/DocumentTitle";
 import { HOME_URL } from "./config/urls";
+import { TourProvider } from "./tour/TourProvider";
+import { tourRegistry } from "./tour/tourRegistry";
 
 import StudentLayout from "./layout/StudentLayout";
 
@@ -69,6 +71,19 @@ import {
 } from "./skill/SkillRoutes";
 
 
+// Bridges CourseContext's activeTrack into TourProvider's generic `track`
+// prop — TourProvider itself never imports an app-specific context (it's
+// the same file across all three apps), so each app's own mount site is
+// responsible for supplying its own notion of "track."
+function TourMount({ children }) {
+  const { activeTrack } = useCourse();
+  return (
+    <TourProvider registry={tourRegistry} track={activeTrack}>
+      {children}
+    </TourProvider>
+  );
+}
+
 function RequireProfile({ children }) {
   const { isAuthenticated, isLearnerContext, loading } = useAuth();
 
@@ -92,6 +107,7 @@ export default function App() {
       <CourseProvider>
         <BrowserRouter>
           <DocumentTitle />
+          <TourMount>
           <Routes>
             <Route
               path="/"
@@ -193,6 +209,7 @@ export default function App() {
             {/* Skill-dev 1-on-1 LiveKit room (separate from Academy private sessions) */}
             <Route path="/skill-session/live/:id" element={<SkillSessionLive />} />
           </Routes>
+          </TourMount>
         </BrowserRouter>
       </CourseProvider>
     </AuthProvider>

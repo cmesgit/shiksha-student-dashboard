@@ -99,7 +99,7 @@ function SkillDevSidebar({ setMenuOpen }) {
         {SD_NAV.map((item) => {
           const active = location.pathname === item.to || (item.to !== "/" && location.pathname.startsWith(item.to));
           return (
-            <NavLink key={item.id} to={item.to} onClick={() => setMenuOpen(false)} style={{ textDecoration: "none" }}>
+            <NavLink key={item.id} to={item.to} onClick={() => setMenuOpen(false)} style={{ textDecoration: "none" }} data-tour={`sidebar-skill.nav-${item.id}`}>
               <div style={{
                 display: "flex", alignItems: "center", gap: 11,
                 padding: "11px 12px", fontSize: 13, fontWeight: active ? 700 : 600,
@@ -196,7 +196,11 @@ function AcademySidebar({ setMenuOpen }) {
         {ACAD_NAV.map((item, idx) => {
           if (item.section) {
             return (
-              <div key={`s-${idx}`} className="acad-side__section">
+              <div
+                key={`s-${idx}`}
+                className="acad-side__section"
+                data-tour={`sidebar.section-${item.section.toLowerCase()}`}
+              >
                 {item.section}
               </div>
             );
@@ -211,6 +215,7 @@ function AcademySidebar({ setMenuOpen }) {
               // would otherwise compute per-item — activeTo is the single
               // shared source of truth instead (see activeNavTo).
               className={() => `acad-side__item${item.to === activeTo ? " active" : ""}`}
+              data-tour={`sidebar.nav-${item.l.toLowerCase().replace(/\s+/g, "-")}`}
             >
               <NavIcon name={item.i} size={14} />
               {item.l}

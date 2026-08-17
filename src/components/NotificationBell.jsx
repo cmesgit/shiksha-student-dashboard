@@ -161,7 +161,7 @@ export default function NotificationBell() {
 
   return (
     <div className="notif-bell-wrap" ref={ref}>
-      <button className="notif-bell-btn" onClick={handleOpen}>
+      <button className="notif-bell-btn" onClick={handleOpen} data-tour="header.notifications">
         {unreadCount > 0 ? (
           <IoNotificationsSharp size={22} color="#f59e0b" />
         ) : (

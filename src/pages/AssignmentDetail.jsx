@@ -167,7 +167,7 @@ export default function AssignmentDetail() {
                   {assignment.subject_name}
                 </span>
               )}
-              <span className={`asg-statusChip asg-statusChip--${stKey}`}>{stLabel}</span>
+              <span className={`asg-statusChip asg-statusChip--${stKey}`} data-tour="assignment.status-chip">{stLabel}</span>
             </div>
             <h1 className="asg-detailTitle">{assignment.title}</h1>
             <div className="asg-detailMetaRow">
@@ -302,7 +302,7 @@ export default function AssignmentDetail() {
               </div>
             ) : (
               <div className="asg-submitForm">
-                <label className="asg-dropzone">
+                <label className="asg-dropzone" data-tour="assignment.upload-zone">
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx"

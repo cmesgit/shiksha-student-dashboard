@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar } from "./SkillUI";
 import { useAuth } from "../contexts/AuthContext";
-import { LoadingState } from "../components/StateViews";
+import { LoadingState, EmptyState } from "../components/StateViews";
 import SkillReviewModal from "../components/SkillReviewModal";
 import SkillModal from "../components/SkillModal";
 import { useSkillToast } from "../components/useSkillToast";
@@ -84,10 +84,17 @@ export default function SkillSessions({ setTab = () => {} }) {
       {loading ? (
         <LoadingState label="Loading sessions" />
       ) : rows.length === 0 ? (
-        <div className="ss-empty">
-          {tab === "upcoming" ? "No upcoming sessions." : "No completed sessions yet."}{" "}
-          {tab === "upcoming" && <button className="ss-link" onClick={() => setTab("explore")}>Explore tutors →</button>}
-        </div>
+        <EmptyState
+          plain
+          icon="video"
+          title={tab === "upcoming" ? "No upcoming sessions" : "No completed sessions yet"}
+          message={
+            tab === "upcoming"
+              ? "Book a session with an expert and it'll show up here until it's confirmed."
+              : "Sessions you've finished move here, so you can review notes or book a follow-up."
+          }
+          action={tab === "upcoming" ? { label: "Explore tutors", onClick: () => setTab("explore") } : undefined}
+        />
       ) : (
         <div className="ss-rows">
           {rows.map((s) => {

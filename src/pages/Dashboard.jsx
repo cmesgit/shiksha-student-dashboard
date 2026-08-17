@@ -45,6 +45,7 @@ import NavIcon from "../components/NavIcon";
 import SkillDevStudentSection from "../components/SkillDevStudentSection";
 import AcademyEmptyState from "../components/AcademyEmptyState";
 import ChooseBatchBanner from "../components/ChooseBatchBanner";
+import WelcomeBackBar from "../tour/WelcomeBackBar";
 import { LoadingState } from "../components/StateViews";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
@@ -714,6 +715,7 @@ export default function Dashboard() {
         </p>
       </header>
 
+      <WelcomeBackBar welcomeKey="student.welcome.academy" />
       <ChooseBatchBanner course={activeCourse} />
 
       <div className="desktopOnly">
@@ -755,7 +757,7 @@ export default function Dashboard() {
               );
             })()}
 
-            <section className="dashboardCard dashboardCard--live">
+            <section className="dashboardCard dashboardCard--live" data-tour="dashboard.live-rail">
               <div className="cardHeader liveHeader">
                 <h3>Upcoming Live Sessions</h3>
                 <p className="sessionCountText">

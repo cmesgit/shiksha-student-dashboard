@@ -175,7 +175,7 @@ export default function SubjectsRecordings() {
         />
       ) : (
         <>
-          <div className="recFilters">
+          <div className="recFilters" data-tour="recordings.filters">
             <button
               type="button"
               className={`recChip${activeFilter === "all" ? " is-active" : ""}`}
@@ -203,7 +203,7 @@ export default function SubjectsRecordings() {
               message="Nothing here yet for this subject."
             />
           ) : (
-            <div className="recGrid">
+            <div className="recGrid" data-tour="recordings.grid">
               {filtered.map((rec) => {
                 const ready = rec.status === RECORDING_STATUS_FINISHED;
                 const state = watchState(progressMap[rec.id]);
