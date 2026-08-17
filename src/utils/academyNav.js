@@ -21,7 +21,7 @@ export const ACAD_NAV = [
   { l: "Assignments", i: "file", to: "/assignments" },
   { l: "Quizzes", i: "help", to: "/subjects/quiz" },
   { l: "Study Material", i: "clip", to: "/study-material" },
-  { l: "Blogs", i: "book", to: "/blogs" },
+  { l: "My Courses", i: "book", to: "/my-courses" },
   { section: "CONNECT" },
   { l: "Teachers", i: "grad", to: "/teachers" },
   { l: "Messages", i: "msg", to: "/chat" },
@@ -30,7 +30,6 @@ export const ACAD_NAV = [
 // Pages reachable outside the sidebar (profile menu, notification deep links,
 // the course catalogue) still need a header title.
 const EXTRA_TITLES = [
-  { to: "/my-courses", l: "My Courses" },
   { to: "/browse-courses", l: "Browse Courses" },
   { to: "/counseling", l: "Counselling" },
   { to: "/private-details", l: "Private Details" },

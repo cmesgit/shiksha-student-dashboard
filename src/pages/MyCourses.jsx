@@ -11,11 +11,13 @@
 // with the shared Claude tokens (slate #425f7f).
 // ──────────────────────────────────────────────────────────────────────────
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCourse } from "../contexts/CourseContext";
 import AcademyEmptyState from "../components/AcademyEmptyState";
 import Skeleton from "../components/Skeleton";
+import api from "../api/apiClient";
+import { formatPrice } from "../api/catalog";
 import "../styles/academyCommon.css";
 import "../styles/myCourses.css";
 
@@ -45,6 +47,28 @@ export default function MyCourses() {
   const { courses, loading, selectCourse, activeCourse } = useCourse();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [view, setView] = useState("mine"); // "mine" | "account"
+  const [accountSummary, setAccountSummary] = useState(null);
+  const [accountLoading, setAccountLoading] = useState(false);
+  const [accountError, setAccountError] = useState(false);
+
+  useEffect(() => {
+    if (view !== "account" || accountSummary || accountLoading) return;
+    let cancelled = false;
+    (async () => {
+      setAccountLoading(true);
+      setAccountError(false);
+      try {
+        const res = await api.get("/accounts/profiles/enrollments/");
+        if (!cancelled) setAccountSummary(res.data || []);
+      } catch {
+        if (!cancelled) setAccountError(true);
+      } finally {
+        if (!cancelled) setAccountLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [view, accountSummary, accountLoading]);
 
   // Switch the whole dashboard's active-course context to the clicked course,
   // then drop the learner into that course's subjects. This is the
@@ -65,13 +89,103 @@ export default function MyCourses() {
     );
   }, [courses, query]);
 
+  const viewToggle = (
+    <div className="mc-view-toggle" role="tablist" aria-label="My courses view">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={view === "mine"}
+        className={`mc-view-toggle__btn${view === "mine" ? " is-active" : ""}`}
+        onClick={() => setView("mine")}
+      >
+        This profile
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={view === "account"}
+        className={`mc-view-toggle__btn${view === "account" ? " is-active" : ""}`}
+        onClick={() => setView("account")}
+      >
+        All profiles
+      </button>
+    </div>
+  );
+
+  const head = (
+    <div className="ac-page__head">
+      <div className="ac-page__headRow">
+        <div>
+          <h1 className="ac-page__title">My courses</h1>
+          <p className="ac-page__sub">
+            {view === "account"
+              ? "Every profile on this account, and the courses each one holds."
+              : "Everything you're enrolled in, in one place."}
+          </p>
+        </div>
+        <Link to="/browse-courses" className="ac-linkbtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          Browse courses
+        </Link>
+      </div>
+      {viewToggle}
+    </div>
+  );
+
+  if (view === "account") {
+    return (
+      <div className="ac-page">
+        {head}
+        {accountLoading ? (
+          <div className="ac-grid">
+            {Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : accountError ? (
+          <div className="ac-empty">
+            <h2 className="ac-empty__title">Couldn't load this</h2>
+            <p className="ac-empty__text">Something went wrong fetching your account's profiles.</p>
+          </div>
+        ) : !accountSummary || accountSummary.length === 0 ? (
+          <div className="ac-empty">
+            <h2 className="ac-empty__title">No profiles yet</h2>
+          </div>
+        ) : (
+          <div className="mc-account-list">
+            {accountSummary.map((row) => (
+              <div className="mc-account-row" key={row.profile.id}>
+                <div className="mc-account-row__profile">
+                  <span className="mc-account-row__avatar">
+                    {row.profile.avatar_type === "image" ? (
+                      <img src={row.profile.avatar} alt="" />
+                    ) : (
+                      row.profile.avatar || "🙂"
+                    )}
+                  </span>
+                  <span className="mc-account-row__name">{row.profile.display_name}</span>
+                </div>
+                {row.courses.length === 0 ? (
+                  <p className="mc-account-row__empty">No active courses.</p>
+                ) : (
+                  <div className="mc-account-row__courses">
+                    {row.courses.map((c) => (
+                      <span className="mc-card__pill" key={c.id}>{c.title}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="ac-page">
-        <div className="ac-page__head">
-          <h1 className="ac-page__title">My courses</h1>
-          <p className="ac-page__sub">Everything you're enrolled in, in one place.</p>
-        </div>
+        {head}
         <div className="ac-grid">
           {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
@@ -80,25 +194,17 @@ export default function MyCourses() {
   }
 
   if (!courses || courses.length === 0) {
-    return <AcademyEmptyState variant="myCourses" />;
+    return (
+      <div className="ac-page">
+        {head}
+        <AcademyEmptyState variant="myCourses" />
+      </div>
+    );
   }
 
   return (
     <div className="ac-page">
-      <div className="ac-page__head">
-        <div className="ac-page__headRow">
-          <div>
-            <h1 className="ac-page__title">My courses</h1>
-            <p className="ac-page__sub">Everything you're enrolled in, in one place.</p>
-          </div>
-          <Link to="/browse-courses" className="ac-linkbtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            Browse courses
-          </Link>
-        </div>
-      </div>
+      {head}
 
       <div className="shop-toolbar">
         <div className="shop-search">
@@ -165,6 +271,7 @@ function CourseCard({ course, isActive, onSelect }) {
       </div>
 
       <h3 className="mc-card__title">{course.title}</h3>
+      <p className="mc-card__price">{formatPrice(course.price)}</p>
 
       <div className="mc-card__sub">
         {sub ? (
