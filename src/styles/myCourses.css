@@ -118,3 +118,77 @@
   white-space: nowrap;
 }
 .mc-card__details:hover { color: #425f7f; text-decoration: underline; }
+
+.mc-card__price {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--academy, #425f7f);
+}
+
+/* ── This profile / All profiles toggle ──────────────────────────────── */
+.mc-view-toggle {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 3px;
+  background: var(--academy-soft, #e6edee);
+  border-radius: 999px;
+  width: fit-content;
+}
+.mc-view-toggle__btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-3, #6b7c83);
+}
+.mc-view-toggle__btn.is-active {
+  background: #fff;
+  color: var(--academy, #425f7f);
+  box-shadow: 0 1px 3px rgba(26, 44, 51, 0.12);
+}
+
+/* ── All-profiles account summary ────────────────────────────────────── */
+.mc-account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+}
+.mc-account-row {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--card-border, #e5eaed);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+.mc-account-row__profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.mc-account-row__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--academy-soft, #e6edee);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.mc-account-row__avatar img { width: 100%; height: 100%; object-fit: cover; }
+.mc-account-row__name {
+  font-family: var(--font-display, "Montserrat", system-ui, sans-serif);
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--ink, #1a2c33);
+}
+.mc-account-row__courses { display: flex; flex-wrap: wrap; gap: 6px; }
+.mc-account-row__empty { margin: 0; font-size: 12.5px; color: var(--ink-3, #6b7c83); }

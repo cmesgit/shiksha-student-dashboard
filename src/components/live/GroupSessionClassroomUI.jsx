@@ -24,6 +24,7 @@ import { useTracks, VideoTrack, useRoomContext } from "@livekit/components-react
 import { Track } from "livekit-client";
 import GroupSessionChatPanel from "./GroupSessionChatPanel";
 import NotesPanel from "./NotesPanel";
+import FilesPanel from "./FilesPanel";
 import GroupSessionControlBar from "./GroupSessionControlBar";
 import React, { useState, useRef, useEffect } from "react";
 import "../../styles/groupSessionLive.css";
@@ -157,6 +158,7 @@ export default function GroupSessionClassroomUI({
   groupSessionRemainingMs = null,
   isHost = false,
   onEndSession = null,
+  liveLimits = null,
 }) {
   const isPresenter = role === "PRESENTER" || role === "teacher";
 
@@ -165,6 +167,7 @@ export default function GroupSessionClassroomUI({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
+  const [chatSocket, setChatSocket] = useState(null);
   const [peopleTab, setPeopleTab] = useState("participants");
   const [joinRequests, setJoinRequests] = useState([]);
   const [admitMode, setAdmitMode] = useState(session?.admitMode || "open");
@@ -341,6 +344,7 @@ export default function GroupSessionClassroomUI({
 
       try {
         ws = new WebSocket(`${proto}//${wsHost}${chatConfig.wsPath}${token ? `?token=${token}` : ""}`);
+        setChatSocket(ws);
 
         ws.onmessage = (ev) => {
           try {
@@ -366,6 +370,7 @@ export default function GroupSessionClassroomUI({
         };
 
         ws.onclose = () => {
+          setChatSocket(null);
           if (!unmounted) reconnectTimer = setTimeout(connect, 3000);
         };
 
@@ -378,6 +383,7 @@ export default function GroupSessionClassroomUI({
     return () => {
       unmounted = true;
       clearTimeout(reconnectTimer);
+      setChatSocket(null);
       ws?.close();
     };
   }, [session?.id, myUserId, chatConfig?.wsPath]);
@@ -612,6 +618,10 @@ export default function GroupSessionClassroomUI({
           )}
 
           {activePanel === "notes" && <NotesPanel sessionId={session?.id} sessionType="group" />}
+
+          {activePanel === "files" && (
+            <FilesPanel sessionId={session?.id} isHost={isHost} currentUserId={myUserId} socket={chatSocket} limits={liveLimits} />
+          )}
 
           {activePanel === "people" && (
             <div className="gs-ppl-panel">

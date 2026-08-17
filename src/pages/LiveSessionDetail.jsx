@@ -113,7 +113,7 @@ export default function LiveSessionDetail() {
       serverUrl={data.livekit_url}
       token={data.token}
       connect={true}
-      video={data.role === "PRESENTER"}
+      video={false}
       audio={true}
       onError={(err) => setError(err?.message || "Lost connection to the session.")}
     >

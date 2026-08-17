@@ -206,6 +206,23 @@ const groupSessionService = {
 
   // Hide a single past session from MY history view. Other participants
   // and the host are unaffected.
+  async listFiles(sessionId) {
+    const res = await api.get(`/sessions/group-sessions/${sessionId}/files/`);
+    return res.data;
+  },
+  uploadFile(sessionId, file, onProgress) {
+    const body = new FormData();
+    body.append("file", file);
+    return api.post(`/sessions/group-sessions/${sessionId}/files/`, body, {
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: (e) =>
+        onProgress?.(Math.round((e.loaded / (e.total || 1)) * 100)),
+    });
+  },
+  deleteFile(sessionId, fileId) {
+    return api.delete(`/sessions/group-sessions/${sessionId}/files/${fileId}/`);
+  },
+
   async hideFromHistory(sessionId) {
     const res = await api.post(
       `/sessions/group-sessions/${sessionId}/hide/`
@@ -341,6 +358,9 @@ export const {
   setAdmitMode,
   hideFromHistory,
   clearHistory,
+  listFiles,
+  uploadFile,
+  deleteFile,
   DURATIONS,
   TIME_SLOTS,
   MAX_INVITEES,
