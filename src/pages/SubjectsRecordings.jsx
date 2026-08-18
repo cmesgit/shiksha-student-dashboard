@@ -13,11 +13,12 @@
 // ──────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
 import { LoadingState, EmptyState } from "../components/StateViews";
 import { subjectChipSlot } from "../utils/subjectChips";
+import TourHeaderButton from "../tour/TourHeaderButton";
 import "../styles/academyCommon.css";
 import "../styles/recordingsHub.css";
 
@@ -50,6 +51,7 @@ const RECORDING_STATUS_FINISHED = 4;
 
 export default function SubjectsRecordings() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { activeCourse } = useCourse();
   // Reachable either at /subjects/recordings (browse all, filter via pills)
   // or /subjects/recordings/:subjectId (deep link from SubjectDetails /
@@ -152,7 +154,10 @@ export default function SubjectsRecordings() {
   return (
     <div className="ac-page">
       <div className="ac-page__head">
-        <h1 className="ac-page__title">Recordings</h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <h1 className="ac-page__title">Recordings</h1>
+          <TourHeaderButton pathname={pathname} />
+        </div>
         <p className="ac-page__sub">
           Catch up on any class you missed — recordings stay available all term.
         </p>

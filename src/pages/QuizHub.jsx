@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import api from "../api/apiClient";
 import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
+import TourHeaderButton from "../tour/TourHeaderButton";
 import "../styles/quiz-hub.css";
 
 // Small Feather-style rule icons for the "start mock test" modal — matches
@@ -43,6 +44,7 @@ function inferTab(quiz) {
 
 export default function QuizHub() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { subjectId } = useParams();
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -159,7 +161,10 @@ export default function QuizHub() {
         &lt; Back
       </button>
 
-      <h1 className="qhTitle">Quizzes</h1>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <h1 className="qhTitle">Quizzes</h1>
+        <TourHeaderButton pathname={pathname} />
+      </div>
 
       {resumeAttempt && (
         <div className="qhResumeBanner">

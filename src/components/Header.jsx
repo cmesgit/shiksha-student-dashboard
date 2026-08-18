@@ -47,7 +47,7 @@ export default function Header({ toggleMenu, menuOpen }) {
 
   return (
     <header className={"header" + (isSkill ? " header--skill" : "")}>
-      <div className="header__hamburger" onClick={toggleMenu}>
+      <div className="header__hamburger" data-tour="header.hamburger" onClick={toggleMenu}>
         {menuOpen ? <HiOutlineX size={26} /> : <HiOutlineMenu size={26} />}
       </div>
 

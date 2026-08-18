@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import api from "../api/apiClient";
 import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import { subjectChipSlot } from "../utils/subjectChips";
 import { useToast } from "../contexts/ToastContext";
+import TourHeaderButton from "../tour/TourHeaderButton";
 import "../styles/academyCommon.css";
 import "../styles/assignmentDetail.css";
 
@@ -17,6 +18,7 @@ const fmtDueShort = (d) =>
 
 export default function AssignmentDetail() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { subjectId, assignmentId } = useParams();
   const { showToast } = useToast();
 
@@ -150,12 +152,15 @@ export default function AssignmentDetail() {
 
   return (
     <div className="ac-page">
-      <button type="button" className="asg-back" onClick={() => navigate(backHref)}>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        Back to Assignments
-      </button>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <button type="button" className="asg-back" onClick={() => navigate(backHref)}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M9 2L4 7L9 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Back to Assignments
+        </button>
+        <TourHeaderButton pathname={pathname} />
+      </div>
 
       <div className="asg-detailGrid">
         {/* ── Main column ─────────────────────────────────────────── */}

@@ -10,10 +10,11 @@
 // Buttons are inline-styled so no CSS file change is needed.
 
 import { useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useCourse } from "../contexts/CourseContext";
 import RenewSubscriptionModal from "../components/RenewSubscriptionModal";
 import { LoadingState } from "../components/StateViews";
+import TourHeaderButton from "../tour/TourHeaderButton";
 import "../styles/myCourseDetail.css";
 
 const DATE_FORMAT = { day: "2-digit", month: "short", year: "numeric" };
@@ -26,6 +27,7 @@ function formatDate(dateStr) {
 export default function MyCourseDetail() {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { courses, loading } = useCourse();
 
   const [renewOpen, setRenewOpen] = useState(false);
@@ -59,7 +61,10 @@ export default function MyCourseDetail() {
     <div className="myCourseDetail">
       <section className="myCourseDetail__header">
         <div className="myCourseDetail__headerMain">
-          <h1 className="myCourseDetail__title">{course.title}</h1>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <h1 className="myCourseDetail__title">{course.title}</h1>
+            <TourHeaderButton pathname={pathname} />
+          </div>
           <div className="myCourseDetail__meta">
             {board && <span className="myCourseDetail__chip">{board}</span>}
             {stream && <span className="myCourseDetail__chip">{stream}</span>}

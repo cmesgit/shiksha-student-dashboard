@@ -66,13 +66,24 @@
  * in the phase-2 checklist) keeps the card on-screen at 375px regardless, so
  * tours are functional on mobile without that polish, just not pixel-spec.
  *
- * NOT built in this pass: the three T3 beacon entries
- * (`student.beacon.profile-switcher`, `student.beacon.settings-sessions`,
- * `student.beacon.browse-filters`). Spec §7.1/§9.5 calls for a distinct
- * `Beacon.jsx` (pulsing-dot, click-to-reveal — not a spotlight overlay) that
- * was never built in phase 2's `shared/src/tour/*` file set. Building a
- * beacon by repurposing the spotlight overlay would misrepresent the T3 UX
- * the anti-annoyance design is built around — flagging rather than faking it.
+ * `student.welcome.academy.mobile` (spec §10) — the spec's own wording
+ * assumes a "bottom nav" to target. This app has none: mobile navigation is
+ * the same `acad-side` drawer as desktop, opened via `Header.jsx`'s
+ * hamburger (`bottomNav.css` exists in the codebase but is dead — no
+ * component ever renders a `.bottomNav`). Building a real bottom-nav
+ * component is UI work far outside "add the flagged mobile tour variant" —
+ * targeted the three things that already sit in the always-visible mobile
+ * header instead (hamburger, notifications, profile switcher), which serves
+ * the same purpose the spec's variant is actually after: orient a first-time
+ * mobile visitor without touching the sidebar drawer.
+ *
+ * The three T3 beacon entries below (`student.beacon.profile-switcher`,
+ * `student.beacon.settings-sessions`, `student.beacon.browse-filters`) reuse
+ * anchors phase 3 already added for the T1/T2 tours above — no new
+ * `data-tour` attributes needed. `TourProvider` renders a beacon whenever
+ * its entry's `tier: "T3"`, its route matches, and it hasn't been seen yet
+ * (§9.5's engine, added alongside this content — see `shared/src/tour/
+ * Beacon.jsx`).
  */
 
 const track = (name) => () =>
@@ -106,6 +117,40 @@ export const tourRegistry = [
         placement: "top",
         title: "What's coming up",
         body: "Your live classes for the week show up here, with a direct join link once one starts.",
+      },
+      {
+        target: '[data-tour="header.notifications"]',
+        placement: "bottom-end",
+        title: "Stay in the loop",
+        body: "New assignments, grades, and messages land here first.",
+      },
+      {
+        target: '[data-tour="header.profile-switcher"]',
+        placement: "bottom-end",
+        title: "Come back to this anytime",
+        body: "Open this menu and choose Help & tours to replay any of this, or manage your profile and sign out.",
+      },
+    ],
+  },
+  {
+    key: "student.welcome.academy.mobile",
+    label: "Welcome tour — Academy (mobile)",
+    version: 1,
+    tier: "T1",
+    renderer: "spotlight",
+    mobile: true,
+    trigger: { match: "/" },
+    // S7 only blocks non-mobile entries under 768px — it never restricts a
+    // `mobile: true` entry to ONLY that width, so without this the desktop
+    // and mobile variants could both fire for the same visitor depending on
+    // which width they happened to load at first.
+    conditions: [track("academy"), () => window.innerWidth < 768],
+    steps: [
+      {
+        target: '[data-tour="header.hamburger"]',
+        placement: "bottom-start",
+        title: "Everything lives in this menu",
+        body: "Your subjects, live classes, and practice work are grouped in here — tap to open it any time.",
       },
       {
         target: '[data-tour="header.notifications"]',
@@ -305,6 +350,55 @@ export const tourRegistry = [
         placement: "top",
         title: "Open one to watch",
         body: "Tap any recording to start playback — teacher's notes, if any, are right there with it.",
+      },
+    ],
+  },
+
+  // ── T3 — Beacon hints ────────────────────────────────────────────────
+  {
+    key: "student.beacon.profile-switcher",
+    label: "Profile switcher",
+    version: 1,
+    tier: "T3",
+    trigger: { match: "/" },
+    conditions: [(ctx) => (ctx.profiles?.length || 0) > 1],
+    steps: [
+      {
+        target: '[data-tour="header.profile-switcher"]',
+        placement: "bottom-end",
+        title: "More than one profile?",
+        body: "Switch between the profiles on this account here, without signing out.",
+      },
+    ],
+  },
+  {
+    key: "student.beacon.settings-sessions",
+    label: "Sessions & devices",
+    version: 1,
+    tier: "T3",
+    trigger: { match: "/" },
+    insideModal: true,
+    steps: [
+      {
+        target: '[data-tour="settings.sessions-nav"]',
+        placement: "right",
+        title: "See where you're signed in",
+        body: "Every device currently signed into this account is listed here — sign any of them out remotely if something looks off.",
+      },
+    ],
+  },
+  {
+    key: "student.beacon.browse-filters",
+    label: "Browse-courses filters",
+    version: 1,
+    tier: "T3",
+    trigger: { match: "/browse-courses" },
+    steps: [
+      {
+        target: '[data-tour="browse-courses.toolbar"]',
+        placement: "bottom",
+        title: "Narrow it down",
+        body: "Filter by board, stream, or category to find a course faster.",
       },
     ],
   },
