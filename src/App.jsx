@@ -102,10 +102,13 @@ function RequireProfile({ children }) {
 }
 
 export default function App() {
+  // BrowserRouter is outermost so CourseProvider can derive activeTrack from
+  // the current route (see trackFromPath) — the chrome has to follow the page
+  // you are actually on, not just the remembered choice.
   return (
-    <AuthProvider>
-      <CourseProvider>
-        <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <CourseProvider>
           <DocumentTitle />
           <TourMount>
           <Routes>
@@ -210,8 +213,8 @@ export default function App() {
             <Route path="/skill-session/live/:id" element={<SkillSessionLive />} />
           </Routes>
           </TourMount>
-        </BrowserRouter>
-      </CourseProvider>
-    </AuthProvider>
+        </CourseProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

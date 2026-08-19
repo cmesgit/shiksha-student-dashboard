@@ -118,7 +118,7 @@ export default function LiveSessionDetail() {
       onError={(err) => setError(err?.message || "Lost connection to the session.")}
     >
       <ReconnectingBanner />
-      <ClassroomUI role={data.role} sessionId={id} onLeave={handleControlBarLeave} />
+      <ClassroomUI role={data.role} sessionId={id} sessionMeta={data} onLeave={handleControlBarLeave} />
       <RoomAudioRenderer />
       {showReview && <ReviewModal sessionId={id} onDone={handleLeave} />}
     </LiveKitRoom>

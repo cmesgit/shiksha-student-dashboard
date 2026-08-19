@@ -45,3 +45,47 @@ export function enrolledTracks(courses = []) {
   for (const c of courses) set.add(courseTrack(c));
   return set;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Route → track
+ *
+ * The chrome (sidebar nav, accents, breadcrumbs) is driven by activeTrack.
+ * Deriving that ONLY from the localStorage override + active course means a
+ * deep link into a track-specific page — a notification click, a shared URL,
+ * a refresh — renders that page's content inside the OTHER track's chrome:
+ * e.g. a Skill Dev session opened while the override says "academy" shows
+ * Skill session details wrapped in the Academy learner sidebar.
+ *
+ * The teacher app never had this bug because it mounts two different layouts
+ * per route (TeacherLayout / SkillDevLayout) — the route IS the track there.
+ * These prefixes give the single-layout student app the same property.
+ *
+ * Only routes that are UNAMBIGUOUSLY one track are listed. Genuinely neutral
+ * routes ("/", /profile, /chat, /blogs, /settings, /counseling…) are left
+ * out on purpose so they keep following the user's remembered choice — that
+ * also keeps LearnerTrackSwitcher working, since it navigates to "/".
+ * ───────────────────────────────────────────────────────────────────────── */
+const SKILL_ROUTES = ["/skill-dev", "/skill-messages", "/skill-session"];
+
+const ACADEMY_ROUTES = [
+  "/subjects", "/assignments", "/progress", "/study-material",
+  "/live-sessions", "/live", "/private-sessions", "/group-sessions",
+  "/quiz", "/teachers", "/my-courses", "/browse-courses",
+];
+
+// Prefix match on a path BOUNDARY, so "/live" claims "/live/42" but never
+// "/live-sessions" (which is its own entry).
+const onRoute = (pathname, prefix) =>
+  pathname === prefix || pathname.startsWith(`${prefix}/`);
+
+/**
+ * The track a path belongs to, or null when the path is track-neutral and
+ * the caller should fall back to the remembered override / active course.
+ */
+export function trackFromPath(pathname) {
+  if (typeof pathname !== "string" || !pathname) return null;
+  const path = pathname.toLowerCase().replace(/\/+$/, "") || "/";
+  if (SKILL_ROUTES.some((r) => onRoute(path, r))) return "skill";
+  if (ACADEMY_ROUTES.some((r) => onRoute(path, r))) return "academy";
+  return null;
+}

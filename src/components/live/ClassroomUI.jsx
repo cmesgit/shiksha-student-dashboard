@@ -31,6 +31,9 @@ function MicIcon({ on }) {
 export default function ClassroomUI({
   role,
   sessionId: sessionIdProp,
+  // Whatever /livestream/sessions/:id/join/ returned — carries subject_name,
+  // course_name and batch_name so the room can say which class this is.
+  sessionMeta,
   onLeave,
 }) {
   const isPresenter = role === "PRESENTER";
@@ -281,8 +284,14 @@ export default function ClassroomUI({
         {/* RIGHT SIDEBAR — always visible; Chat/Notes/People/Info tabs */}
         <div className="conf-sidebar">
           <div className="conf-info-block">
-            <div className="conf-subject">Live Session</div>
-            <div className="conf-topic">Class in progress</div>
+            <div className="conf-subject">
+              {sessionMeta?.subject_name || "Live Session"}
+            </div>
+            <div className="conf-topic">
+              {[sessionMeta?.course_name, sessionMeta?.batch_name]
+                .filter(Boolean)
+                .join(" · ") || "Class in progress"}
+            </div>
             <div className="conf-timer-row">
               <span className="conf-timer-dot" />
               <span className="conf-timer-text">{formatDuration(elapsed)}</span>
@@ -366,6 +375,18 @@ export default function ClassroomUI({
 
             {sidebarTab === "info" && (
               <div className="conf-info-list">
+                {sessionMeta?.course_name && (
+                  <div className="conf-info-field">
+                    <div className="conf-info-label">Course</div>
+                    <div className="conf-info-value">{sessionMeta.course_name}</div>
+                  </div>
+                )}
+                {sessionMeta?.batch_name && (
+                  <div className="conf-info-field">
+                    <div className="conf-info-label">Batch</div>
+                    <div className="conf-info-value">{sessionMeta.batch_name}</div>
+                  </div>
+                )}
                 <div className="conf-info-field">
                   <div className="conf-info-label">Session ID</div>
                   <div className="conf-info-value">{sessionId}</div>

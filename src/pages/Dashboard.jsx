@@ -645,12 +645,14 @@ export default function Dashboard() {
   };
 
   // ── Skill Dev track — render the skill home instead ───────────────
+  // Rendered bare on purpose. A wrapper here used to pin the section to
+  // `height:100%` with `overflow:hidden`, which capped it at the viewport and
+  // clipped everything below the fold — and because the wrapper never grew,
+  // the real scroll container (.studentLayout__page) never got a scrollbar
+  // either, so that content was simply unreachable. .studentLayout__right
+  // already paints --page-bg, so the wrapper's background was redundant too.
   if (activeTrack === "skill") {
-    return (
-      <div style={{ height: "100%", background: "var(--page-bg, #eef1f2)", display: "flex", overflow: "hidden" }}>
-        <SkillDevStudentSection data={data} />
-      </div>
-    );
+    return <SkillDevStudentSection />;
   }
 
   // `loading` alone isn't enough: fetchDashboard sees a still-null

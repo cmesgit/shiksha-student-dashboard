@@ -23,9 +23,10 @@
 // override, refreshCourses) is unchanged.
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import api from "../api/apiClient";
 import { useAuth } from "./AuthContext";
-import { courseTrack } from "../utils/trackFromCourses";
+import { courseTrack, trackFromPath } from "../utils/trackFromCourses";
 
 const CourseContext = createContext();
 
@@ -74,6 +75,7 @@ function writeTrackOverride(profileId, track) {
 
 export function CourseProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
+  const location = useLocation();
   const activeProfileId = user?.active_profile?.id || null;
 
   const [courses,       setCourses]       = useState([]);
@@ -154,9 +156,19 @@ export function CourseProvider({ children }) {
   };
 
   // ── Derived track — "academy" | "skill"
-  // Priority: manual switch → active course → academy fallback.
+  // Priority: current route → manual switch → active course → academy.
+  //
+  // The ROUTE outranks the remembered choice: while you are standing on a
+  // page that belongs to one track, the chrome must be that track's, or you
+  // get Skill Dev session details wrapped in the Academy sidebar (which is
+  // exactly what deep-linking from a notification used to do). Track-neutral
+  // routes return null from trackFromPath and fall through to the override,
+  // so LearnerTrackSwitcher — which navigates to "/" — still works.
+  const routeTrack = trackFromPath(location.pathname);
   const activeTrack =
-    trackOverride || (activeCourse ? courseTrack(activeCourse) : DEFAULT_TRACK);
+    routeTrack ||
+    trackOverride ||
+    (activeCourse ? courseTrack(activeCourse) : DEFAULT_TRACK);
 
   return (
     <CourseContext.Provider

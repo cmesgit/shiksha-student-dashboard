@@ -5,10 +5,10 @@
  * with [data-track="skill"]'s --skill/--acc family automatically.
  */
 
-.sd-shell {
-  height: 100%;
-  overflow-y: auto;
-}
+/* No page-level scroll container here on purpose: .studentLayout__page is
+ * already the scroll container for every learner route. A local one (the old
+ * unused .sd-shell) only nests a second scroller, which breaks scroll
+ * restore and the layout's styled scrollbar. */
 
 .sd-main {
   max-width: 1080px;
