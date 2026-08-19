@@ -115,6 +115,14 @@ export default function QuizMock() {
         let serverStartedAt = null;
         try {
           const startRes = await api.post(`/quizzes/${quizId}/start/`);
+          // Landed here on an already-finished quiz — almost always the
+          // browser Back button from the result screen. Show the result
+          // instead of silently opening a fresh, ticking attempt.
+          // `replace` so Back doesn't bounce straight back in here.
+          if (startRes.data?.already_submitted) {
+            navigate(`/subjects/quiz/${subjectId}/result/${quizId}`, { replace: true });
+            return;
+          }
           if (startRes.data?.attempt_id) attemptNumber = String(startRes.data.attempt_id).slice(-8);
           if (startRes.data?.started_at) serverStartedAt = new Date(startRes.data.started_at).getTime();
         } catch (err) {
@@ -296,6 +304,7 @@ export default function QuizMock() {
 
   const q = questions[index];
   const total = questions.length;
+  const isLast = index === total - 1;
   const answeredCount = Object.keys(answers).length;
   const markedCount = Object.values(marked).filter(Boolean).length;
   const notVisitedCount = total - Object.keys(visited).length;
@@ -339,7 +348,27 @@ export default function QuizMock() {
           <div className="qm-nav-row">
             <button className="qm-nav-btn" onClick={() => goTo(index - 1)} disabled={index === 0}>← Previous</button>
             <button className="qm-clear-link" onClick={handleClear}>Clear answer</button>
-            <button className="qm-nav-btn qm-nav-btn--primary" onClick={() => goTo(index + 1)} disabled={index === total - 1}>Save & Next →</button>
+            {/* On the LAST question this used to be `disabled`, so the biggest,
+                boldest button on the card silently refused to click — the
+                disabled style is only opacity:.5, which still reads as an
+                active primary button. The learner's next step (Submit) lives
+                far away in the page header, so the quiz felt stuck. Now it
+                becomes the submit affordance, matching QuizPractice.jsx's
+                goNext(), which already branches on the last index instead of
+                disabling. `← Previous` keeps its `disabled` because at index 0
+                there is genuinely nowhere to go. */}
+            {isLast ? (
+              <button
+                className="qm-nav-btn qm-nav-btn--primary"
+                onClick={() => setShowSubmitModal(true)}
+              >
+                Submit test →
+              </button>
+            ) : (
+              <button className="qm-nav-btn qm-nav-btn--primary" onClick={() => goTo(index + 1)}>
+                Save &amp; Next →
+              </button>
+            )}
           </div>
         </div>
 

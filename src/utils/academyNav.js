@@ -55,8 +55,29 @@ const MATCHERS = [...ACAD_NAV.filter((n) => n.l), ...EXTRA_TITLES]
 // top-level path the way Assignments/Study Material did.
 const NAV_MATCHERS = ACAD_NAV.filter((n) => n.l).slice().sort((a, b) => b.to.length - a.to.length);
 
+// Subject-scoped deep links live under /subjects/:subjectId/… — title AND
+// highlight them by what they actually show. A plain longest-prefix match
+// gives "Subjects" for all of them, because these screens never got their
+// own top-level path the way /assignments and /study-material did. That is
+// why the sidebar lit "Subjects" while the user was looking at Assignments.
+const SUBJECT_SUBSCREENS = [
+  { seg: "assignments", l: "Assignments", to: "/assignments" },
+  { seg: "quiz",        l: "Quizzes",     to: "/subjects/quiz" },
+  { seg: "recordings",  l: "Recordings",  to: "/subjects/recordings" },
+];
+
+/** The /subjects/:id/<seg> screen this pathname is on, if any. */
+function subjectSubscreen(pathname) {
+  const m = pathname.match(/^\/subjects\/[^/]+\/([^/]+)/);
+  return m ? SUBJECT_SUBSCREENS.find((s) => s.seg === m[1]) : undefined;
+}
+
 /** Which ACAD_NAV item's `to` should be highlighted for this pathname. */
 export function activeNavTo(pathname) {
+  // Checked before the prefix matchers, or /subjects swallows these.
+  const sub = subjectSubscreen(pathname);
+  if (sub) return sub.to;
+
   const hit = NAV_MATCHERS.find((n) =>
     n.end ? pathname === n.to : pathname === n.to || pathname.startsWith(`${n.to}/`)
   );
@@ -69,24 +90,14 @@ function humanise(pathname) {
   return seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// Subject-scoped deep links live under /subjects/:subjectId/… — title them by
-// what they actually show, not as "Subjects", which is what a plain
-// longest-prefix match would give.
-const SUBJECT_SUBSCREENS = [
-  { seg: "assignments", l: "Assignments" },
-  { seg: "quiz", l: "Quizzes" },
-  { seg: "recordings", l: "Recordings" },
-];
-
 /** The header/tab title for a pathname, taken from the active nav item. */
 export function pageTitleFor(pathname) {
   if (pathname === "/") return "Dashboard";
 
-  const sub = pathname.match(/^\/subjects\/[^/]+\/([^/]+)/);
-  if (sub) {
-    const hit = SUBJECT_SUBSCREENS.find((s) => s.seg === sub[1]);
-    if (hit) return hit.l;
-  }
+  // Same SUBJECT_SUBSCREENS table activeNavTo uses, so the sidebar
+  // highlight and the header title can never name different screens.
+  const sub = subjectSubscreen(pathname);
+  if (sub) return sub.l;
 
   const hit = MATCHERS.find(
     (n) => !n.end && (pathname === n.to || pathname.startsWith(`${n.to}/`))

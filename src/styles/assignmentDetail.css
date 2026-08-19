@@ -832,3 +832,27 @@
   color: #1a2c33;
   font-weight: 600;
 }
+
+/* ── Attachment rows must not overflow their card ──────────────────────
+   .asg-attachmentRow is used in BOTH columns, but the side column ("Your
+   submission") is far narrower than the main one. With the icon (34px),
+   the filename and two action buttons all pinned on one line and
+   flex-shrink:0 on the actions, a long filename pushed the buttons past
+   the card's right edge instead of being ellipsised. Wrapping the actions
+   onto their own line when space runs out keeps every control reachable at
+   any width, and costs nothing on the wide main column where they still
+   fit inline. */
+.asg-attachmentRow {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+.asg-attachmentMeta {
+  flex: 1 1 120px;
+}
+.asg-attachmentActions {
+  margin-left: auto;
+}
+.asg-detailSide .asg-attachmentActions .asg-ghostBtn {
+  flex: 1 1 auto;
+  justify-content: center;
+}

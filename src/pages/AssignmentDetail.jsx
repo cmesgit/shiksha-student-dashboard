@@ -120,7 +120,12 @@ export default function AssignmentDetail() {
     }
   };
 
-  const backHref = subjectId ? `/subjects/${subjectId}/assignments` : "/assignments";
+  // The STRING "undefined" is truthy, so a URL that already went wrong
+  // upstream would otherwise be handed straight back to the assignments list
+  // and keep the bad crumb alive. Treat it as absent.
+  const validSubjectId =
+    subjectId && subjectId !== "undefined" && subjectId !== "null" ? subjectId : null;
+  const backHref = validSubjectId ? `/subjects/${validSubjectId}/assignments` : "/assignments";
 
   const stKey = useMemo(() => {
     if (!assignment) return "due";
@@ -251,7 +256,7 @@ export default function AssignmentDetail() {
             <h3 className="asg-cardHeading">Your submission</h3>
 
             {isSubmitted ? (
-              <div className="asg-submittedHero">
+              <div className="asg-submittedHero" data-tour="assignment.submission-panel">
                 <div className="asg-submittedTick">✓</div>
                 <div className="asg-submittedLabel">Submitted</div>
                 {assignment.marks_obtained != null ? (
@@ -265,6 +270,21 @@ export default function AssignmentDetail() {
                     {assignment.graded_at && (
                       <p className="asg-submittedText" style={{ fontSize: 12, opacity: 0.7 }}>
                         Graded {fmtDate(assignment.graded_at)}
+                      </p>
+                    )}
+                  </div>
+                ) : assignment.feedback ? (
+                  // Written feedback with no marks entered. This used to be
+                  // unreachable — feedback rendered only inside the
+                  // marks_obtained branch — so a teacher who commented
+                  // without grading had their comment silently dropped and
+                  // the student was told to wait for feedback that had
+                  // already been written.
+                  <div className="asg-gradedBlock">
+                    <p className="asg-submittedText">{assignment.feedback}</p>
+                    {assignment.graded_at && (
+                      <p className="asg-submittedText" style={{ fontSize: 12, opacity: 0.7 }}>
+                        Reviewed {fmtDate(assignment.graded_at)}
                       </p>
                     )}
                   </div>
@@ -301,6 +321,17 @@ export default function AssignmentDetail() {
                       >
                         View
                       </button>
+                      {/* The Attachments row in the main column has had View +
+                          Download all along; the learner's OWN submitted file
+                          could only be opened in a tab. Getting your own work
+                          back should not be the harder path. */}
+                      <a
+                        href={assignment.submitted_file}
+                        download
+                        className="asg-ghostBtn"
+                      >
+                        Download
+                      </a>
                     </div>
                   </div>
                 )}

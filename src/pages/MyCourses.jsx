@@ -52,8 +52,25 @@ export default function MyCourses() {
   const [accountLoading, setAccountLoading] = useState(false);
   const [accountError, setAccountError] = useState(false);
 
+  // `accountLoading` must NOT be a dependency, and must not be part of the
+  // guard. It used to be both, which made this effect cancel its own request
+  // every single time:
+  //
+  //   1. runs, guard passes, calls setAccountLoading(true)
+  //   2. accountLoading is a dep → the effect re-runs
+  //   3. the FIRST run's cleanup fires, setting cancelled = true
+  //   4. the re-run hits `|| accountLoading` and returns immediately
+  //   5. the original request resolves, but every setState is behind
+  //      `if (!cancelled)` — so the data is thrown away AND
+  //      setAccountLoading(false) never runs
+  //
+  // accountLoading was therefore stuck true forever and the "All profiles"
+  // tab showed loading skeletons that never resolved. Keying only on `view`
+  // and `accountSummary` is enough: once the data lands the guard stops any
+  // refetch, and the re-run that data triggers cancels a request that has
+  // already completed.
   useEffect(() => {
-    if (view !== "account" || accountSummary || accountLoading) return;
+    if (view !== "account" || accountSummary) return;
     let cancelled = false;
     (async () => {
       setAccountLoading(true);
@@ -68,7 +85,7 @@ export default function MyCourses() {
       }
     })();
     return () => { cancelled = true; };
-  }, [view, accountSummary, accountLoading]);
+  }, [view, accountSummary]);
 
   // Switch the whole dashboard's active-course context to the clicked course,
   // then drop the learner into that course's subjects. This is the

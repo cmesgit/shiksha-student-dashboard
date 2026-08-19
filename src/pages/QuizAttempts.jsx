@@ -40,7 +40,9 @@ export default function QuizAttempts() {
   const handleReattempt = async () => {
     try {
       setStarting(true);
-      await api.post(`/quizzes/${quizId}/start/`);
+      // Deliberate retake — opt in, or the backend returns the existing
+      // submitted attempt instead of starting a fresh one.
+      await api.post(`/quizzes/${quizId}/start/`, { new_attempt: true });
       const path = quizType === "practice" ? "practice" : "take";
       navigate(`/subjects/quiz/${subjectId}/${path}/${quizId}`);
     } catch (err) {
@@ -56,9 +58,12 @@ export default function QuizAttempts() {
 
   return (
     <div className="quizResultPage">
+      {/* Explicit route, not navigate(-1) — the history entry behind this
+          screen is usually the attempt itself, and re-entering /take/:quizId
+          starts a brand-new attempt (see the note in QuizResult.jsx). */}
       <button
         className="quizResultBack"
-        onClick={() => navigate(-1)}
+        onClick={() => navigate(`/subjects/quiz/${subjectId}`)}
       >
         &lt; Back to Quizzes
       </button>

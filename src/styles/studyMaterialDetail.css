@@ -400,3 +400,19 @@
   .smd-note-box { max-width: 100%; }
   .smd-file-name { max-width: 160px; }
 }
+/* ── Files panel: keep the row inside the 340px column ─────────────────
+   .sm-row is authored for the full-width list on StudyMaterialList, where
+   badge(40) + title + size(64) + View + Download all fit on one line. In
+   this side panel the content box is only 300px (340 grid column - 20px
+   card padding each side), and those fixed parts alone total ~320px — so
+   the Download button was pushed off the right edge and clipped. Drop the
+   size column, drop the row's own horizontal padding (the card already
+   pads), and let the two buttons wrap onto their own line together. */
+.smd-files .sm-row {
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 0;
+}
+.smd-files .sm-rowMeta { display: none; }
+.smd-files .sm-rowMain { flex: 1 1 calc(100% - 54px); }
+.smd-files .sm-btn { flex: 1 1 auto; justify-content: center; }

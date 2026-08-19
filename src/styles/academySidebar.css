@@ -243,3 +243,28 @@
 @media (max-width: 768px) {
   .acad-side__close { display: block; }
 }
+
+/* Board line under the course title. A learner can hold the SAME class under
+   two boards (Class 10 CBSE and Class 10 MBSE), whose titles are identical —
+   without this the switcher showed two indistinguishable entries and the
+   selected one was a guess. */
+.acad-side__wellBoard {
+  display: block;
+  color: var(--side-ink-muted, var(--side-ink));
+  opacity: .72;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.acad-side__menuItemTitle { display: block; }
+.acad-side__menuItemBoard {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  opacity: .7;
+  margin-top: 1px;
+}

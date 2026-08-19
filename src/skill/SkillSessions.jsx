@@ -11,7 +11,16 @@ import SkillModal from "../components/SkillModal";
 import { useSkillToast } from "../components/useSkillToast";
 import "../styles/skillSessions.css";
 
-const STATUS_LABEL = { requested: "Requested", confirmed: "Confirmed", cancelled: "Cancelled" };
+// "lapsed" = the slot passed without the session being held (the backend's
+// skills/tasks.lapse_unheld_sessions closes these out). Before that status
+// existed they stayed "confirmed" and sat in Upcoming forever.
+const STATUS_LABEL = {
+  requested: "Requested",
+  confirmed: "Confirmed",
+  cancelled: "Cancelled",
+  completed: "Completed",
+  lapsed: "Didn't take place",
+};
 const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
 
 export default function SkillSessions({ setTab = () => {} }) {
@@ -87,7 +96,7 @@ export default function SkillSessions({ setTab = () => {} }) {
         <EmptyState
           plain
           icon="video"
-          title={tab === "upcoming" ? "No upcoming sessions" : "No completed sessions yet"}
+          title={tab === "upcoming" ? "No upcoming sessions" : "No past sessions yet"}
           message={
             tab === "upcoming"
               ? "Book a session with an expert and it'll show up here until it's confirmed."
@@ -120,6 +129,11 @@ export default function SkillSessions({ setTab = () => {} }) {
                     )}
                     <button className="ss-btn ss-btn--cancel" onClick={() => setCancelFor(s)}>Cancel</button>
                   </>
+                ) : s.status === "lapsed" ? (
+                  /* Nothing to rate — this session never happened. Offering
+                     "Rate session" here would be insulting and would let a
+                     no-show drag down the expert's rating. */
+                  <span className="ss-lapsedNote">Not held</span>
                 ) : s.reviewed ? (
                   <span className="ss-myStars">★★★★★</span>
                 ) : (

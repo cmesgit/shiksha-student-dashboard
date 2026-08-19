@@ -68,6 +68,14 @@ export default function CourseSwitcher({ setMenuOpen }) {
   const displayCourse =
     list.find((c) => c.id === activeCourse.id) || list[0] || activeCourse;
 
+  // A learner can be enrolled in the SAME class under two boards (Class 10
+  // CBSE and Class 10 MBSE), and the titles are then identical — there was
+  // no way to tell which was selected, or which one you were switching to.
+  // The board already comes down with /courses/my/ (CourseSerializer nests
+  // it); it just was never rendered.
+  const boardOf = (c) =>
+    (typeof c?.board === "string" ? c.board : c?.board?.name) || "";
+
   const pick = (course) => {
     if (course.id !== activeCourse.id) selectCourse(course.id);
     setOpen(false);
@@ -82,12 +90,15 @@ export default function CourseSwitcher({ setMenuOpen }) {
         onClick={() => multiple && setOpen((o) => !o)}
         aria-haspopup={multiple ? "listbox" : undefined}
         aria-expanded={multiple ? open : undefined}
-        title={displayCourse.title}
+        title={[displayCourse.title, boardOf(displayCourse)].filter(Boolean).join(" · ")}
         data-tour="sidebar.course-switcher"
       >
         <span className="acad-side__wellText">
           <span className="acad-side__wellLabel">Active course</span>
           <span className="acad-side__wellValue">{displayCourse.title}</span>
+          {boardOf(displayCourse) && (
+            <span className="acad-side__wellBoard">{boardOf(displayCourse)}</span>
+          )}
         </span>
         {multiple && <SwitchCaret />}
       </button>
@@ -103,7 +114,10 @@ export default function CourseSwitcher({ setMenuOpen }) {
               className={`acad-side__menuItem${c.id === displayCourse.id ? " is-active" : ""}`}
               onClick={() => pick(c)}
             >
-              {c.title}
+              <span className="acad-side__menuItemTitle">{c.title}</span>
+              {boardOf(c) && (
+                <span className="acad-side__menuItemBoard">{boardOf(c)}</span>
+              )}
             </button>
           ))}
         </div>

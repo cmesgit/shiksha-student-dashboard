@@ -7,7 +7,12 @@ import { useAuth } from "../contexts/AuthContext";
 import "./breadcrumbs.css";
 
 // Drop pure ids (numeric or uuid-ish) so crumbs read as sections, not slugs.
-const isId = (s) => /^\d+$/.test(s) || /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(s);
+// "undefined"/"null" are dropped too: a template literal fed a missing id
+// writes those into the URL as text, and the crumb bar then proudly rendered
+// "Subjects › Undefined › Assignments". This is a backstop for display only —
+// the real fix is never to build such a URL (see SubjectsAssignments.jsx).
+const isId = (s) =>
+  /^\d+$/.test(s) || /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(s) || s === "undefined" || s === "null";
 const titleCase = (s) =>
   s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 

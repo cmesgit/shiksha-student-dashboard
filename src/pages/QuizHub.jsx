@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import api from "../api/apiClient";
+import { useCourse } from "../contexts/CourseContext";
 import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import TourHeaderButton from "../tour/TourHeaderButton";
 import "../styles/quiz-hub.css";
@@ -48,6 +49,10 @@ export default function QuizHub() {
   const { subjectId } = useParams();
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
+  // A learner profile can hold live subscriptions to several courses at once.
+  // Without this the Hub listed every subscribed course's quizzes under
+  // whichever class was selected — see the fetch effect below.
+  const { activeCourse } = useCourse();
 
   const [activeTab, setActiveTab] = useState(tabParam || "practice");
   const [subjectFilter, setSubjectFilter] = useState(subjectId ? String(subjectId) : "all");
@@ -63,20 +68,36 @@ export default function QuizHub() {
     if (tabParam) setActiveTab(tabParam);
   }, [tabParam]);
 
+  // Deep links from the dashboard land on /subjects/quiz/:subjectId and pin
+  // the filter to that subject. Navigating back to the plain /subjects/quiz
+  // must RELEASE it again — the old `if (subjectId)` guard left the filter
+  // pinned to a subject from a different class, which is what produced a
+  // "Completed 2" badge above an empty list.
   useEffect(() => {
-    if (subjectId) setSubjectFilter(String(subjectId));
+    setSubjectFilter(subjectId ? String(subjectId) : "all");
   }, [subjectId]);
 
+  // Switching course in the sidebar doesn't navigate, so this page stays
+  // mounted — keying the effect on activeCourse is what makes it refetch.
   useEffect(() => {
     let cancelled = false;
+
+    if (!activeCourse) {
+      setQuizzes([]);
+      setStats(null);
+      setResumeAttempt(null);
+      setLoading(false);
+      return;
+    }
 
     async function load() {
       try {
         setLoading(true);
         setError(null);
+        const params = { course: activeCourse.id };
         const [quizRes, statsRes] = await Promise.all([
-          api.get("/student/quizzes/"),
-          api.get("/student/quizzes/stats/").catch(() => ({ data: null })),
+          api.get("/student/quizzes/", { params }),
+          api.get("/student/quizzes/stats/", { params }).catch(() => ({ data: null })),
         ]);
         if (cancelled) return;
         setQuizzes(quizRes.data);
@@ -100,7 +121,7 @@ export default function QuizHub() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeCourse]);
 
   const subjects = useMemo(() => {
     const seen = new Map();
@@ -120,13 +141,16 @@ export default function QuizHub() {
     [quizzes, activeTab, subjectFilter]
   );
 
+  // Counts must honour the SAME subject filter the list does, or the badge
+  // promises rows the body won't render.
   const tabCounts = useMemo(() => {
     const counts = { practice: 0, mock: 0, completed: 0 };
     quizzes.forEach((q) => {
+      if (subjectFilter !== "all" && String(q.subject_id) !== subjectFilter) return;
       counts[inferTab(q)] += 1;
     });
     return counts;
-  }, [quizzes]);
+  }, [quizzes, subjectFilter]);
 
   function handleQuizClick(quiz) {
     if (activeTab === "completed") {

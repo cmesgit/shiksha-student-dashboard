@@ -34,7 +34,12 @@ import { subjectChipSlot } from "../utils/subjectChips";
 import "../styles/academyCommon.css";
 import "../styles/academyScreens.css";
 
-const STATUS_FILTERS = ["All", "Due", "Overdue", "Submitted"];
+// "Graded" was missing, and that made the whole dropdown look broken. The
+// decorator emits FOUR status keys (due / overdue / submitted / graded) but
+// only three had an option, so a graded assignment matched nothing and was
+// invisible under every filter except All — which is exactly the reported
+// symptom of "Submitted shows nothing".
+const STATUS_FILTERS = ["All", "Due", "Overdue", "Submitted", "Graded"];
 
 // Status → shared .ac-tag--* variant.
 const STATUS_TONE = { due: "success", overdue: "danger", submitted: "info", graded: "success" };
@@ -182,7 +187,17 @@ export default function SubjectsAssignments() {
     () =>
       decorated
         .filter((a) => !subjectFilter || String(a.subjectId) === subjectFilter)
-        .filter((a) => statusFilter === "All" || a.stKey === statusFilter.toLowerCase())
+        // "Submitted" is a SUPERSET of "Graded" — graded work has, by
+        // definition, been submitted, and a learner picking "Submitted"
+        // means "everything I've turned in". "Graded" then narrows to the
+        // marked ones. The decorator splits the two apart for the status
+        // chip's label; the filter must put them back together.
+        .filter((a) => {
+          if (statusFilter === "All") return true;
+          const want = statusFilter.toLowerCase();
+          if (want === "submitted") return a.stKey === "submitted" || a.stKey === "graded";
+          return a.stKey === want;
+        })
         .sort((a, b) => {
           // Soonest due first; undated last.
           if (!a.due_date) return 1;
@@ -268,9 +283,27 @@ export default function SubjectsAssignments() {
                 <button
                   type="button"
                   className="ac-btn"
-                  onClick={() => navigate(`/subjects/${a.subjectId}/assignments/${a.id}`)}
+                  // Guard subjectId. The legacy fan-out fallback only fires
+                  // when EVERY row lacks subject_id, so a MIXED response left
+                  // individual rows undefined — and template-interpolating
+                  // that produced a literal "/subjects/undefined/assignments/…"
+                  // URL. It rendered (the detail page keys off the assignment
+                  // id) but poisoned everything downstream: the breadcrumb
+                  // read "Subjects › Undefined › Assignments", and the detail
+                  // page's Back link fed "undefined" straight back in, since
+                  // the STRING "undefined" is truthy.
+                  disabled={!a.subjectId}
+                  onClick={() => {
+                    if (!a.subjectId) return;
+                    navigate(`/subjects/${a.subjectId}/assignments/${a.id}`);
+                  }}
                 >
-                  {a.stKey === "submitted" ? "Feedback" : "Open"}
+                  {/* "graded", not "submitted". stKey is exclusive — a graded
+                      assignment never has stKey "submitted" — so the old test
+                      promised Feedback in the ONE state where none can exist
+                      yet, and said "Open" once the feedback was actually
+                      there. */}
+                  {a.stKey === "graded" ? "Feedback" : "Open"}
                 </button>
               </div>
             ))

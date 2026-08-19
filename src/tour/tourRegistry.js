@@ -290,6 +290,23 @@ export const tourRegistry = [
         placement: "top",
         title: "Submit your work here",
         body: "Upload a PDF or document — you'll see it listed as ready before you confirm submission.",
+        // The dropzone only exists while the assignment is UNsubmitted (see
+        // AssignmentDetail.jsx's isSubmitted branch). Without this guard the
+        // tour still promised "STEP 1 OF 2" on a submitted assignment and
+        // then closed on Next, because its one remaining step had no anchor.
+        // Reading the DOM rather than API state keeps the guard honest about
+        // what is actually on screen at this instant.
+        when: () => !!document.querySelector('[data-tour="assignment.upload-zone"]'),
+      },
+      {
+        target: '[data-tour="assignment.submission-panel"]',
+        placement: "left",
+        title: "Your submission and marks",
+        body: "Once you've turned work in, this panel shows what you submitted, whether it was on time, and your grade and feedback when they're ready.",
+        // The mirror image of the step above: this panel replaces the
+        // dropzone after submitting, so exactly one of the two ever runs and
+        // the tour is always a genuine 2 steps.
+        when: () => !!document.querySelector('[data-tour="assignment.submission-panel"]'),
       },
     ],
   },

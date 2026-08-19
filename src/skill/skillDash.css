@@ -43,3 +43,16 @@
 /* Pricing package option */
 .pack { all: unset; cursor: pointer; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 13px; background: var(--surface); box-sizing: border-box; transition: all .15s ease; }
 .pack.on { border-color: var(--acc); background: var(--acc-soft); }
+
+/* A session whose slot passed without it being held. Muted, not alarming —
+   it is a fact to record, not an error to shout about. */
+.ss-lapsedNote {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+.ss-tag--lapsed {
+  background: #f1f5f9;
+  color: #64748b;
+}

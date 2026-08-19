@@ -695,3 +695,86 @@
 /* ── Quiz card (ac-card variant) — just needs the pointer cursor the
    generic .ac-card doesn't assume. ── */
 .qz-card { cursor: pointer; }
+
+/* ── Attempts list (QuizAttempts.jsx) ──────────────────────────────────
+   This screen shipped with markup but NO styles — every class it uses
+   (quizAttemptsHeader/Title/TableWrapper/Table, quizScorePill, its score
+   tones and the Review button) had zero matching rules anywhere, so it
+   rendered as a bare browser-default table. Written to match the rest of
+   this file: the same #425f7f academy blue, 18px card radius and white
+   surface used by .quizResultHeaderBox above. */
+.quizAttemptsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: #fff;
+  border-radius: 18px 18px 0 0;
+  padding: 18px 24px;
+  border-bottom: 1px solid #eef2f6;
+}
+.quizAttemptsTitle {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: #1a2c33;
+}
+
+.quizAttemptsTableWrapper {
+  background: #fff;
+  border-radius: 0 0 18px 18px;
+  padding: 6px 10px 14px;
+  /* The table can exceed a narrow viewport; scroll it inside its own box
+     rather than letting the page scroll sideways. */
+  overflow-x: auto;
+}
+.quizAttemptsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: #1a2c33;
+}
+.quizAttemptsTable th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: #8b98a5;
+  padding: 12px 14px;
+  border-bottom: 1px solid #eef2f6;
+  white-space: nowrap;
+}
+.quizAttemptsTable td {
+  padding: 13px 14px;
+  border-bottom: 1px solid #f4f7f9;
+  vertical-align: middle;
+}
+.quizAttemptsTable tbody tr:last-child td { border-bottom: none; }
+.quizAttemptsTable tbody tr:hover { background: #f8fafb; }
+
+.quizScorePill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.quizScorePill.score-high { background: #e8f7ed; color: #127a3c; }
+.quizScorePill.score-mid  { background: #fff5e5; color: #b45309; }
+.quizScorePill.score-low  { background: #fdecec; color: #c02626; }
+
+.quizAttemptsReviewBtn {
+  background: #fff;
+  color: #425f7f;
+  border: 1px solid #cfdbe6;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.quizAttemptsReviewBtn:hover { background: #eef3f8; border-color: #425f7f; }

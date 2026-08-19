@@ -61,13 +61,24 @@ export default function QuizResult() {
   const [showReattemptModal, setShowReattemptModal] = useState(false);
   const [showMistakes, setShowMistakes] = useState(false);
 
+  // Where "Back" actually goes. Reached from the attempts table (?attempt=)
+  // → back to that table; reached straight from a submission → out to the
+  // subject's Quiz Hub. Either way it is a real route, never a history pop.
+  const goBack = () =>
+    navigate(
+      attemptId
+        ? `/subjects/quiz/${subjectId}/attempts/${quizId}`
+        : `/subjects/quiz/${subjectId}`
+    );
+
   const toggleExplanation = (id) => {
     setOpenExplanation(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const handleReattempt = async () => {
     try {
-      await api.post(`/quizzes/${quizId}/start/`);
+      // Deliberate retake — opt in (see StartQuizView's docstring).
+      await api.post(`/quizzes/${quizId}/start/`, { new_attempt: true });
       const path = resultData?.quiz_type === "practice" ? "practice" : "take";
       navigate(`/subjects/quiz/${subjectId}/${path}/${quizId}`);
     } catch (err) {
@@ -135,7 +146,16 @@ export default function QuizResult() {
 
   return (
     <div className="quizResultPage">
-      <button className="quizResultBack" onClick={() => navigate(-1)}>
+      {/* NEVER navigate(-1) from here. The previous history entry is the
+          /take/:quizId attempt route — and QuizMock's nav guard pushes a
+          DUPLICATE of it (QuizMock.jsx's pushState), so going back lands on
+          the quiz questions twice over. Worse, remounting QuizMock fires
+          POST /quizzes/:id/start/ unconditionally, which creates a whole new
+          attempt: a stray back-click silently burns an attempt, reshuffles
+          the questions, and can push the learner past reveal_answers_after
+          so they lose access to the answer key. Always go somewhere
+          explicit. */}
+      <button className="quizResultBack" onClick={goBack}>
         &lt; Back
       </button>
 
@@ -155,7 +175,7 @@ export default function QuizResult() {
       <div className="quizResultHeaderBtns">
         <button
           className="quizResultBackBtn"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
         >
           ← Back to Quizzes
         </button>

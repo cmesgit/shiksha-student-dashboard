@@ -38,6 +38,7 @@ const TYPE_ICONS = {
   SESSION:         "🎥",
   SUBMISSION:      "📬",
   PRIVATE_SESSION: "🔒",
+  MATERIAL:        "📚",
 };
 
 const TYPE_COLORS = {
@@ -46,6 +47,7 @@ const TYPE_COLORS = {
   SESSION:         "#ef4444",
   SUBMISSION:      "#2563eb",
   PRIVATE_SESSION: "#015865",
+  MATERIAL:        "#0d9488",
 };
 
 function timeAgo(isoString) {
@@ -149,6 +151,10 @@ export default function NotificationBell() {
       else if (type === "QUIZ")       goTracked(`/subjects/quiz/${subject_id}`);
       else if (type === "SUBMISSION") goTracked(`/subjects/${subject_id}/assignments`);
       else if (type === "SESSION")    goTracked(`/live-sessions`);
+      // MATERIAL rows come from the REST feed with no link_url (the
+      // ActivitySerializer has no such field), so this branch — not
+      // openLink above — is what routes them on a reloaded page.
+      else if (type === "MATERIAL")   goTracked(`/study-material/list/${subject_id}`);
       else                            goTracked(`/subjects/${subject_id}`);
       return;
     } else {
@@ -158,6 +164,7 @@ export default function NotificationBell() {
         QUIZ:       "/subjects/quiz",
         SUBMISSION: "/assignments",
         SESSION:    "/live-sessions",
+        MATERIAL:   "/study-material",
       };
       goTracked(fallback[type] || "/");
     }
@@ -185,6 +192,14 @@ export default function NotificationBell() {
           <span className="notif-bell-badge">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
+        )}
+        {/* The badge above is TRACK-SCOPED, so an unread notification in the
+            other track produced no signal at all on the closed bell — the
+            "N new in <track>" peek inside the dropdown was undiscoverable
+            unless you already thought to open it. This dot says "there is
+            something in the other track" without faking an in-track count. */}
+        {crossTrackUnread > 0 && (
+          <span className="notif-bell-crossdot" title={`${crossTrackUnread} new in ${TRACK_LABEL[otherTrack]}`} />
         )}
       </button>
 

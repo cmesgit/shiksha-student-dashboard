@@ -33,7 +33,13 @@ export default function QuizPractice() {
         setLoading(true);
         setError(null);
         try {
-          await api.post(`/quizzes/${quizId}/start/`);
+          const startRes = await api.post(`/quizzes/${quizId}/start/`);
+          // Same Back-button guard as QuizMock: don't reopen a finished set
+          // as a new attempt.
+          if (startRes.data?.already_submitted) {
+            navigate(`/subjects/quiz/${subjectId}/result/${quizId}`, { replace: true });
+            return;
+          }
         } catch (err) {
           const msg = err.response?.data?.detail;
           if (msg) { setError(msg); setLoading(false); return; }
