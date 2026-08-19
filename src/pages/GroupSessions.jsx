@@ -385,7 +385,11 @@ function ParticipantSearch({ subjectId, selected, onAdd, disabled, currentUserId
               <span style={styles.searchAvatar}>{(s.name || "?").charAt(0).toUpperCase()}</span>
               <span style={{ flex: 1, minWidth: 0 }}>
                 <strong style={styles.searchName}>{s.name || "Student"}</strong>
-                <small style={styles.searchSub}>{s.phone || s.student_id || shortId(s.user_id)}</small>
+                {/* `phone` used to lead this chain but the roster endpoint
+                    has never returned it, so it was always a no-op. student_id
+                    is now populated for real (it was always "" before — the
+                    backend read a User.profile relation that does not exist). */}
+                <small style={styles.searchSub}>{s.student_id || shortId(s.user_id)}</small>
               </span>
               <span style={styles.searchAdd}>Add</span>
             </button>
@@ -407,7 +411,7 @@ function ParticipantsStep({ subjectId, participants, setParticipants, disabled, 
       {
         user_id: sid,
         name: student.name || "Student",
-        student_id: student.student_id || student.phone || "",
+        student_id: student.student_id || "",
       },
     ]);
     setParticipants(next.slice(0, MAX_PARTICIPANTS));
