@@ -366,6 +366,36 @@
   overflow-y: auto;
 }
 
+/* Cross-track peek — "2 new in Skill Dev". Sits between the list and the
+   See-all footer. Styled as a distinct, quieter affordance than See-all so
+   the two adjacent full-width buttons don't read as one control: accent
+   tint + left-aligned with a leading arrow, vs See-all's neutral centred
+   row. */
+.notif-bell-crosstrack {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  border-top: 1px solid #f3f4f6;
+  background: color-mix(in srgb, var(--acc, #425f7f) 8%, #fff);
+  color: var(--acc-ink, #425f7f);
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 10px 16px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.notif-bell-crosstrack:hover {
+  background: color-mix(in srgb, var(--acc, #425f7f) 14%, #fff);
+}
+
+.notif-bell-crosstrack__icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
 .notif-bell-seeall {
   display: block;
   width: 100%;

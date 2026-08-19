@@ -14,7 +14,23 @@ import { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { IoNotificationsOutline, IoNotificationsSharp } from "react-icons/io5";
 import useNotificationSocket from "../hooks/useNotificationSocket";
+import { useCourse } from "../contexts/CourseContext";
+import useNotificationNavigator from "../shared/useNotificationNavigator";
 import { LoadingState } from "./StateViews";
+
+// Where the "N new in <other track>" peek sends you. Deliberately a track
+// LANDING route, not a deep link: the peek knows only a count, not which
+// notification, so it opens that track's home and lets the now-rescoped
+// bell show the rows.
+const TRACK_HOME = {
+  academy: "/",
+  skill: "/skill-dev",
+};
+
+const TRACK_LABEL = {
+  academy: "Academy",
+  skill: "Skill Dev",
+};
 
 const TYPE_ICONS = {
   ASSIGNMENT:      "📝",
@@ -46,14 +62,18 @@ export default function NotificationBell() {
   const ref = useRef(null);
   const navigate = useNavigate();
 
+  const { activeTrack } = useCourse();
+  const otherTrack = activeTrack === "skill" ? "academy" : "skill";
+
   const {
     notifications,
     unreadCount,
+    crossTrackUnread,
     loading,
     markAllRead,
     markOneRead,
     clearNotifications,
-  } = useNotificationSocket();
+  } = useNotificationSocket({ track: activeTrack });
 
   useEffect(() => {
     const handler = (e) => {
@@ -68,6 +88,12 @@ export default function NotificationBell() {
     if (!open && unreadCount > 0) markAllRead();
   };
 
+  // Routing (and the track persistence that makes a cross-track jump
+  // stick) lives in useNotificationNavigator, shared with the Comm Center
+  // list so the two surfaces can't drift apart again.
+  const { goTracked: navTracked, openLink } = useNotificationNavigator();
+  const goTracked = (path) => { navTracked(path); setOpen(false); };
+
   const handleNotifClick = (notif) => {
     const { type, subject_id, id, object_id, is_private_session, is_group_session, is_skill_session, link_url } = notif;
     if (id) markOneRead(id);
@@ -78,15 +104,7 @@ export default function NotificationBell() {
     // bare conversation path (/chat/<id>) that doesn't match any route —
     // ChatPanel opens a conversation via router state, not a URL param.
     if (link_url && link_url.startsWith("/")) {
-      const chatMatch = link_url.match(/^\/chat\/([^/?]+)/);
-      if (chatMatch) {
-        navigate("/chat", { state: { conversationId: chatMatch[1] } });
-        setOpen(false);
-        return;
-      }
-      navigate(link_url);
-      setOpen(false);
-      return;
+      if (openLink(link_url)) { setOpen(false); return; }
     }
 
     // Live session (scheduled or "now LIVE") notifications carry the real
@@ -94,16 +112,14 @@ export default function NotificationBell() {
     // or livestream/views.py's go-live push) — route straight into it
     // instead of the bare list.
     if (type === "SESSION" && !is_group_session && !is_private_session && !is_skill_session && object_id) {
-      navigate(`/live/${object_id}`);
-      setOpen(false);
+      goTracked(`/live/${object_id}`);
       return;
     }
 
     // Private session notifications always go to /private-sessions
     // regardless of which side (student or teacher) — the page handles both.
     if (is_private_session || type === "PRIVATE_SESSION") {
-      navigate("/private-sessions");
-      setOpen(false);
+      goTracked("/private-sessions");
       return;
     }
 
@@ -111,8 +127,7 @@ export default function NotificationBell() {
     // is_group_session flag from group_session_views._notify_user) must route to
     // the Group Sessions page, not /live-sessions.
     if (is_group_session) {
-      navigate("/group-sessions");
-      setOpen(false);
+      goTracked("/group-sessions");
       return;
     }
 
@@ -121,8 +136,7 @@ export default function NotificationBell() {
     // SkillSession id (see skills/notifications.push_skill_bell); `id` here
     // is the Activity row id and does NOT match /skill-dev/sessions/:id.
     if (is_skill_session) {
-      navigate(subject_id ? `/skill-dev/sessions/${subject_id}` : "/skill-dev/sessions");
-      setOpen(false);
+      goTracked(subject_id ? `/skill-dev/sessions/${subject_id}` : "/skill-dev/sessions");
       return;
     }
 
@@ -131,11 +145,12 @@ export default function NotificationBell() {
     // bug equivalent to the teacher's blank-page bug. Mirror the teacher
     // bell's "every click leads to a real page" guarantee.
     if (subject_id) {
-      if (type === "ASSIGNMENT")      navigate(`/subjects/${subject_id}/assignments`);
-      else if (type === "QUIZ")       navigate(`/subjects/quiz/${subject_id}`);
-      else if (type === "SUBMISSION") navigate(`/subjects/${subject_id}/assignments`);
-      else if (type === "SESSION")    navigate(`/live-sessions`);
-      else                            navigate(`/subjects/${subject_id}`);
+      if (type === "ASSIGNMENT")      goTracked(`/subjects/${subject_id}/assignments`);
+      else if (type === "QUIZ")       goTracked(`/subjects/quiz/${subject_id}`);
+      else if (type === "SUBMISSION") goTracked(`/subjects/${subject_id}/assignments`);
+      else if (type === "SESSION")    goTracked(`/live-sessions`);
+      else                            goTracked(`/subjects/${subject_id}`);
+      return;
     } else {
       // No subject_id — best-effort defaults so the click is never a no-op.
       const fallback = {
@@ -144,9 +159,8 @@ export default function NotificationBell() {
         SUBMISSION: "/assignments",
         SESSION:    "/live-sessions",
       };
-      navigate(fallback[type] || "/");
+      goTracked(fallback[type] || "/");
     }
-    setOpen(false);
   };
 
   // Derive display type — backend sends SESSION with is_private_session flag
@@ -223,6 +237,21 @@ export default function NotificationBell() {
               })
             )}
           </div>
+
+          {/* Cross-track peek. The bell is scoped to the active track, so
+              without this a learner sitting in Academy would never learn
+              their Skill Dev session was confirmed. Rendered only when the
+              other track actually has unread rows — an always-present row
+              would be noise. */}
+          {crossTrackUnread > 0 && (
+            <button
+              className="notif-bell-crosstrack"
+              onClick={() => goTracked(TRACK_HOME[otherTrack])}
+            >
+              <span className="notif-bell-crosstrack__icon">↪</span>
+              {crossTrackUnread} new in {TRACK_LABEL[otherTrack]}
+            </button>
+          )}
 
           <button
             className="notif-bell-seeall"
