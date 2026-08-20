@@ -16,12 +16,18 @@ import { useAuth } from "../contexts/AuthContext";
 import { LoadingState } from "../components/StateViews";
 import "../styles/skillExplore.css";
 
-const FAVS_KEY = "skilldev_favs";
-const loadFavs = () => {
-  try { return new Set(JSON.parse(localStorage.getItem(FAVS_KEY) || "[]")); }
+// Favourites are PER LEARNER PROFILE. The key used to be a flat
+// "skilldev_favs", shared by every child on the account, so one sibling's
+// favourited experts showed up as the other's.
+const favsKey = (profileId) => `skilldev_favs.${profileId || "anon"}`;
+const loadFavs = (profileId) => {
+  try { return new Set(JSON.parse(localStorage.getItem(favsKey(profileId)) || "[]")); }
   catch { return new Set(); }
 };
-const saveFavs = (set) => localStorage.setItem(FAVS_KEY, JSON.stringify([...set]));
+const saveFavs = (set, profileId) => {
+  try { localStorage.setItem(favsKey(profileId), JSON.stringify([...set])); }
+  catch { /* quota / private mode */ }
+};
 
 function ExpertCard({ t, favs, toggleFav, onBook, onView }) {
   const [playing, setPlaying] = useState(false);
@@ -88,14 +94,15 @@ function ExpertCard({ t, favs, toggleFav, onBook, onView }) {
 }
 
 export default function SkillExplore({ setTab = () => {} }) {
-  const { api } = useAuth();
+  const { api, activeProfile } = useAuth();
+  const profileId = activeProfile?.id;
   const [experts, setExperts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCat, setActiveCat] = useState("all");
   const [search, setSearch] = useState("");
   const [categories, setCategories] = useState([]);
   const [favsOnly, setFavsOnly] = useState(false);
-  const [favs, setFavs] = useState(loadFavs);
+  const [favs, setFavs] = useState(() => loadFavs(profileId));
   // "Offline near me" — real, working discovery filter (ExpertProfile has a
   // pincode/district/state + class_mode already wired server-side); the
   // design is silent on it, but it's real functionality worth keeping per
@@ -135,11 +142,15 @@ export default function SkillExplore({ setTab = () => {} }) {
   const toggleOffline = () => { const v = !offlineOnly; setOfflineOnly(v); reload({ offline: v }); };
   const handlePincode = (e) => { setPincode(e.target.value); if (offlineOnly) reload({ pincode: e.target.value }); };
 
+  // Re-read when the child changes: favourites are per profile, and this
+  // component is not guaranteed to remount on a profile switch.
+  useEffect(() => { setFavs(loadFavs(profileId)); }, [profileId]);
+
   const toggleFav = (id) => {
     const next = new Set(favs);
     next.has(id) ? next.delete(id) : next.add(id);
     setFavs(next);
-    saveFavs(next);
+    saveFavs(next, profileId);
   };
 
   const visible = favsOnly ? experts.filter((e) => favs.has(e.id)) : experts;

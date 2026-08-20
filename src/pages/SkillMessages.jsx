@@ -41,9 +41,23 @@ export default function SkillMessages() {
 
   const directTo = teacherId ? { kind: "TEACHER", id: teacherId } : undefined;
 
+  // This screen never forwarded conversationId, so it could open the inbox
+  // but never a SPECIFIC thread — which is why chat notifications used to be
+  // routed to the Academy inbox regardless of track. Now that they land here
+  // when the learner is in Skill Dev, this has to honour it, or clicking a
+  // message notification would drop them on an unselected list.
+  // ?conversation= covers the cross-app hop, which can carry a URL but not
+  // router state.
+  const conversationId = state?.conversationId || sp.get("conversation") || undefined;
+
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
-      <ChatPanel directTo={directTo} initialDraft={draft} theme="skill" />
+      <ChatPanel
+        directTo={directTo}
+        conversationId={conversationId}
+        initialDraft={draft}
+        theme="skill"
+      />
     </div>
   );
 }

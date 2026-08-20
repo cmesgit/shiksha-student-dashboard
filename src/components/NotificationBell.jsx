@@ -22,9 +22,15 @@ import { LoadingState } from "./StateViews";
 // LANDING route, not a deep link: the peek knows only a count, not which
 // notification, so it opens that track's home and lets the now-rescoped
 // bell show the rows.
+// Both tracks' home is "/" — the dashboard renders Academy or Skill Dev
+// depending on activeTrack (see SD_NAV's own Dashboard entry, which also
+// points at "/"). "/skill-dev" was NOT a route: the app defines
+// /skill-dev/sessions, /explore, /courses, /reviews… but nothing at the bare
+// prefix, and neither dashboard app has a catch-all — so the peek rendered a
+// completely blank page.
 const TRACK_HOME = {
   academy: "/",
-  skill: "/skill-dev",
+  skill: "/",
 };
 
 const TRACK_LABEL = {
@@ -64,7 +70,7 @@ export default function NotificationBell() {
   const ref = useRef(null);
   const navigate = useNavigate();
 
-  const { activeTrack } = useCourse();
+  const { activeTrack, setTrack } = useCourse();
   const otherTrack = activeTrack === "skill" ? "academy" : "skill";
 
   const {
@@ -261,7 +267,15 @@ export default function NotificationBell() {
           {crossTrackUnread > 0 && (
             <button
               className="notif-bell-crosstrack"
-              onClick={() => goTracked(TRACK_HOME[otherTrack])}
+              // setTrack EXPLICITLY, don't rely on goTracked: that derives the
+              // destination track from the path, and "/" is track-neutral, so
+              // it would navigate home while leaving the user in the track
+              // they were already in — the opposite of what this button says.
+              onClick={() => {
+                setTrack(otherTrack);
+                navigate(TRACK_HOME[otherTrack]);
+                setOpen(false);
+              }}
             >
               <span className="notif-bell-crosstrack__icon">↪</span>
               {crossTrackUnread} new in {TRACK_LABEL[otherTrack]}

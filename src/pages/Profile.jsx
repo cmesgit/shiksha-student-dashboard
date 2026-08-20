@@ -2,10 +2,16 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import { getPublicProfile, savePublicProfile } from "../utils/profileStorage";
+import { useAuth } from "../contexts/AuthContext";
 import { LoadingState, EmptyState } from "../components/StateViews";
 import "../styles/profile.css";
 
 export default function Profile() {
+  // The local draft cache is keyed per LEARNER PROFILE — without this id it
+  // falls back to a shared bucket and one child's saved name/about/subjects
+  // pre-fill the next child's form.
+  const { activeProfile } = useAuth();
+  const profileId = activeProfile?.id;
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -44,13 +50,18 @@ export default function Profile() {
   ];
 
   useEffect(() => {
-    const stored = getPublicProfile();
+    const stored = getPublicProfile(profileId);
     setAbout(stored.about || "");
     setSubjects(stored.subjects || []);
     setHobbies(stored.hobbies || []);
     setLanguages(stored.languages || []);
     fetchProfile();
-  }, []);
+    // profileId, not []: this reads a PER-PROFILE cache, so switching child
+    // must re-read it. The layout happens to remount this page on an identity
+    // change today, but depending on that would silently break the moment the
+    // remount key changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId]);
 
   const fetchProfile = async () => {
     try {
@@ -112,7 +123,7 @@ export default function Profile() {
       subjects: editSubjects,
       hobbies: editHobbies,
       languages: editLanguages,
-    });
+    }, profileId);
     setAbout(editAbout);
     setSubjects(editSubjects);
     setHobbies(editHobbies);

@@ -204,13 +204,26 @@ export default function App() {
               <Route path="skill-dev/profile/:expertId" element={<SkillProfilePage />} />
               <Route path="skill-dev/courses" element={<SkillCoursesPage />} />
               <Route path="skill-dev/reviews" element={<SkillReviewsPage />} />
+
+              {/* Bare /skill-dev was never a route, so anything linking to it
+                  (the bell's cross-track peek did) rendered nothing at all.
+                  Send it to the Skill Dev home. */}
+              <Route path="skill-dev" element={<Navigate to="/" replace />} />
             </Route>
+
 
             {/* Fullscreen live routes */}
             <Route path="/private-session/live/:id" element={<PrivateSessionLive />} />
             <Route path="/group-session/live/:id" element={<GroupSessionLive />} />
             {/* Skill-dev 1-on-1 LiveKit room (separate from Academy private sessions) */}
             <Route path="/skill-session/live/:id" element={<SkillSessionLive />} />
+
+            {/* Catch-all, genuinely last. Without it React Router matches
+                nothing and renders a COMPLETELY BLANK page — no layout, no
+                header, no way back — which is exactly what one wrong link
+                (the bell's cross-track peek) produced. Redirecting home is
+                the safe default in an app where every route needs auth. */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </TourMount>
         </CourseProvider>

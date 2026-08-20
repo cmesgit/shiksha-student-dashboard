@@ -50,14 +50,24 @@ export default function useNotificationNavigator() {
     if (typeof linkUrl !== "string" || !linkUrl.startsWith("/")) return false;
     if (linkUrl.startsWith("//")) return false;   // protocol-relative junk
 
+    // Open the conversation in the inbox for the track the user is ALREADY
+    // IN. /chat and /skill-messages render the same ChatPanel over the same
+    // shared conversation list — only the theme and surrounding nav differ —
+    // so this never hides a message. Hardcoding "/chat" meant a message
+    // notification yanked a learner out of Skill Dev into the Academy
+    // layout, which is why chat stays track-neutral but its NAVIGATION must
+    // not be.
     const chatMatch = linkUrl.match(/^\/chat\/([^/?]+)/);
     if (chatMatch) {
-      navigate("/chat", { state: { conversationId: chatMatch[1] } });
+      const inbox = activeTrack === "skill" ? "/skill-messages" : "/chat";
+      navigate(inbox, { state: { conversationId: chatMatch[1] } });
       return true;
     }
     goTracked(linkUrl);
     return true;
-  }, [navigate, goTracked]);
+    // activeTrack must be a dependency, or this callback captures whichever
+    // track the app first loaded in and keeps routing chat there.
+  }, [navigate, goTracked, activeTrack]);
 
   // Exposed so surfaces that render a LIST (the Comm Center) can scope
   // it the same way the bell does, without ChatPanel — a shared file
