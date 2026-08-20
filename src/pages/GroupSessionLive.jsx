@@ -344,12 +344,20 @@ export default function GroupSessionLive() {
 
   return (
     <div style={fullscreenWrap}>
-      <LiveKitRoom
+      // video/audio both false: a student joins SILENT and dark.
+    // The ControlBar already force-mutes on mount, but audio={true}
+    // published the mic FIRST and muted it a render later — a brief
+    // window in which the whole class could hear their room. It also
+    // fired the browser's mic-permission prompt at join, for a mic
+    // most students never use; permission is now asked on first unmute.
+    // Camera-off is additionally enforced server-side for students
+    // (the viewer grant permits the microphone source only).
+    <LiveKitRoom
         serverUrl={livekitData.livekit_url}
         token={livekitData.token}
         connect={true}
         video={false}
-        audio={true}
+        audio={false}
         style={liveKitWrap}
         onDisconnected={() => navigate("/group-sessions")}
         onError={(err) => setError(err?.message || "Lost connection to the group session.")}
