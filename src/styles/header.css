@@ -13,8 +13,11 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* The elastic half: takes the space .header__right doesn't want, and min-width:0
+   lets the nowrap title actually ellipsis instead of forcing the header wider. */
 .header__left {
   min-width: 0;
+  flex: 1;
 }
 
 /* Page title — Montserrat 800 15px (design line 600). */
@@ -97,6 +100,12 @@
   gap: 14px;
   position: relative;
   margin-left: auto;
+  /* Never shrink this box. Its children are non-shrinkable (the track switcher
+     is flex-shrink:0, the profile pill sizes to its avatar), so letting the box
+     shrink does not shrink the row — it just makes the controls spill OUT of
+     the box and scroll the page sideways anyway. The elastic half of the header
+     is .header__left, whose title can ellipsis; it absorbs the squeeze. */
+  flex-shrink: 0;
 }
 
 .header__avatar {

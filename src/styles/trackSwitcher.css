@@ -12,7 +12,20 @@
 .trackSwitcher__lock { font-size:13px; opacity:.8; }
 .trackSwitcher__badge { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.3px;
   background:rgba(154,123,24,.18); color:#9a7b18; padding:2px 6px; border-radius:100px; }
-@media (max-width:600px){ .trackSwitcher{margin-right:8px} .trackSwitcher__seg{padding:6px 10px;font-size:11px} .trackSwitcher__badge{display:none} }
+/* Narrow screens: icon-only segments, 186px → 66px. The header row (this +
+   messages + bell + profile switcher) needed 484px of a 293px slot at 375px and
+   scrolled the whole page sideways; this and the profile pill were the two big
+   contributors. Both tracks stay reachable — collapsing the labels is much
+   better than hiding the control, which would strand a learner on one track.
+   The buttons carry aria-label/title, so the accessible name survives the
+   `span{display:none}`. margin-right goes to 0: .header__right already supplies
+   a 10px gap, so the 8px was double-spacing. */
+@media (max-width:600px){
+  .trackSwitcher{margin-right:0}
+  .trackSwitcher__seg{padding:7px 9px;font-size:11px;gap:0}
+  .trackSwitcher__seg > span{display:none}
+  .trackSwitcher__badge{display:none}
+}
 
 /* "Add Faculty" affordance (guest-only experts may apply for Faculty).
    Unlike the old .is-locked dead state, this is intentionally clickable. */

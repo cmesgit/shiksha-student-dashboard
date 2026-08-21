@@ -62,6 +62,7 @@ export default function Header({ toggleMenu, menuOpen }) {
         <MessageIcon to={isSkill ? "/skill-messages" : "/chat"} />
         <NotificationBell />
         <ProfileSwitcher
+          compact
           teacherSignupUrl={`${HOME_URL}/signup?role=teacher`}
           learnUrl={window.location.origin}
           teachUrl={TEACHER_URL}

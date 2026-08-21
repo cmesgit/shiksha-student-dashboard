@@ -56,6 +56,10 @@ export default function LearnerTrackSwitcher() {
             aria-selected={active}
             className={["trackSwitcher__seg", active ? "is-active" : ""].join(" ").trim()}
             title={label}
+            /* The label <span> is display:none below 600px (trackSwitcher.css),
+               which also removes it from the accessibility tree — so name the
+               button explicitly rather than relying on the title attribute. */
+            aria-label={label}
             onClick={() => handleClick(key)}
           >
             <Icon size={13} />
