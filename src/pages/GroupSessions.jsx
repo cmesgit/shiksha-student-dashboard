@@ -1249,15 +1249,29 @@ export default function GroupSessions() {
     loadGroups();
   }, [loadGroups]);
 
+  // Does this group belong to the selected course?
+  //
+  // The id comparison was always correct; the problem was that it was OR'd with
+  // a title comparison, so a row WITH a valid id that failed the id check could
+  // still be pulled in by its title — and MBSE and CBSE both run a course
+  // titled "Class 9", so that fallback matched the wrong course outright.
+  // The id is now authoritative whenever the row has one, and the label is only
+  // consulted for legacy rows that genuinely carry no courseId. Those labels are
+  // board-qualified on both sides now (the backend builds course_label and the
+  // denormalised course_title with the board in them), so even that path no
+  // longer collides — but it stays a last resort rather than an equal alternative.
+  // Kept identical to the teacher app's copy of this screen on purpose.
+  const matchesSelectedCourse = useCallback((g) => {
+    if (!selectedCourseId) return true;
+    if (!g.courseId && !g.courseTitle) return true;   // no course at all — ad-hoc group
+    if (g.courseId) return String(g.courseId) === String(selectedCourseId);
+    return String(g.courseTitle) === String(selectedCourse?.course_label);
+  }, [selectedCourseId, selectedCourse]);
+
   const visibleGroups = useMemo(() => {
     const active = groups
       .filter((g) => !isEndedNow(g))
-      .filter((g) => {
-        if (!selectedCourseId) return true;
-        if (!g.courseId && !g.courseTitle) return true;
-        return String(g.courseId) === String(selectedCourseId) ||
-               String(g.courseTitle) === String(selectedCourse?.course_label);
-      });
+      .filter(matchesSelectedCourse);
 
     return active.sort((a, b) => {
       const order = { live: 0, scheduled: 1, completed: 2, cancelled: 3, expired: 4 };
@@ -1269,7 +1283,7 @@ export default function GroupSessions() {
       const bTime = new Date(`${b.date || "9999-12-31"}T${b.time || "23:59"}`).getTime();
       return (Number.isNaN(aTime) ? Infinity : aTime) - (Number.isNaN(bTime) ? Infinity : bTime);
     });
-  }, [groups, selectedCourseId, selectedCourse, _tick]);
+  }, [groups, matchesSelectedCourse, _tick]);
 
   // Past tab — backed by the real ?tab=history endpoint (completed /
   // cancelled / expired sessions the user was part of). Lazy-loaded the
@@ -1294,12 +1308,7 @@ export default function GroupSessions() {
   }, [sessTab, pastLoaded, loadPastGroups]);
 
   const visiblePastGroups = useMemo(() => {
-    let list = pastGroups.filter((g) => {
-      if (!selectedCourseId) return true;
-      if (!g.courseId && !g.courseTitle) return true;
-      return String(g.courseId) === String(selectedCourseId) ||
-             String(g.courseTitle) === String(selectedCourse?.course_label);
-    });
+    let list = pastGroups.filter(matchesSelectedCourse);
 
     return [...list].sort((a, b) => {
       const aTime = new Date(`${a.date || "1970-01-01"}T${a.time || "00:00"}`).getTime();
@@ -1310,7 +1319,7 @@ export default function GroupSessions() {
       // (unlike Live Sessions, whose Past tab does have one).
       return bVal - aVal;
     });
-  }, [pastGroups, selectedCourseId, selectedCourse]);
+  }, [pastGroups, matchesSelectedCourse]);
 
   const refreshOne = async (sessionId) => {
     try {
