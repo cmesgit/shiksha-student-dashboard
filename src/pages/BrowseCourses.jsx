@@ -182,19 +182,11 @@ export default function BrowseCourses() {
           <span>
             {error || enrolError}{" "}
             {error ? (
-              <button
-                type="button"
-                onClick={load}
-                style={{ background: "none", border: "none", color: "#991b1b", fontWeight: 700, textDecoration: "underline", cursor: "pointer", padding: 0 }}
-              >
+              <button type="button" className="ac-banner__action" onClick={load}>
                 Try again
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={() => setEnrolError("")}
-                style={{ background: "none", border: "none", color: "#991b1b", fontWeight: 700, textDecoration: "underline", cursor: "pointer", padding: 0 }}
-              >
+              <button type="button" className="ac-banner__action" onClick={() => setEnrolError("")}>
                 Dismiss
               </button>
             )}

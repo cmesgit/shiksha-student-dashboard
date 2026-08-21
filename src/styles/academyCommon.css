@@ -235,6 +235,24 @@
   color: #991b1b;
 }
 .ac-banner svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+/* Inline action inside a banner ("Try again" / "Dismiss"). Inherits the
+   banner's colour so one rule works for every variant. */
+.ac-banner__action {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ac-banner__action:hover { text-decoration: none; }
+.ac-banner__action:focus-visible {
+  outline: none;
+  border-radius: 3px;
+  box-shadow: var(--focus-ring, 0 0 0 3px rgba(66, 95, 127, 0.35));
+}
 
 /* ── Subject chip — legacy class alias ──────────────────────────────── */
 /* The canonical `.subj-chip--0…5` colour slots live in shared/tokens.css.

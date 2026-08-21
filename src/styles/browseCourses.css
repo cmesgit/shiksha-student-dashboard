@@ -124,12 +124,59 @@
 /* Real Course.thumbnail (CMS-uploaded, 16:9) — bleeds to the card's edges
    above the padded content, since .shop-card applies uniform 18px padding. */
 .shop-card__thumb {
-  width: calc(100% + 36px);
+  /* 38 / 19 = 18px padding + 1px border on each side. At +36/-18 the media
+     stopped at the padding edge and left a 1px light sliver of the card's
+     border showing along the top corners — invisible with no thumbnails in
+     use, obvious now that every card renders a coloured cover. */
+  width: calc(100% + 38px);
   height: 120px;
-  margin: -18px -18px 12px;
+  margin: -19px -19px 12px;
   border-radius: 16px 16px 0 0;
   object-fit: cover;
 }
+
+/* Generated cover, shown when a course has no CMS thumbnail — which is every
+   live course today. Same box as .shop-card__thumb so a card looks identical
+   whether the image exists or not, and the grid keeps one rhythm. Hue comes
+   from a CSS var set per card in CourseShopCard. */
+.shop-card__cover {
+  width: calc(100% + 38px);   /* see .shop-card__thumb — spans the border box */
+  height: 120px;
+  margin: -19px -19px 12px;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 18%,
+      hsl(var(--cover-hue, 206) 72% 62% / 0.55) 0%,
+      transparent 58%),
+    linear-gradient(135deg,
+      hsl(var(--cover-hue, 206) 46% 30%) 0%,
+      hsl(var(--cover-hue, 206) 52% 20%) 100%);
+}
+/* A soft diagonal sheen so the flat gradient doesn't read as a colour block. */
+.shop-card__cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(112deg, rgba(255, 255, 255, 0.14) 0%,
+                                      rgba(255, 255, 255, 0) 46%);
+}
+.shop-card__cover-glyph {
+  position: relative;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.22);
+}
+/* An owned course shouldn't shout for attention next to purchasable ones. */
+.shop-card--owned .shop-card__cover { filter: saturate(0.72); }
+.shop-card--soon .shop-card__cover { filter: grayscale(0.35); }
 
 .shop-card__pills {
   display: flex;
@@ -205,6 +252,10 @@
   gap: 10px;
   margin-top: auto;
   padding-top: 4px;
+  /* Floor matching the button box, so a footer can never be shorter than its
+     own control and shift the baseline. The actual culprit for mismatched
+     baselines was the button border — see .shop-card__btn. */
+  min-height: 39px;
 }
 .shop-card__priceWrap {
   display: flex;
@@ -236,7 +287,11 @@
 }
 
 .shop-card__btn {
-  border: none;
+  /* TRANSPARENT border, not none — the --ghost variant below adds a 1.5px
+     border, and without a matching one here the two variants differ by 3px in
+     height. In a grid that put the "Enrol" and "Coming Soon" buttons of two
+     neighbouring cards on visibly different baselines. */
+  border: 1.5px solid transparent;
   border-radius: 10px;
   padding: 9px 16px;
   font-family: var(--font-body, "Poppins", system-ui, sans-serif);
