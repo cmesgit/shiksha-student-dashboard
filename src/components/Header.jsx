@@ -24,7 +24,9 @@ import ProfileSwitcher from "../shared/ProfileSwitcher";
 import LearnerTrackSwitcher from "./LearnerTrackSwitcher";
 import "../styles/header.css";
 import "../shared/ProfileSwitcher.css";
-import MessageIcon from "./MessageIcon";
+import MessagesPopover from "../shared/MessagesPopover";
+import "../shared/ChatPanel.css";
+import "../shared/MessagesPopover.css";
 import NotificationBell from "./NotificationBell";
 import { pageTitleFor } from "../utils/academyNav";
 import { pageTitleForSkill, firstName } from "../utils/skillNav";
@@ -59,7 +61,7 @@ export default function Header({ toggleMenu, menuOpen }) {
       <div className="header__right">
         {/* Academy ⟷ Skill Dev switch (learner) */}
         <LearnerTrackSwitcher />
-        <MessageIcon to={isSkill ? "/skill-messages" : "/chat"} />
+        <MessagesPopover theme={isSkill ? "skill" : "academy"} viewAllHref={isSkill ? "/skill-messages" : "/chat"} />
         <NotificationBell />
         <ProfileSwitcher
           compact
