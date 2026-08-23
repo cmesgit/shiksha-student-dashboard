@@ -61,7 +61,7 @@ export default function Header({ toggleMenu, menuOpen }) {
       <div className="header__right">
         {/* Academy ⟷ Skill Dev switch (learner) */}
         <LearnerTrackSwitcher />
-        <MessagesPopover theme={isSkill ? "skill" : "academy"} viewAllHref={isSkill ? "/skill-messages" : "/chat"} />
+        <MessagesPopover viewAllHref={isSkill ? "/skill-messages" : "/chat"} />
         <NotificationBell />
         <ProfileSwitcher
           compact
