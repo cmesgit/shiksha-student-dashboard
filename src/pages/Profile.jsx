@@ -1,18 +1,41 @@
+/**
+ * Profile — the student's own "public" profile card and its Edit mode.
+ *
+ * WHERE THE DATA LIVES (this used to be muddled, and the screen lied about it)
+ * ─────────────────────────────────────────────────────────────────────────
+ *   name / about / avatar → SERVER, via PATCH /accounts/profiles/<id>/
+ *       (ProfileDetailView → auth_flow.apply_profile_edits, which handles
+ *       display_name, first_name, last_name, bio, avatar_emoji, avatar_image).
+ *       These previously PATCHed /accounts/me/, but MeView defines only `get`,
+ *       so DRF answered 405 on every save and the error was swallowed into a
+ *       console.error: the spinner ended, edit mode closed, and a reload showed
+ *       the old name. The payload was account-shaped too (`username: editName`)
+ *       on a screen that edits ONE learner profile out of several.
+ *
+ *   subjects / hobbies / languages → THIS DEVICE ONLY (localStorage, keyed per
+ *       learner profile). LearnerProfile has no field for them, so there is
+ *       nothing to persist to. Rather than keep implying they sync, the UI now
+ *       says so — see the "Saved on this device" note on the Interests card.
+ *       Give them a home in accounts.LearnerProfile if that ever needs to
+ *       change; the write here is deliberately the only local one left.
+ */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import { getPublicProfile, savePublicProfile } from "../utils/profileStorage";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 import { LoadingState, EmptyState } from "../components/StateViews";
 import "../styles/profile.css";
 
 export default function Profile() {
   // The local draft cache is keyed per LEARNER PROFILE — without this id it
-  // falls back to a shared bucket and one child's saved name/about/subjects
+  // falls back to a shared bucket and one child's saved subjects/hobbies
   // pre-fill the next child's form.
-  const { activeProfile } = useAuth();
+  const { activeProfile, bootstrap } = useAuth();
   const profileId = activeProfile?.id;
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatar, setAvatar] = useState(null);
@@ -26,7 +49,8 @@ export default function Profile() {
   const [courses, setCourses] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Public profile data (persisted in localStorage)
+  // `about` is server-backed (LearnerProfile.bio); the three lists below are
+  // device-local — see the file header.
   const [about, setAbout] = useState("");
   const [subjects, setSubjects] = useState([]);
   const [hobbies, setHobbies] = useState([]);
