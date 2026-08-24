@@ -15,6 +15,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CourseProvider, useCourse } from "./contexts/CourseContext";
 import DocumentTitle from "./components/DocumentTitle";
+import { LoadingState } from "./components/StateViews";
 import { HOME_URL } from "./config/urls";
 import { TourProvider } from "./tour/TourProvider";
 import { tourRegistry } from "./tour/tourRegistry";
@@ -96,8 +97,18 @@ function RequireProfile({ children }) {
     }
   }, [loading, isAuthenticated, isLearnerContext]);
 
-  if (loading) return null;
-  if (!isAuthenticated || !isLearnerContext) return null;
+  // A visible state, NOT a bare `null`. This mirrors the teacher app's
+  // ProtectedTeacherRoute, whose own header records why: "a null return during
+  // the bootstrap window (or just before a redirect fires) is a blank white
+  // screen — which is exactly what made the teacher dashboard look broken."
+  // The teacher app was fixed; the student app kept returning null, so every
+  // student cold load was a white page for the length of the /me/ round-trip.
+  // LoadingState (components/StateViews) is the app's existing token-styled
+  // state card — it supplies the trailing "…", role="status" and the
+  // reduced-motion spinner, so none of that is re-implemented here.
+  if (loading) return <LoadingState label="Loading your dashboard" />;
+  if (!isAuthenticated) return <LoadingState label="Redirecting to sign in" />;
+  if (!isLearnerContext) return <LoadingState label="Taking you to the profile picker" />;
   return children;
 }
 
@@ -212,11 +223,22 @@ export default function App() {
             </Route>
 
 
-            {/* Fullscreen live routes */}
-            <Route path="/private-session/live/:id" element={<PrivateSessionLive />} />
-            <Route path="/group-session/live/:id" element={<GroupSessionLive />} />
+            {/* Fullscreen live routes.
+                GUARDED. These sit outside the layout (no chrome), and because
+                the layout is what carried <RequireProfile>, they were the ONLY
+                three unguarded routes in the app — a logged-out visitor opening
+                the URL mounted the LiveKit room, which fires its token request
+                on mount and then renders a broken room instead of redirecting
+                to login. The teacher app already wraps all four of its
+                equivalents (TeacherRoutes.jsx), so this was a one-sided
+                divergence, not a deliberate exemption.
+                No track gate here: unlike the teacher app, a student's
+                CourseContext track is a UI preference, not an entitlement —
+                the backend scopes each room by enrollment. */}
+            <Route path="/private-session/live/:id" element={<RequireProfile><PrivateSessionLive /></RequireProfile>} />
+            <Route path="/group-session/live/:id" element={<RequireProfile><GroupSessionLive /></RequireProfile>} />
             {/* Skill-dev 1-on-1 LiveKit room (separate from Academy private sessions) */}
-            <Route path="/skill-session/live/:id" element={<SkillSessionLive />} />
+            <Route path="/skill-session/live/:id" element={<RequireProfile><SkillSessionLive /></RequireProfile>} />
 
             {/* Catch-all, genuinely last. Without it React Router matches
                 nothing and renders a COMPLETELY BLANK page — no layout, no
