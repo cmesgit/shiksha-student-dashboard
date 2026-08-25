@@ -155,6 +155,13 @@ export default function QuizHub() {
   // The comparison the weakest-chapter card makes ("against 7 in 10 across
   // Physics") is subject-wide, so it is averaged over that subject's other
   // attempted chapters only.
+  // True when the syllabus has chapters but not one of them can be practised
+  // yet, i.e. nothing has been accepted into the shared bank.
+  const bankEmpty = useMemo(
+    () => chapters.length > 0 && chapters.every((c) => c.available === 0),
+    [chapters]
+  );
+
   const weakestPeerAccuracy = useMemo(() => {
     if (!weakest) return null;
     const peers = chapters.filter(
@@ -291,6 +298,20 @@ export default function QuizHub() {
                 icon="book"
                 title="No chapters yet"
                 message="Once your course has chapters with bank questions, they show up here to practise."
+              />
+            ) : bankEmpty ? (
+              // Seen on dev with a real syllabus: 89 chapters, every one of
+              // them disabled because no question has been accepted into the
+              // shared bank yet. A wall of dead rows reads as a broken screen,
+              // so when NOTHING is practisable the card says so once instead.
+              // (The endpoint deliberately returns available=0 chapters rather
+              // than hiding them, so the list still reflects the syllabus —
+              // that choice is right, this is only about how it renders.)
+              <EmptyState
+                plain
+                icon="book"
+                title="The question bank is still being filled"
+                message={`Your syllabus has ${chapters.length} chapter${chapters.length === 1 ? "" : "s"}, but none has questions in the ShikshaCom bank yet. They open for practice as soon as the academy team accepts them.`}
               />
             ) : (
               <div className="qhRows">
