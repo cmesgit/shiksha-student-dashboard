@@ -1,0 +1,195 @@
+/* chapter-practice.css · the runner behind S1's "Practise" button.
+ *
+ * Not a specced screen in design_handoff_quiz_system (README specs S1, S2
+ * and S3; S2 is the MOCK attempt and deliberately withholds the answer key).
+ * Practice is the opposite contract — POST /student/practice/<id>/answer/
+ * returns the verdict immediately — so this reuses S2's shapes where they
+ * carry over (question card, choice rows, letter tiles) and adds the verdict
+ * states S2 has no need for.
+ *
+ * Colours resolve through shared/tokens.css only.
+ */
+
+.cpPage {
+  max-width: 760px;
+  margin: 0 auto;
+  padding-bottom: 28px;
+}
+
+.cpHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 18px;
+  margin-bottom: 14px;
+}
+.cpHeadBody { flex: 1; min-width: 0; }
+.cpHeadTitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+}
+.cpHeadRules {
+  font-size: 11px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+.cpExit {
+  border: none;
+  background: none;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.cpProgressChip {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  background: var(--page-bg);
+  color: var(--ink);
+  padding: 8px 14px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.cpCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+.cpQNum {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--academy);
+}
+.cpQNum span { color: var(--ink-muted); }
+.cpQText {
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 12px 0 18px;
+}
+
+.cpChoices { display: flex; flex-direction: column; gap: 9px; }
+.cpChoice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 13px 16px;
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.cpChoice:disabled { cursor: default; }
+.cpLetter {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--page-bg);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cpChoice--selected {
+  border-color: var(--academy);
+  background: var(--academy-soft);
+}
+.cpChoice--selected .cpLetter { background: var(--academy); color: var(--surface); }
+
+/* Verdict states — practice's whole point is that these appear immediately. */
+.cpChoice--right { border-color: var(--success); background: var(--success-soft); }
+.cpChoice--right .cpLetter { background: var(--success); color: var(--surface); }
+.cpChoice--wrong { border-color: var(--danger); background: var(--danger-soft); }
+.cpChoice--wrong .cpLetter { background: var(--danger); color: var(--surface); }
+
+.cpVerdict {
+  margin-top: 16px;
+  border-radius: 10px;
+  padding: 13px 16px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.cpVerdict--right { background: var(--success-soft); color: var(--success); }
+.cpVerdict--wrong { background: var(--danger-soft); color: var(--danger); }
+.cpExplain {
+  margin-top: 9px;
+  background: var(--surface-muted);
+  border-radius: 10px;
+  padding: 13px 16px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.cpExplainLabel {
+  display: block;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.cpNav {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+.cpNext {
+  border: none;
+  background: var(--academy);
+  color: var(--surface);
+  border-radius: 10px;
+  padding: 10px 24px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ── done ─────────────────────────────────────────────────────────────── */
+.cpDone { text-align: center; padding: 34px 26px; }
+.cpDoneScore {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 34px;
+  color: var(--ink);
+}
+.cpDoneLabel { font-size: 13px; color: var(--ink-muted); margin-top: 6px; }
+.cpDoneActions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.cpDoneBtn {
+  border: none;
+  background: var(--academy);
+  color: var(--surface);
+  border-radius: 10px;
+  padding: 11px 20px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cpDoneBtn--ghost {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--academy);
+}

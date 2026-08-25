@@ -40,6 +40,7 @@ import QuizMock from "./pages/QuizMock";
 import QuizPractice from "./pages/QuizPractice";
 import QuizResult from "./pages/QuizResult";
 import QuizAttempts from "./pages/QuizAttempts";
+import ChapterPractice from "./pages/ChapterPractice";
 import SubjectsRecordings from "./pages/SubjectsRecordings";
 import RecordingDetail from "./pages/RecordingDetail";
 import StudyMaterialList from "./pages/StudyMaterialList";
@@ -166,6 +167,10 @@ export default function App() {
               <Route path="subjects/quiz/:subjectId/practice/:quizId" element={<QuizPractice />} />
               <Route path="subjects/quiz/:subjectId/result/:quizId" element={<QuizResult />} />
               <Route path="subjects/quiz/:subjectId/attempts/:quizId" element={<QuizAttempts />} />
+              {/* Chapter practice (Phase 8, S1's "Practise" button). Keyed by
+                  PracticeSession id, not a quiz — it has no subject segment
+                  because a practice set belongs to a chapter, not a quiz. */}
+              <Route path="subjects/quiz/practice-session/:sessionId" element={<ChapterPractice />} />
 
               <Route path="subjects/recordings" element={<SubjectsRecordings />} />
               <Route path="subjects/recordings/:subjectId" element={<SubjectsRecordings />} />
