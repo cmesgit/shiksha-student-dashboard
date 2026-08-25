@@ -1,5 +1,6 @@
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
+import { FiEdit2 } from "react-icons/fi";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
 import { LoadingState } from "../components/StateViews";
@@ -58,6 +59,8 @@ export default function QuizResult() {
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState(null);
   const [openExplanation, setOpenExplanation] = useState({});
+  const [practisingChapter, setPractisingChapter] = useState(null);
+  const [practiseError, setPractiseError] = useState(null);
   const [showReattemptModal, setShowReattemptModal] = useState(false);
   const [showMistakes, setShowMistakes] = useState(false);
 
@@ -125,15 +128,76 @@ export default function QuizResult() {
     return resultData.questions.some((q) => (q.time_spent_seconds || 0) > 0);
   }, [resultData]);
 
+  // Same contract S1's "Practise" uses — one practice session per click, with
+  // the question set handed to the runner in router state (there is no GET
+  // for a session, so it cannot be refetched).
+  async function practiseChapter(chapter) {
+    setPractisingChapter(chapter.chapter_id);
+    setPractiseError(null);
+    try {
+      const res = await api.post("/student/practice/start/", {
+        chapter_id: chapter.chapter_id,
+      });
+      navigate(`/subjects/quiz/practice-session/${res.data.session_id}`, {
+        state: { session: res.data },
+      });
+    } catch (err) {
+      setPractiseError(
+        err?.response?.status === 409
+          ? err.response.data?.detail
+            || "No questions in the ShikshaCom bank for this chapter yet."
+          : "Could not start practice. Please try again."
+      );
+    } finally {
+      setPractisingChapter(null);
+    }
+  }
+
   if (loading) return <LoadingState label="Loading result" />;
   if (error)   return <div className="quizResultPage">{error}</div>;
   if (!resultData) return null;
 
-  const total     = resultData.questions.length;
+  // `questions` is ANSWERED-ONLY by design (the server says so where it sets
+  // questions_total). Using its length as the denominator made the hero ring
+  // read 50% directly above "1 / 4 marks": answering 2 of 4 and getting 1
+  // right is 50% *of what you attempted* but 25% of the paper. README §S3's
+  // ring is the mark percentage — "68%" above "68 of 100 marks" — so it is
+  // driven by score/total_marks, and the tallies below count the paper.
+  const answered  = resultData.questions.length;
   const correct   = resultData.questions.filter(q => q.is_correct).length;
-  const incorrect = total - correct;
-  const pct       = Math.round((correct / total) * 100);
+  const incorrect = answered - correct;
+  const blank     = resultData.blank_count ?? Math.max(
+    (resultData.questions_total ?? answered) - answered, 0);
+  const marked    = resultData.marked_count ?? 0;
+  const total     = resultData.questions_total ?? answered;
+  const pct       = resultData.total_marks
+    ? Math.round((resultData.score * 100) / resultData.total_marks)
+    : 0;
 
+  // README §S3: "Better than last time — up 9 marks". previous_percent is
+  // null on a first attempt — that must read as praise, not as a 0-mark gain.
+  const prevPct = resultData.previous_percent;
+  const deltaMarks = prevPct == null || !resultData.total_marks
+    ? null
+    : Math.round(((pct - prevPct) * resultData.total_marks) / 100);
+  const verdict =
+    deltaMarks == null
+      ? (pct >= 75 ? "Great job!" : pct >= 50 ? "Good effort" : "Keep practising")
+      : deltaMarks > 0
+        ? `Better than last time — up ${deltaMarks} mark${deltaMarks === 1 ? "" : "s"}`
+        : deltaMarks < 0
+          ? `Down ${Math.abs(deltaMarks)} mark${Math.abs(deltaMarks) === 1 ? "" : "s"} on last time`
+          : "Exactly the same as last time";
+
+  // "finished early" for the compare row — only when the paper was timed and
+  // the attempt genuinely ended before the limit.
+  const limitSecs = (resultData.time_limit_minutes || 0) * 60;
+  const takenSecs = resultData.time_taken_seconds;
+  const earlyMins = limitSecs && takenSecs != null && takenSecs < limitSecs
+    ? Math.round((limitSecs - takenSecs) / 60)
+    : null;
+
+  const chapters = resultData.chapters || [];
   const topicBreakdown = resultData.topic_breakdown || [];
   const difficultyBreakdown = [...(resultData.difficulty_breakdown || [])].sort(
     (a, b) => (DIFF_ORDER[a.difficulty] ?? 9) - (DIFF_ORDER[b.difficulty] ?? 9)
@@ -222,14 +286,20 @@ export default function QuizResult() {
           </div>
 
           <div className="qraScoreHeroRight">
-            <div className="qraVerdict">
-              {pct >= 75 ? "Great job! 🎉" : pct >= 50 ? "Good effort" : "Keep practicing"}
-            </div>
+            {/* README §S3's verdict line is a COMPARISON ("Better than last
+                time — up 9 marks"), not a grade. previous_percent is null on
+                a first attempt, which must fall back to the standalone praise
+                rather than claim a 0-mark improvement. */}
+            <div className="qraVerdict">{verdict}</div>
             <div className="quizResultSummary">
               {[
                 { label: "Correct",   value: correct,   mod: "correct" },
                 { label: "Incorrect", value: incorrect, mod: "incorrect" },
-                { label: "Accuracy",  value: `${pct}%`, mod: "accuracy" },
+                // Blank is its own tally, not folded into Incorrect: leaving
+                // a question and getting it wrong are different mistakes, and
+                // under negative marking they score differently too.
+                { label: "Blank",     value: blank,     mod: "blank" },
+                { label: "Marked",    value: marked,    mod: "marked" },
               ].map(({ label, value, mod }) => (
                 <div key={label} className={`quizResultSummaryCard quizResultSummaryCard--${mod}`}>
                   <div className="quizResultSummaryValue">{value}</div>
@@ -240,6 +310,9 @@ export default function QuizResult() {
             <div className="qraCompareRow">
               <span>Class average: <strong>{resultData.class_avg_percent}%</strong></span>
               <span>You scored higher than <strong>{resultData.scored_higher_than ?? 0}%</strong> of attempts</span>
+              {earlyMins != null && earlyMins > 0 && (
+                <span>Finished <strong>{earlyMins} min</strong> early</span>
+              )}
             </div>
           </div>
         </div>
@@ -267,6 +340,51 @@ export default function QuizResult() {
               <span><span className="qraDot qraDot--you" /> You</span>
               <span><span className="qraDot qraDot--avg" /> Class average</span>
             </div>
+          </div>
+        )}
+
+        {/* ── Chapters on this paper (README §S3) ──
+            QUIZ-level, not per-question: Phase 3 put chapter tagging on Quiz,
+            so every question here shares these chapters and there is no
+            honest per-chapter mark split to draw. Rather than invent one,
+            this lists what the paper covered and turns each chapter into the
+            spec's real payoff — a route straight into S1's chapter practice.
+            `is_custom` marks a chapter the teacher typed themselves. */}
+        {chapters.length > 0 && (
+          <div className="qraCard">
+            <div className="qraCardTitle">What this paper covered</div>
+            <div className="qraCardSub">
+              Practise any of these from the ShikshaCom bank — nothing you do
+              there is graded.
+            </div>
+            <div className="qraChapterList">
+              {chapters.map((c) => (
+                <div key={c.chapter_id || c.label} className="qraChapterRow">
+                  <span className="qraChapterName">
+                    {c.is_custom && (
+                      <FiEdit2
+                        size={11}
+                        aria-label="Chapter created by your teacher"
+                        className="qraChapterPencil"
+                      />
+                    )}
+                    {c.label}
+                  </span>
+                  {c.chapter_id && (
+                    <button
+                      className="qraChapterBtn"
+                      disabled={practisingChapter === c.chapter_id}
+                      onClick={() => practiseChapter(c)}
+                    >
+                      {practisingChapter === c.chapter_id ? "Starting…" : "Practise"}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {practiseError && (
+              <div className="qraChapterError">{practiseError}</div>
+            )}
           </div>
         )}
 
