@@ -11,10 +11,10 @@
   padding: 12px 18px; display: flex; align-items: center; gap: 14px; margin-bottom: var(--gap); flex-wrap: wrap;
 }
 .qm-back {
-  border: 1px solid var(--card-border); background: #fff; border-radius: var(--radius-btn);
+  border: 1px solid var(--card-border); background: var(--surface); border-radius: var(--radius-btn);
   padding: 6px 12px; font: 600 12px var(--font-body); color: var(--ink-2); cursor: pointer;
 }
-.qm-back:hover { background: #f4f6f8; }
+.qm-back:hover { background: var(--surface-muted); }
 .qm-title { font: 700 14px var(--font-display); }
 .qm-timer {
   font: 700 13px var(--font-display); padding: 8px 14px; border-radius: var(--radius-btn); flex: 0 0 auto;
@@ -22,10 +22,10 @@
 }
 .qm-timer--warn { background: var(--danger-soft); color: var(--danger); }
 .qm-submit-btn {
-  border: none; background: var(--success); color: #fff; border-radius: var(--radius-btn);
+  border: none; background: var(--success); color: var(--surface); border-radius: var(--radius-btn);
   padding: 9px 18px; font: 700 12.5px var(--font-body); cursor: pointer;
 }
-.qm-submit-btn:hover { background: #278a39; }
+.qm-submit-btn:hover { filter: brightness(0.92); }   /* no --success-hover token exists; darkening avoids inventing a literal */
 
 .qm-body { display: flex; gap: var(--gap); align-items: flex-start; }
 .qm-question-card {
@@ -41,7 +41,7 @@
 }
 .qm-marks { font: 500 11px var(--font-body); color: var(--ink-3); }
 .qm-mark-btn {
-  margin-left: auto; border: 1px solid var(--card-border); background: #fff; color: var(--ink-3);
+  margin-left: auto; border: 1px solid var(--card-border); background: var(--surface); color: var(--ink-3);
   border-radius: 8px; padding: 6px 11px; font: 600 11px var(--font-body); cursor: pointer;
 }
 .qm-mark-btn--on { background: var(--warning-soft); border-color: var(--skill-border); color: var(--warning-ink); }
@@ -50,25 +50,25 @@
 .qm-choices { display: flex; flex-direction: column; gap: 10px; }
 .qm-choice {
   display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: var(--radius-btn);
-  border: 1.5px solid var(--card-border); background: #fff; cursor: pointer; text-align: left;
+  border: 1.5px solid var(--card-border); background: var(--surface); cursor: pointer; text-align: left;
   font: 500 13.5px var(--font-body); color: var(--ink); width: 100%; transition: all .15s ease;
 }
-.qm-choice:hover { border-color: var(--acc-border, #cfdbe6); }
+.qm-choice:hover { border-color: var(--acc-border, var(--border-strong)); }
 .qm-choice--selected { border-color: var(--academy); background: var(--academy-soft); }
 .qm-choice-letter {
   width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; flex: 0 0 auto;
   background: var(--page-bg); color: var(--ink-3); font: 700 11.5px var(--font-display);
 }
-.qm-choice--selected .qm-choice-letter { background: var(--academy); color: #fff; }
+.qm-choice--selected .qm-choice-letter { background: var(--academy); color: var(--surface); }
 
 .qm-nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; }
 .qm-nav-btn {
-  border: 1px solid var(--card-border); background: #fff; color: var(--ink-2); border-radius: var(--radius-btn);
+  border: 1px solid var(--card-border); background: var(--surface); color: var(--ink-2); border-radius: var(--radius-btn);
   padding: 10px 20px; font: 600 12.5px var(--font-body); cursor: pointer;
 }
 .qm-nav-btn:disabled { opacity: .5; cursor: not-allowed; }
-.qm-nav-btn--primary { border: none; background: var(--academy); color: #fff; padding: 10px 24px; font-weight: 700; }
-.qm-nav-btn--primary:hover:not(:disabled) { background: #37516d; }
+.qm-nav-btn--primary { border: none; background: var(--academy); color: var(--surface); padding: 10px 24px; font-weight: 700; }
+.qm-nav-btn--primary:hover:not(:disabled) { background: var(--action-hover); }
 .qm-clear-link { border: none; background: none; color: var(--ink-3); font: 600 12px var(--font-body); cursor: pointer; text-decoration: underline; }
 
 .qm-palette {
@@ -82,9 +82,9 @@
   font: 700 11.5px var(--font-display); background: var(--page-bg); color: var(--ink-3);
   border: 1px solid var(--card-border);
 }
-.qm-pal-cell--visited { background: #fff; color: var(--ink-2); }
-.qm-pal-cell--answered { background: var(--success); color: #fff; border-color: var(--success); }
-.qm-pal-cell--marked { background: var(--warning); color: #fff; border-color: var(--warning); }
+.qm-pal-cell--visited { background: var(--surface); color: var(--ink-2); }
+.qm-pal-cell--answered { background: var(--success); color: var(--surface); border-color: var(--success); }
+.qm-pal-cell--marked { background: var(--warning); color: var(--surface); border-color: var(--warning); }
 .qm-pal-cell--current { outline: 2px solid var(--academy); outline-offset: 1px; }
 
 .qm-legend { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; font: 500 11px var(--font-body); color: var(--ink-3); }
@@ -95,19 +95,19 @@
 .qm-legend-dot--notvisited { background: var(--page-bg); border: 1px solid var(--card-border); }
 
 .qm-modal-overlay { position: fixed; inset: 0; background: rgba(26,44,51,.45); display: grid; place-items: center; z-index: 50; }
-.qm-modal-box { background: #fff; border-radius: 14px; padding: 26px; width: 400px; max-width: 92vw; box-shadow: 0 20px 50px rgba(26,44,51,.25); }
+.qm-modal-box { background: var(--surface); border-radius: 14px; padding: 26px; width: 400px; max-width: 92vw; box-shadow: 0 20px 50px rgba(26,44,51,.25); }
 .qm-modal-box h3 { font: 700 16px var(--font-display); margin: 0 0 8px; }
 .qm-modal-box p { font: 400 12.5px/1.6 var(--font-body); color: var(--ink-2); margin: 0 0 16px; }
 .qm-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
 .qm-btn-cancel {
-  border: 1px solid var(--card-border); background: #fff; color: var(--ink-2); border-radius: var(--radius-btn);
+  border: 1px solid var(--card-border); background: var(--surface); color: var(--ink-2); border-radius: var(--radius-btn);
   padding: 9px 16px; font: 600 12.5px var(--font-body); cursor: pointer;
 }
 .qm-btn-submit {
-  border: none; background: var(--success); color: #fff; border-radius: var(--radius-btn);
+  border: none; background: var(--success); color: var(--surface); border-radius: var(--radius-btn);
   padding: 9px 18px; font: 700 12.5px var(--font-body); cursor: pointer;
 }
 .qm-btn-exit {
-  border: none; background: var(--danger); color: #fff; border-radius: var(--radius-btn);
+  border: none; background: var(--danger); color: var(--surface); border-radius: var(--radius-btn);
   padding: 9px 18px; font: 700 12.5px var(--font-body); cursor: pointer;
 }

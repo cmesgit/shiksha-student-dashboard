@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { FiClock, FiFlag } from "react-icons/fi";
 import api from "../api/apiClient";
 import "../styles/quiz-mock.css";
 
@@ -60,6 +61,42 @@ function getShuffledQuestions(questions, quizId, attemptKey) {
       return { ...q, choices };
     })
     .filter(Boolean);
+}
+
+// ── autosave ────────────────────────────────────────────────────────────
+// BUILD_GUIDE Phase 8 item 3 asks for autosave, and without it a mock attempt
+// did not survive a reload: answers lived only in React state while the
+// DEADLINE is server-side and keeps running. A refresh, a phone locking, or a
+// tab crash therefore wiped every answer and left the clock ticking, with no
+// way back. There is no server-side draft endpoint (only /submit/), so the
+// draft is local — keyed per ATTEMPT, exactly like the shuffle order above, so
+// a second attempt never inherits the first one's answers.
+const draftKeyFor = (quizId, attemptKey) => `quiz_${quizId}_${attemptKey}_draft`;
+
+function readDraft(quizId, attemptKey) {
+  try {
+    const raw = localStorage.getItem(draftKeyFor(quizId, attemptKey));
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    return {
+      answers: d.answers && typeof d.answers === "object" ? d.answers : {},
+      marked: d.marked && typeof d.marked === "object" ? d.marked : {},
+      visited: d.visited && typeof d.visited === "object" ? d.visited : {},
+      index: Number.isInteger(d.index) ? d.index : 0,
+    };
+  } catch {
+    return null;   // corrupt draft must never block starting the test
+  }
+}
+
+function writeDraft(quizId, attemptKey, draft) {
+  try {
+    localStorage.setItem(draftKeyFor(quizId, attemptKey), JSON.stringify(draft));
+  } catch { /* quota/private mode — the attempt still works, just not resumable */ }
+}
+
+function clearDraft(quizId, attemptKey) {
+  try { localStorage.removeItem(draftKeyFor(quizId, attemptKey)); } catch { /* */ }
 }
 
 export default function QuizMock() {
@@ -135,7 +172,26 @@ export default function QuizMock() {
         setQuizData(res.data);
         const shuffled = getShuffledQuestions(res.data.questions, quizId, attemptNumber);
         setQuestions(shuffled);
-        setVisited({ [shuffled[0]?.id]: true });
+
+        // Restore this attempt's draft before the first render of the palette,
+        // so a reload comes back to the same answers, marks and question —
+        // the deadline kept running while the tab was gone.
+        const draft = readDraft(quizId, attemptNumber);
+        if (draft) {
+          // Only keep answers whose question is still in this attempt; a quiz
+          // edited between attempts must not resurrect a dead question id.
+          const live = new Set(shuffled.map((q) => q.id));
+          const keep = (o) => Object.fromEntries(
+            Object.entries(o).filter(([qId]) => live.has(qId)));
+          const restoredAnswers = keep(draft.answers);
+          answersRef.current = restoredAnswers;
+          setAnswers(restoredAnswers);
+          setMarked(keep(draft.marked));
+          setVisited({ ...keep(draft.visited), [shuffled[0]?.id]: true });
+          setIndex(Math.min(Math.max(draft.index, 0), Math.max(shuffled.length - 1, 0)));
+        } else {
+          setVisited({ [shuffled[0]?.id]: true });
+        }
 
         startTimeRef.current = serverStartedAt || Date.now();
         durationRef.current = (res.data.time_limit_minutes || 45) * 60;
@@ -210,6 +266,7 @@ export default function QuizMock() {
     try {
       const formatted = Object.entries(answersRef.current).map(([q, c]) => ({ question: q, selected_choice: c }));
       await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
+      clearDraft(quizId, attemptKeyRef.current);
       navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
     } catch (err) {
       setTimeout(async () => {
@@ -261,6 +318,15 @@ export default function QuizMock() {
       return updated;
     });
   }
+
+  // Persist after every change rather than on an interval: the events this
+  // guards against (reload, crash, phone locking) give no chance to flush.
+  // Skipped once submitted, so the post-submit navigation cannot rewrite a
+  // draft that submit() just cleared.
+  useEffect(() => {
+    if (!quizReady || submittedRef.current) return;
+    writeDraft(quizId, attemptKeyRef.current, { answers, marked, visited, index });
+  }, [answers, marked, visited, index, quizReady, quizId]);
   function handleClear() {
     const qId = questions[index].id;
     setAnswers((prev) => {
@@ -286,6 +352,11 @@ export default function QuizMock() {
       const formatted = Object.entries(answers).map(([q, c]) => ({ question: q, selected_choice: c }));
       await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
       submittedRef.current = true;
+      // Only once the server has the answers. Clearing any earlier would
+      // discard the draft on a failed submit, which is exactly when it is
+      // most needed. handleExit deliberately does NOT clear it — leaving the
+      // page is not finishing, and the attempt stays resumable.
+      clearDraft(quizId, attemptKeyRef.current);
       navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
     } catch (err) {
       const msg = err.response?.data?.detail
@@ -315,7 +386,18 @@ export default function QuizMock() {
       <div className="qm-header">
         <button className="qm-back" onClick={() => setShowExitModal(true)}>← Back</button>
         <span className="qm-title">{quizData.title}</span>
-        <div className={`qm-timer ${isLowTime ? "qm-timer--warn" : ""}`}>⏱ {fmtTime(timeLeft ?? 0)}</div>
+        {/* role=timer + aria-live so the countdown is announced, and the
+            5-minute danger state is not conveyed by colour alone. */}
+        <div
+          className={`qm-timer ${isLowTime ? "qm-timer--warn" : ""}`}
+          role="timer"
+          aria-live={isLowTime ? "assertive" : "off"}
+          aria-label={isLowTime
+            ? `Under five minutes remaining: ${fmtTime(timeLeft ?? 0)}`
+            : `Time remaining ${fmtTime(timeLeft ?? 0)}`}
+        >
+          <FiClock size={14} aria-hidden="true" /> {fmtTime(timeLeft ?? 0)}
+        </div>
         <button className="qm-submit-btn" onClick={() => setShowSubmitModal(true)}>Submit</button>
       </div>
 
@@ -327,8 +409,13 @@ export default function QuizMock() {
             <span className="qm-qnum">Q{index + 1} <span className="qm-qtotal">/ {total}</span></span>
             {q.topic && <span className="qm-chip">{q.topic}</span>}
             <span className="qm-marks">+{q.marks || 1} marks</span>
-            <button className={`qm-mark-btn ${marked[q.id] ? "qm-mark-btn--on" : ""}`} onClick={toggleMark}>
-              {marked[q.id] ? "🚩 Marked" : "🏳 Mark for review"}
+            <button
+              className={`qm-mark-btn ${marked[q.id] ? "qm-mark-btn--on" : ""}`}
+              onClick={toggleMark}
+              aria-pressed={!!marked[q.id]}
+            >
+              <FiFlag size={12} aria-hidden="true" />
+              {marked[q.id] ? "Marked" : "Mark for review"}
             </button>
           </div>
           <p className="qm-qtext">{q.text}</p>
