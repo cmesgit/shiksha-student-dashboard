@@ -1,10 +1,21 @@
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { FiEdit2 } from "react-icons/fi";
+import {
+  FiChevronDown,
+  FiChevronLeft,
+  FiChevronUp,
+  FiCheck,
+  FiEdit2,
+  FiRefreshCw,
+  FiRotateCcw,
+  FiSearch,
+  FiX,
+} from "react-icons/fi";
 import api from "../api/apiClient";
 import PageHeader from "../components/PageHeader";
 import { LoadingState } from "../components/StateViews";
 import { useToast } from "../contexts/ToastContext";
+import { quizHubPath, withQuizOrigin } from "../utils/quizNav";
 import "../styles/quiz.css";
 import "../styles/quiz-result-analytics.css";
 
@@ -21,11 +32,11 @@ function MistakesReview({ questions, onClose }) {
       <div className="mrCard">
         <div className="mrHeader">
           <span>Reviewing mistake {idx + 1} of {questions.length}</span>
-          <button className="mrClose" onClick={onClose}>✕</button>
+          <button className="mrClose" onClick={onClose} aria-label="Close"><FiX /></button>
         </div>
         <p className="mrQuestionText">{q.text}</p>
-        <div className="mrAnswerRow mrAnswerRow--wrong">✗ Your answer: {q.selected_choice}</div>
-        <div className="mrAnswerRow mrAnswerRow--correct">✓ Correct answer: {q.correct_choice}</div>
+        <div className="mrAnswerRow mrAnswerRow--wrong"><FiX aria-hidden="true" /> Your answer: {q.selected_choice}</div>
+        <div className="mrAnswerRow mrAnswerRow--correct"><FiCheck aria-hidden="true" /> Correct answer: {q.correct_choice}</div>
         {q.explanation && (
           <div className="mrExplanation"><strong>Why:</strong> {q.explanation}</div>
         )}
@@ -51,6 +62,7 @@ function MistakesReview({ questions, onClose }) {
 export default function QuizResult() {
   const navigate = useNavigate();
   const { subjectId, quizId } = useParams();
+  const { pathname, state: navState } = useLocation();
   const [searchParams] = useSearchParams();
   const attemptId = searchParams.get("attempt");
   const { showToast } = useToast();
@@ -63,15 +75,22 @@ export default function QuizResult() {
   const [practiseError, setPractiseError] = useState(null);
   const [showReattemptModal, setShowReattemptModal] = useState(false);
   const [showMistakes, setShowMistakes] = useState(false);
+  const [questionQuery, setQuestionQuery] = useState("");
 
   // Where "Back" actually goes. Reached from the attempts table (?attempt=)
   // → back to that table; reached straight from a submission → out to the
-  // subject's Quiz Hub. Either way it is a real route, never a history pop.
+  // Quiz Hub. Either way it is a real route, never a history pop.
+  //
+  // The hub target comes from router state rather than being rebuilt from
+  // :subjectId — the hub is mounted both unscoped and subject-scoped, and
+  // fabricating the scoped path sent learners who started from the sidebar
+  // to a shorter, silently-filtered list. See utils/quizNav.js.
   const goBack = () =>
     navigate(
       attemptId
         ? `/subjects/quiz/${subjectId}/attempts/${quizId}`
-        : `/subjects/quiz/${subjectId}`
+        : quizHubPath(navState, subjectId),
+      attemptId ? { state: withQuizOrigin(pathname, navState) } : undefined
     );
 
   const toggleExplanation = (id) => {
@@ -101,7 +120,20 @@ export default function QuizResult() {
         setResultData(res.data);
       } catch (err) {
         console.error("Failed to load result:", err);
-        setError("Unable to load result.");
+        // Every failure here used to collapse into the single string
+        // "Unable to load result.", which told the learner nothing and made
+        // the three genuinely different causes (no submitted attempt yet, a
+        // bad quiz id, a server fault) indistinguishable in support reports.
+        // DRF sends a usable sentence for the expected ones — show it.
+        const detail = err.response?.data?.detail;
+        const body = err.response?.data;
+        setError(
+          detail
+            || (typeof body === "string" && body)
+            || (err.response?.status === 404
+                  ? "We couldn't find this quiz. It may have been removed by your teacher."
+                  : "Unable to load result. Please try again in a moment.")
+        );
       } finally {
         setLoading(false);
       }
@@ -114,6 +146,22 @@ export default function QuizResult() {
     const wrongIds = new Set(resultData.wrong_question_ids || []);
     return resultData.questions.filter((q) => wrongIds.has(q.id));
   }, [resultData]);
+
+  // The search box above the review list used to be inert — no value, no
+  // onChange, no filtering anywhere. It looked like a working control and
+  // silently did nothing. Filter on question text, the learner's own answer
+  // and the correct answer, keeping each question's ORIGINAL number so a
+  // filtered list still reads "7." rather than renumbering from 1.
+  const visibleQuestions = useMemo(() => {
+    if (!resultData) return [];
+    const numbered = resultData.questions.map((q, i) => ({ q, number: i + 1 }));
+    const needle = questionQuery.trim().toLowerCase();
+    if (!needle) return numbered;
+    return numbered.filter(({ q }) =>
+      [q.text, q.selected_choice, q.correct_choice]
+        .some((field) => String(field || "").toLowerCase().includes(needle))
+    );
+  }, [resultData, questionQuery]);
 
   const maxTimeSpent = useMemo(() => {
     if (!resultData) return 1;
@@ -154,7 +202,22 @@ export default function QuizResult() {
   }
 
   if (loading) return <LoadingState label="Loading result" />;
-  if (error)   return <div className="quizResultPage">{error}</div>;
+  // Was `<div className="quizResultPage">{error}</div>` — a bare sentence on
+  // an empty page with no heading and no way back, so a learner who hit it
+  // was stranded and had to use the browser's Back button.
+  if (error) {
+    return (
+      <div className="quizResultPage">
+        <button className="quizResultBack" onClick={goBack}>
+          <FiChevronLeft aria-hidden="true" /> Back to Quizzes
+        </button>
+        <div className="quizResultErrorBox">
+          <h2>We couldn't show this result</h2>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
   if (!resultData) return null;
 
   // `questions` is ANSWERED-ONLY by design (the server says so where it sets
@@ -220,40 +283,44 @@ export default function QuizResult() {
           so they lose access to the answer key. Always go somewhere
           explicit. */}
       <button className="quizResultBack" onClick={goBack}>
-        &lt; Back
+        <FiChevronLeft aria-hidden="true" /> Back to Quizzes
       </button>
 
-      {/* ── Header with action buttons alongside search ── */}
-     <div className="quizResultHeaderBox">
-  <div className="quizResultHeaderInner">
-    <PageHeader title={resultData.subject_name} />
+      {/* ── Header: search on one side, the single primary action on the other.
+          There used to be a second "← Back to Quizzes" button in the action
+          cluster below calling this exact same `goBack` — two identical
+          controls stacked, with the duplicate competing visually with
+          Reattempt. The one above is the app's established pattern
+          (QuizAttempts.jsx uses the same `.quizResultBack` class). */}
+      <div className="quizResultHeaderBox">
+        <div className="quizResultHeaderInner">
+          <PageHeader title={resultData.subject_name} />
 
-    <div className="quizResultHeaderRow">
-      {/* SEARCH */}
-      <div className="quizSearch">
-        <input type="text" placeholder="Search questions..." />
-        <span className="quizSearchIcon">🔍</span>
+          <div className="quizResultHeaderRow">
+            <div className="quizSearch">
+              <span className="quizSearchIcon" aria-hidden="true">
+                <FiSearch />
+              </span>
+              <input
+                type="search"
+                placeholder="Search questions..."
+                aria-label="Search questions"
+                value={questionQuery}
+                onChange={(e) => setQuestionQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="quizResultHeaderBtns">
+              <button
+                className="quizResultReattemptBtn"
+                onClick={() => setShowReattemptModal(true)}
+              >
+                <FiRefreshCw aria-hidden="true" /> Reattempt Quiz
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* BUTTONS BELOW SEARCH */}
-      <div className="quizResultHeaderBtns">
-        <button
-          className="quizResultBackBtn"
-          onClick={goBack}
-        >
-          ← Back to Quizzes
-        </button>
-
-        <button
-          className="quizResultReattemptBtn"
-          onClick={() => setShowReattemptModal(true)}
-        >
-          🔁 Reattempt Quiz
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 
       <div className="quizResultBodyBox">
 
@@ -457,7 +524,7 @@ export default function QuizResult() {
             <span>Question review</span>
             {answersRevealed && wrongQuestions.length > 0 && (
               <button className="qraRetryBtn" onClick={() => setShowMistakes(true)}>
-                ↻ Practice my {wrongQuestions.length} mistake{wrongQuestions.length > 1 ? "s" : ""}
+                <FiRotateCcw aria-hidden="true" /> Practice my {wrongQuestions.length} mistake{wrongQuestions.length > 1 ? "s" : ""}
               </button>
             )}
           </div>
@@ -468,7 +535,12 @@ export default function QuizResult() {
               free score. Your score and correctness are still shown below.
             </p>
           )}
-          {resultData.questions.map((q, index) => (
+          {questionQuery.trim() && visibleQuestions.length === 0 && (
+            <p className="qraAnswersHiddenNote">
+              No questions match "{questionQuery.trim()}".
+            </p>
+          )}
+          {visibleQuestions.map(({ q, number }) => (
             <div
               key={q.id}
               className={`quizDetailQuestion quizDetailQuestion--result ${
@@ -478,9 +550,9 @@ export default function QuizResult() {
               <div className="quizDetailQuestionRow">
                 <p className="quizDetailQuestionText">
                   <span className={`quizResultBadge ${q.is_correct ? "quizResultBadge--correct" : "quizResultBadge--wrong"}`}>
-                    {q.is_correct ? "✓" : "✗"}
+                    {q.is_correct ? <FiCheck aria-hidden="true" /> : <FiX aria-hidden="true" />}
                   </span>
-                  {index + 1}. {q.text}
+                  {number}. {q.text}
                 </p>
                 {answersRevealed && (
                   <span className="quizResultCorrectChip">
@@ -500,7 +572,7 @@ export default function QuizResult() {
               )}
 
               <div className={`quizResultAnswerPill ${q.is_correct ? "quizResultAnswerPill--correct" : "quizResultAnswerPill--wrong"}`}>
-                {q.is_correct ? "✓" : "✗"} Your Answer: {q.selected_choice}
+                {q.is_correct ? <FiCheck aria-hidden="true" /> : <FiX aria-hidden="true" />} Your Answer: {q.selected_choice}
               </div>
 
               {answersRevealed && (
@@ -509,7 +581,10 @@ export default function QuizResult() {
                     onClick={() => toggleExplanation(q.id)}
                     className={`quizResultExplainBtn ${openExplanation[q.id] ? "quizResultExplainBtn--open" : ""}`}
                   >
-                    {openExplanation[q.id] ? "Hide Explanation ▲" : "Show Explanation ▼"}
+                    {openExplanation[q.id] ? "Hide Explanation" : "Show Explanation"}
+                    {openExplanation[q.id]
+                      ? <FiChevronUp aria-hidden="true" />
+                      : <FiChevronDown aria-hidden="true" />}
                   </button>
 
                   {openExplanation[q.id] && (

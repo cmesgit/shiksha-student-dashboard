@@ -1,13 +1,16 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { FiChevronLeft, FiRefreshCw } from "react-icons/fi";
 import api from "../api/apiClient";
 import { LoadingState } from "../components/StateViews";
 import { useToast } from "../contexts/ToastContext";
+import { quizHubPath, withQuizOrigin } from "../utils/quizNav";
 import "../styles/quiz.css";
 
 export default function QuizAttempts() {
   const navigate = useNavigate();
   const { subjectId, quizId } = useParams();
+  const { pathname, state: navState } = useLocation();
   const { showToast } = useToast();
 
   const [attempts, setAttempts] = useState([]);
@@ -44,7 +47,9 @@ export default function QuizAttempts() {
       // submitted attempt instead of starting a fresh one.
       await api.post(`/quizzes/${quizId}/start/`, { new_attempt: true });
       const path = quizType === "practice" ? "practice" : "take";
-      navigate(`/subjects/quiz/${subjectId}/${path}/${quizId}`);
+      navigate(`/subjects/quiz/${subjectId}/${path}/${quizId}`, {
+        state: withQuizOrigin(pathname, navState),
+      });
     } catch (err) {
       const msg = err.response?.data?.detail || "Unable to start reattempt.";
       showToast({ type: "error", message: msg });
@@ -63,9 +68,9 @@ export default function QuizAttempts() {
           starts a brand-new attempt (see the note in QuizResult.jsx). */}
       <button
         className="quizResultBack"
-        onClick={() => navigate(`/subjects/quiz/${subjectId}`)}
+        onClick={() => navigate(quizHubPath(navState, subjectId))}
       >
-        &lt; Back to Quizzes
+        <FiChevronLeft aria-hidden="true" /> Back to Quizzes
       </button>
 
       <div className="quizAttemptsHeader">
@@ -75,7 +80,7 @@ export default function QuizAttempts() {
           onClick={handleReattempt}
           disabled={starting}
         >
-          {starting ? "Starting…" : "🔁 Re-Attempt Quiz"}
+          {starting ? "Starting…" : <><FiRefreshCw aria-hidden="true" /> Re-Attempt Quiz</>}
         </button>
       </div>
 
@@ -124,7 +129,8 @@ export default function QuizAttempts() {
                         className="quizAttemptsReviewBtn"
                         onClick={() =>
                           navigate(
-                            `/subjects/quiz/${subjectId}/result/${quizId}?attempt=${attempt.id}`
+                            `/subjects/quiz/${subjectId}/result/${quizId}?attempt=${attempt.id}`,
+                            { state: withQuizOrigin(pathname, navState) }
                           )
                         }
                       >

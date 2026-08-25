@@ -444,8 +444,12 @@
   background: #f9fafb;
 }
 
+/* Holds a react-icons glyph (was a literal emoji). display:flex stops the
+   SVG sitting on the text baseline and drifting the row. */
 .notif-bell-icon {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  font-size: 17px;
   flex-shrink: 0;
   margin-top: 2px;
 }

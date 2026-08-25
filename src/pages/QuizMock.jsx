@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { FiClock, FiFlag } from "react-icons/fi";
 import api from "../api/apiClient";
+import { quizHubPath, withQuizOrigin } from "../utils/quizNav";
 import "../styles/quiz-mock.css";
 
 // Redesigned timed mock-test flow — replaces QuizDetail.jsx. Ships the
@@ -102,6 +103,7 @@ function clearDraft(quizId, attemptKey) {
 export default function QuizMock() {
   const navigate = useNavigate();
   const { subjectId, quizId } = useParams();
+  const { pathname, state: navState } = useLocation();
 
   const [quizData, setQuizData] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -131,7 +133,9 @@ export default function QuizMock() {
       try {
         const formatted = entries.map(([q, c]) => ({ question: q, selected_choice: c }));
         await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
-        navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
+        navigate(`/subjects/quiz/${subjectId}/result/${quizId}`, {
+        state: withQuizOrigin(pathname, navState),
+      });
       } catch (err) {
         setError("Time is up — your quiz was submitted. " + (err.response?.data?.detail || ""));
         setLoading(false);
@@ -157,7 +161,10 @@ export default function QuizMock() {
           // instead of silently opening a fresh, ticking attempt.
           // `replace` so Back doesn't bounce straight back in here.
           if (startRes.data?.already_submitted) {
-            navigate(`/subjects/quiz/${subjectId}/result/${quizId}`, { replace: true });
+            navigate(`/subjects/quiz/${subjectId}/result/${quizId}`, {
+              replace: true,
+              state: withQuizOrigin(pathname, navState),
+            });
             return;
           }
           if (startRes.data?.attempt_id) attemptNumber = String(startRes.data.attempt_id).slice(-8);
@@ -267,14 +274,18 @@ export default function QuizMock() {
       const formatted = Object.entries(answersRef.current).map(([q, c]) => ({ question: q, selected_choice: c }));
       await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
       clearDraft(quizId, attemptKeyRef.current);
-      navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
+      navigate(`/subjects/quiz/${subjectId}/result/${quizId}`, {
+        state: withQuizOrigin(pathname, navState),
+      });
     } catch (err) {
       setTimeout(async () => {
         if (!mountedRef.current) return;
         try {
           const formatted = Object.entries(answersRef.current).map(([q, c]) => ({ question: q, selected_choice: c }));
           await api.post(`/student/quizzes/${quizId}/submit/`, { answers: formatted });
-          navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
+          navigate(`/subjects/quiz/${subjectId}/result/${quizId}`, {
+        state: withQuizOrigin(pathname, navState),
+      });
         } catch (retryErr) {
           console.error("Auto submit retry failed", retryErr);
         }
@@ -342,7 +353,7 @@ export default function QuizMock() {
   }
   function handleExit() {
     submittedRef.current = true;
-    navigate(`/subjects/quiz/${subjectId}`);
+    navigate(quizHubPath(navState, subjectId));
   }
 
   async function handleSubmit() {
@@ -357,7 +368,9 @@ export default function QuizMock() {
       // most needed. handleExit deliberately does NOT clear it — leaving the
       // page is not finishing, and the attempt stays resumable.
       clearDraft(quizId, attemptKeyRef.current);
-      navigate(`/subjects/quiz/${subjectId}/result/${quizId}`);
+      navigate(`/subjects/quiz/${subjectId}/result/${quizId}`, {
+        state: withQuizOrigin(pathname, navState),
+      });
     } catch (err) {
       const msg = err.response?.data?.detail
         || (err.response?.data && typeof err.response.data === "object" ? Object.values(err.response.data).flat().join(" ") : null)

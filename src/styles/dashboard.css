@@ -21,11 +21,21 @@
 }
 .dashGreet__title {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--font-display);
   font-weight: 800;
   font-size: var(--fs-page-title);
   letter-spacing: -.4px;
   color: var(--ink);
+}
+
+/* Replaces the literal 👋. Tinted rather than inheriting --ink so it still
+   reads as a friendly flourish next to the greeting instead of punctuation. */
+.dashGreet__wave {
+  color: var(--warning);
+  flex-shrink: 0;
 }
 .dashGreet__sub {
   margin: 3px 0 0;
@@ -413,9 +423,18 @@
 .dashboardRight {
   display: grid;
   /* Right rail order is now [Assignments/Quizzes toggle card, Month Calendar] —
-     the toggle card gets the flexible track, the calendar keeps the fixed
-     track it always had (same two values, swapped to match child order). */
-  grid-template-rows: minmax(0, 1fr) 281px;
+     the toggle card gets the flexible track, the calendar sizes to its own
+     content.
+
+     The calendar track used to be a fixed 281px, which silently CLIPPED the
+     grid's 6th week row: `.calDate` is `aspect-ratio: 1`, so at the 348px rail
+     the seven columns are ~43px wide and therefore ~43px tall, making the grid
+     alone ~287px before the month header, legend and padding. Any month whose
+     6th row holds a date lost it — e.g. 31 Aug 2026 (a Monday, sitting alone
+     on row 6) rendered in the DOM but was invisible. `.dashboardMain` is
+     `align-items: start` with no fixed height, so `auto` here just lets the
+     rail grow; nothing else has to move. */
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 14px;
   min-height: 0;
 }
@@ -497,7 +516,9 @@
   width: 100%;
   justify-items: stretch;
   align-content: start;
-  flex: 0 1 auto;
+  /* Must not shrink: the card is a flex column, and letting the grid absorb
+     the squeeze is the other half of how the 6th week row used to disappear. */
+  flex: 0 0 auto;
 }
 
 .calDayName {

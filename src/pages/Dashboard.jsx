@@ -35,6 +35,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { PiHandWavingFill } from "react-icons/pi";
 import SessionCard from "../components/SessionCard";
 import AssignmentCard from "../components/AssignmentCard";
 import QuizCard from "../components/QuizCard";
@@ -706,7 +707,8 @@ export default function Dashboard() {
           every page, so the greeting lives here where the design puts it. */}
       <header className="dashGreet">
         <h1 className="dashGreet__title">
-          {greetName ? `${timeGreeting}, ${greetName}` : timeGreeting} 👋
+          {greetName ? `${timeGreeting}, ${greetName}` : timeGreeting}
+          <PiHandWavingFill className="dashGreet__wave" aria-hidden="true" />
         </h1>
         <p className="dashGreet__sub">
           {courseLabel ? (

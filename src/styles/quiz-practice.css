@@ -15,6 +15,7 @@
 .qp-progress-track { height: 7px; border-radius: var(--radius-pill); background: #e0e6ea; overflow: hidden; }
 .qp-progress-fill { height: 100%; background: var(--academy); border-radius: var(--radius-pill); transition: width .3s ease; }
 .qp-streak {
+  display: inline-flex; align-items: center; gap: 5px;
   font: 700 12.5px var(--font-display); padding: 8px 13px; border-radius: var(--radius-pill); flex-shrink: 0;
   background: #fff; border: 1px solid var(--card-border); color: var(--ink-3);
 }
@@ -54,12 +55,19 @@
 .qp-choice--correct .qp-choice-key { background: var(--success); color: #fff; }
 .qp-choice--wrong .qp-choice-key { background: var(--danger); color: #fff; }
 .qp-choice-text { flex: 1; }
-.qp-choice-mark { font-size: 15px; }
+.qp-choice-mark { display: inline-flex; align-items: center; font-size: 15px; }
+.qp-choice--correct .qp-choice-mark { color: var(--success); }
+.qp-choice--wrong .qp-choice-mark { color: var(--danger); }
 
 .qp-feedback { margin-top: 16px; padding: 14px 16px; border-radius: var(--radius-btn); }
 .qp-feedback--correct { background: var(--success-soft); border: 1px solid var(--success-border); }
 .qp-feedback--wrong { background: var(--warning-soft); border: 1px solid var(--skill-border); }
-.qp-feedback-title { font: 700 13px var(--font-display); margin-bottom: 4px; color: var(--ink); }
+.qp-feedback-title {
+  display: flex; align-items: center; gap: 6px;
+  font: 700 13px var(--font-display); margin-bottom: 4px; color: var(--ink);
+}
+.qp-feedback--correct .qp-feedback-title svg { color: var(--success); }
+.qp-feedback--wrong .qp-feedback-title svg { color: var(--warning-ink); }
 .qp-feedback-explanation { font: 400 12.5px/1.6 var(--font-body); color: var(--ink-2); }
 
 .qp-inline-error {

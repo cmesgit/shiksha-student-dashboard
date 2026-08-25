@@ -17,9 +17,14 @@
   font-size: 11px;
 }
 
+/* Holds a react-icons glyph (was a literal 🔍). `display: flex` keeps the SVG
+   optically centred against the input's text baseline. */
 .quizSearchIcon {
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
   opacity: 0.6;
+  flex-shrink: 0;
 }
 
 /* ===== Quiz Result Page ===== */
@@ -44,6 +49,9 @@
   cursor: pointer;
   align-self: flex-start;
   margin-bottom: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .quizResultBack:hover {
@@ -56,6 +64,28 @@
   background: white;
   border-radius: 18px 18px 0 0;
   padding: 20px 24px;
+}
+
+/* Error state for the result page — replaces a bare unstyled sentence. */
+.quizResultErrorBox {
+  width: 100%;
+  background: #fff;
+  border-radius: 18px;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.quizResultErrorBox h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.quizResultErrorBox p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
 }
 
 .quizResultHeaderBox .pageHeader {
@@ -513,6 +543,9 @@
 
 /* ── Quiz Result: Explanation button ── */
 .quizResultExplainBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   background: transparent;
   color: #425f7f;
   border: 1px solid #425f7f;
@@ -567,23 +600,15 @@
   gap: 10px;
 }
 
-.quizResultBackBtn {
-  padding: 8px 18px;
-  background: transparent;
-  color: #425f7f;
-  border: 1px solid #425f7f;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.quizResultBackBtn:hover {
-  background: #e6f7f8;
-}
+/* `.quizResultBackBtn` lived here. It rendered a second "Back to Quizzes"
+   button inside the header's action cluster, calling the same handler as
+   `.quizResultBack` above the header — removed as a duplicate, and no other
+   JSX references the class. */
 
 .quizResultReattemptBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 18px;
   background: #425f7f;
   color: #fff;

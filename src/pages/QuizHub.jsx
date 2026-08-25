@@ -5,6 +5,7 @@ import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
 import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import TourHeaderButton from "../tour/TourHeaderButton";
+import { withQuizOrigin } from "../utils/quizNav";
 import "../styles/quiz-hub.css";
 
 // S1 · "Practice & tests" — design_handoff_quiz_system README §S1.
@@ -199,15 +200,18 @@ export default function QuizHub() {
   }
 
   function openAssigned(quiz) {
+    // Carry the hub path we're leaving, so "Back to Quizzes" returns to THIS
+    // list rather than rebuilding a subject-scoped one. See utils/quizNav.js.
+    const origin = withQuizOrigin(pathname);
     if (quiz.status === "SUBMITTED") {
-      navigate(`/subjects/quiz/${quiz.subject_id}/attempts/${quiz.id}`);
+      navigate(`/subjects/quiz/${quiz.subject_id}/attempts/${quiz.id}`, { state: origin });
       return;
     }
     if (quiz.quiz_type === "practice") {
-      navigate(`/subjects/quiz/${quiz.subject_id}/practice/${quiz.id}`);
+      navigate(`/subjects/quiz/${quiz.subject_id}/practice/${quiz.id}`, { state: origin });
       return;
     }
-    navigate(`/subjects/quiz/${quiz.subject_id}/take/${quiz.id}`);
+    navigate(`/subjects/quiz/${quiz.subject_id}/take/${quiz.id}`, { state: origin });
   }
 
   if (loading) return <LoadingState label="Loading your practice and tests" />;

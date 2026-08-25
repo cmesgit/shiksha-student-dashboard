@@ -116,6 +116,9 @@
 .qraQuestionsHeader > span:first-child { font-size: 13px; font-weight: 700; color: #1a2c33; }
 
 .qraRetryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid #cfdbe6;
   background: #e6edee;
   color: #425f7f;
@@ -168,9 +171,9 @@
   color: #6b7c83;
   margin-bottom: 10px;
 }
-.mrClose { border: none; background: none; color: #9ca3af; font-size: 16px; cursor: pointer; }
+.mrClose { border: none; background: none; color: #9ca3af; font-size: 16px; cursor: pointer; display: flex; align-items: center; }
 .mrQuestionText { font-size: 15px; font-weight: 600; color: #1a2c33; margin-bottom: 14px; }
-.mrAnswerRow { border-radius: 8px; padding: 10px 12px; font-size: 12.5px; margin-bottom: 8px; }
+.mrAnswerRow { border-radius: 8px; padding: 10px 12px; font-size: 12.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
 .mrAnswerRow--wrong { background: #fdeaea; color: #b91c1c; }
 .mrAnswerRow--correct { background: #ecf8ee; color: #1f8a45; }
 .mrExplanation { font-size: 12.5px; color: #374151; background: #f8fafb; border-radius: 8px; padding: 10px 12px; margin-top: 6px; }
