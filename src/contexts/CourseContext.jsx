@@ -73,6 +73,39 @@ function writeTrackOverride(profileId, track) {
   }
 }
 
+/* Which course the learner last had open, per profile.
+ *
+ * The selection used to live in React state only, so any full page load
+ * reset it to `list[0]`. That was easy to miss while most learners had a
+ * single course; with a school course AND a competitive exam on one profile
+ * it means switching to the exam, refreshing, and being silently put back on
+ * the school course.
+ *
+ * Keyed per profile for the same reason the track override is: two siblings
+ * on one account must not inherit each other's selection. */
+const COURSE_SELECTION_BASE = "shiksha.learner.activeCourse";
+
+const courseKey = (profileId) =>
+  profileId ? `${COURSE_SELECTION_BASE}.${profileId}` : COURSE_SELECTION_BASE;
+
+function readCourseSelection(profileId) {
+  try {
+    return localStorage.getItem(courseKey(profileId)) || null;
+  } catch {
+    return null; // storage unavailable (SSR / private mode)
+  }
+}
+
+function writeCourseSelection(profileId, courseId) {
+  try {
+    const key = courseKey(profileId);
+    if (courseId) localStorage.setItem(key, courseId);
+    else localStorage.removeItem(key);
+  } catch {
+    /* storage unavailable — in-memory state only */
+  }
+}
+
 export function CourseProvider({ children }) {
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
@@ -115,6 +148,14 @@ export function CourseProvider({ children }) {
           const fresh = list.find((c) => c.id === prev.id);
           if (fresh) return fresh;
         }
+        // Restore the remembered course before falling back to the first one.
+        // Guarded on the id still being present in THIS profile's list, so an
+        // unenrolled or profile-switched selection can't resurrect a course
+        // the learner no longer has.
+        const remembered = list.find(
+          (c) => c.id === readCourseSelection(activeProfileId)
+        );
+        if (remembered) return remembered;
         return list.length > 0 ? list[0] : null;
       });
       return list;
@@ -144,6 +185,7 @@ export function CourseProvider({ children }) {
     const selected = courses.find((c) => c.id === courseId);
     if (selected) {
       setActiveCourse(selected);
+      writeCourseSelection(activeProfileId, selected.id);
       setTrackOverride(null);
       writeTrackOverride(activeProfileId, null); // course drives the track
     }

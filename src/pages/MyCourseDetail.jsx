@@ -12,6 +12,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useCourse } from "../contexts/CourseContext";
+import { courseQualifier } from "../utils/courseKind";
 import RenewSubscriptionModal from "../components/RenewSubscriptionModal";
 import { LoadingState } from "../components/StateViews";
 import TourHeaderButton from "../tour/TourHeaderButton";
@@ -54,7 +55,9 @@ export default function MyCourseDetail() {
   }
 
   const sub = course.subscription;
-  const board = course.board?.name;
+  // Board for a school course; "Competitive exam" for an exam, which has
+  // none by design. Previously the chip just vanished for exams.
+  const qualifier = courseQualifier(course);
   const stream = course.stream_name;
 
   return (
@@ -66,7 +69,7 @@ export default function MyCourseDetail() {
             <TourHeaderButton pathname={pathname} />
           </div>
           <div className="myCourseDetail__meta">
-            {board && <span className="myCourseDetail__chip">{board}</span>}
+            {qualifier && <span className="myCourseDetail__chip">{qualifier}</span>}
             {stream && <span className="myCourseDetail__chip">{stream}</span>}
           </div>
           {course.description && (

@@ -17,6 +17,7 @@ import { useCourse } from "../contexts/CourseContext";
 import AcademyEmptyState from "../components/AcademyEmptyState";
 import Skeleton from "../components/Skeleton";
 import api from "../api/apiClient";
+import { courseQualifier } from "../utils/courseKind";
 import { formatPrice } from "../api/catalog";
 import "../styles/academyCommon.css";
 import "../styles/myCourses.css";
@@ -100,7 +101,7 @@ export default function MyCourses() {
     const q = query.trim().toLowerCase();
     if (!q) return courses || [];
     return (courses || []).filter((c) =>
-      [c.title, c.board?.name, c.stream_name]
+      [c.title, courseQualifier(c), c.stream_name]
         .filter(Boolean)
         .some((v) => v.toLowerCase().includes(q))
     );
@@ -260,7 +261,9 @@ export default function MyCourses() {
 function CourseCard({ course, isActive, onSelect }) {
   const sub = course.subscription;
   const status = statusOf(sub);
-  const board = course.board?.name;
+  // Board for a school course; "Competitive exam" for an exam, which has
+  // none by design. Previously the pill just vanished for exams.
+  const qualifier = courseQualifier(course);
   const stream = course.stream_name;
 
   const handleKeyDown = (e) => {
@@ -281,7 +284,7 @@ function CourseCard({ course, isActive, onSelect }) {
     >
       <div className="mc-card__top">
         <div className="mc-card__pills">
-          {board && <span className="mc-card__pill">{board}</span>}
+          {qualifier && <span className="mc-card__pill">{qualifier}</span>}
           {stream && <span className="mc-card__pill">{stream}</span>}
         </div>
         <span className={`mc-card__badge mc-card__badge--${status.key}`}>{status.label}</span>

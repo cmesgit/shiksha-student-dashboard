@@ -15,6 +15,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useCourse } from "../contexts/CourseContext";
 import { courseTrack } from "../utils/trackFromCourses";
+import { courseQualifier } from "../utils/courseKind";
 
 /* The design's selector caret is a double chevron (up + down), 13px,
    stroke-width 2.4 — Academy Dashboard.dc.html line 576. */
@@ -73,8 +74,11 @@ export default function CourseSwitcher({ setMenuOpen }) {
   // no way to tell which was selected, or which one you were switching to.
   // The board already comes down with /courses/my/ (CourseSerializer nests
   // it); it just was never rendered.
-  const boardOf = (c) =>
-    (typeof c?.board === "string" ? c.board : c?.board?.name) || "";
+  //
+  // courseQualifier falls back to "Competitive exam" where there is no board,
+  // because an exam legitimately has none — otherwise a learner taking both
+  // "Class 10" and "UPSC Civil Services" saw the first qualified and the
+  // second bare, with nothing saying which was which.
 
   const pick = (course) => {
     if (course.id !== activeCourse.id) selectCourse(course.id);
@@ -90,14 +94,14 @@ export default function CourseSwitcher({ setMenuOpen }) {
         onClick={() => multiple && setOpen((o) => !o)}
         aria-haspopup={multiple ? "listbox" : undefined}
         aria-expanded={multiple ? open : undefined}
-        title={[displayCourse.title, boardOf(displayCourse)].filter(Boolean).join(" · ")}
+        title={[displayCourse.title, courseQualifier(displayCourse)].filter(Boolean).join(" · ")}
         data-tour="sidebar.course-switcher"
       >
         <span className="acad-side__wellText">
           <span className="acad-side__wellLabel">Active course</span>
           <span className="acad-side__wellValue">{displayCourse.title}</span>
-          {boardOf(displayCourse) && (
-            <span className="acad-side__wellBoard">{boardOf(displayCourse)}</span>
+          {courseQualifier(displayCourse) && (
+            <span className="acad-side__wellBoard">{courseQualifier(displayCourse)}</span>
           )}
         </span>
         {multiple && <SwitchCaret />}
@@ -115,8 +119,8 @@ export default function CourseSwitcher({ setMenuOpen }) {
               onClick={() => pick(c)}
             >
               <span className="acad-side__menuItemTitle">{c.title}</span>
-              {boardOf(c) && (
-                <span className="acad-side__menuItemBoard">{boardOf(c)}</span>
+              {courseQualifier(c) && (
+                <span className="acad-side__menuItemBoard">{courseQualifier(c)}</span>
               )}
             </button>
           ))}
