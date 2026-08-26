@@ -1,7 +1,17 @@
 /* The design's root shell: display:flex, height:100vh, min-width:1240px,
-   background #eef1f2 (Academy Dashboard.dc.html line 559). The min-width is
-   applied only from 769px up — below that we keep the mobile drawer rather
-   than force a horizontal scroll on phones. */
+   background #eef1f2 (Academy Dashboard.dc.html line 559).
+*
+   The min-width now applies only once the viewport actually REACHES 1240px.
+   It used to kick in from 769px, which floored the shell at 1240px on any
+   tablet-width window and produced a real horizontal scrollbar for the whole
+   769–1239px band — the sidebar and header did not overflow on their own
+   merits, they were simply stretched by this floor.
+*
+   This mirrors the teacher app, which already made the same call for the same
+   reason (see layout.css: "below it (including tablet widths like a 1024px
+   iPad) we keep the mobile drawer rather than force content wider than the
+   viewport with no way to reach the sidebar"). The two dashboards were
+   diverging on a shared design constraint; the student app was the outlier. */
 .studentLayout {
   display: flex;
   height: 100vh;
@@ -9,7 +19,7 @@
   background: var(--page-bg);
 }
 
-@media (min-width: 769px) {
+@media (min-width: 1240px) {
   .studentLayout {
     min-width: var(--app-min-w);
   }
