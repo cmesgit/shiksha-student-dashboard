@@ -69,8 +69,8 @@
  * `student.welcome.academy.mobile` (spec §10) — the spec's own wording
  * assumes a "bottom nav" to target. This app has none: mobile navigation is
  * the same `acad-side` drawer as desktop, opened via `Header.jsx`'s
- * hamburger (`bottomNav.css` exists in the codebase but is dead — no
- * component ever renders a `.bottomNav`). Building a real bottom-nav
+ * hamburger. (There used to be a dead `bottomNav.css` here that no component
+ * ever rendered against; it has since been deleted.) Building a real bottom-nav
  * component is UI work far outside "add the flagged mobile tour variant" —
  * targeted the three things that already sit in the always-visible mobile
  * header instead (hamburger, notifications, profile switcher), which serves
