@@ -29,7 +29,7 @@
 // ──────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useCourse } from "../contexts/CourseContext";
 import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import "../styles/academyCommon.css";
@@ -62,7 +62,17 @@ const teacherLabelFor = (subject) =>
 export default function StudyMaterialList() {
   const navigate = useNavigate();
   const { subjectId } = useParams();
-  const { activeCourse, subjects } = useCourse();
+  const [searchParams] = useSearchParams();
+  const { activeCourse, subjects, courses, selectCourse } = useCourse();
+
+  // A study-material notification deep-links to a SUBJECT, but this screen
+  // only ever fetches the ACTIVE course — and nothing in the notification
+  // click path sets that. A learner in two courses would click a Class 10
+  // notification while Class 12 was active and get the Class 12 list filtered
+  // to a Class 10 subject id: "No material for this subject", for material
+  // that exists. The backend now appends ?course= to the link so we can
+  // switch first (materials/views.py, materials.uploaded link_url).
+  const wantedCourseId = searchParams.get("course");
 
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +85,20 @@ export default function StudyMaterialList() {
   useEffect(() => {
     setSubjectFilter(subjectId ? String(subjectId) : "");
   }, [subjectId]);
+
+  // Follow ?course= before fetching. selectCourse is a no-op unless the id is
+  // one of this learner's own courses, so a stale or hand-edited link can't
+  // move them somewhere they aren't enrolled — it just leaves the current
+  // course active. Changing activeCourse re-runs the fetch effect below.
+  useEffect(() => {
+    if (!wantedCourseId) return;
+    if (activeCourse?.id === wantedCourseId) return;
+    if (!(courses || []).some((c) => c.id === wantedCourseId)) return;
+    selectCourse(wantedCourseId);
+    // selectCourse identity changes every render (it closes over state), so
+    // depending on it here would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantedCourseId, activeCourse?.id, courses]);
 
   useEffect(() => {
     const list = subjects || [];
@@ -158,11 +182,27 @@ export default function StudyMaterialList() {
     return () => { cancelled = true; };
   }, [activeCourse, subjects]);
 
-  // Only offer a pill for subjects that actually have material.
+  // Only offer a pill for subjects that actually have material — plus, always,
+  // whichever subject is currently FILTERED.
+  //
+  // Without that second clause a deep link could select a subject with no
+  // visible material and then render no pill for it: nothing highlighted, an
+  // empty list, and no way back to "All" except noticing the All pill had
+  // gone grey. The filter was invisible and unclearable — a state the UI could
+  // reach but the user could never have produced by clicking.
   const subjectsWithMaterial = useMemo(() => {
     const ids = new Set(materials.map((m) => String(m.subjectId)));
-    return (subjects || []).filter((s) => ids.has(String(s.id)));
-  }, [subjects, materials]);
+    return (subjects || []).filter(
+      (s) => ids.has(String(s.id)) || String(s.id) === subjectFilter
+    );
+  }, [subjects, materials, subjectFilter]);
+
+  // Is the active filter pointing at a subject that isn't even in this course?
+  // Happens when a notification deep-links to another course's subject and we
+  // couldn't switch (not enrolled any more, or the link predates ?course=).
+  const filterIsForeign = Boolean(
+    subjectFilter && !(subjects || []).some((s) => String(s.id) === subjectFilter)
+  );
 
   const rows = useMemo(
     () =>
@@ -253,7 +293,24 @@ export default function StudyMaterialList() {
 
           {rows.length === 0 ? (
             <section className="ac-listCard">
-              <div className="ac-emptyRow">No material for this subject</div>
+              {/* "No material for this subject" is a lie when the subject
+                  belongs to a different course — the material exists, this
+                  screen is just pointed at the wrong course. Say which case
+                  it is, and always offer the way out. */}
+              <div className="ac-emptyRow">
+                <span>
+                  {filterIsForeign
+                    ? "That material is in one of your other courses. Switch course from the sidebar to open it."
+                    : "No material for this subject"}
+                </span>
+                <button
+                  type="button"
+                  className="ac-linkBtn"
+                  onClick={() => setSubjectFilter("")}
+                >
+                  Show all subjects
+                </button>
+              </div>
             </section>
           ) : (
             <section className="ac-listCard ac-listCard--flush">

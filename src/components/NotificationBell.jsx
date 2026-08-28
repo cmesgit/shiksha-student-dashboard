@@ -169,9 +169,14 @@ export default function NotificationBell() {
       else if (type === "QUIZ")       goTracked(`/subjects/quiz/${subject_id}`);
       else if (type === "SUBMISSION") goTracked(`/subjects/${subject_id}/assignments`);
       else if (type === "SESSION")    goTracked(`/live-sessions`);
-      // MATERIAL rows come from the REST feed with no link_url (the
-      // ActivitySerializer has no such field), so this branch — not
-      // openLink above — is what routes them on a reloaded page.
+      // Fallback only. Activity rows now carry link_url, so a MATERIAL row
+      // normally routes via openLink above with the ?course= the server
+      // computed — which is what lets the Study Material screen switch course
+      // before filtering. This branch still matters for rows written BEFORE
+      // that column existed, which have a blank link and would otherwise be
+      // unclickable. Such a row can still land on the wrong course's list;
+      // StudyMaterialList detects a subject that isn't in the active course
+      // and says so, rather than the old "No material for this subject".
       else if (type === "MATERIAL")   goTracked(`/study-material/list/${subject_id}`);
       else                            goTracked(`/subjects/${subject_id}`);
       return;
