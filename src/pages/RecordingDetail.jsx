@@ -3,7 +3,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { LoadingState, EmptyState, ErrorState } from "../components/StateViews";
 import api from "../api/apiClient";
 import NotesViewModal from "../components/live/NotesViewModal";
-import { BUNNY_LIBRARY_ID } from "../config/urls";
+import useRecordingPlayback from "../hooks/useRecordingPlayback";
+import {
+  parsePlayerJsMessage,
+  readTimeupdate,
+  subscribePlayerJs,
+} from "../utils/playerjs";
 import "../styles/academyCommon.css";
 import "../styles/recordingDetail.css";
 const SAVE_INTERVAL_MS = 15000; // save progress every 15 seconds
@@ -17,10 +22,25 @@ export default function RecordingDetail() {
   const [startTime, setStartTime]   = useState(0);
   const [progressPct, setProgressPct] = useState(null);
   const [showNotes, setShowNotes] = useState(false);
+  // Bumped to remount the iframe when the trim end is reached — the only way
+  // to actually stop a cross-origin player we cannot call pause() on.
+  const [iframeKey, setIframeKey] = useState(0);
+  const [reachedEnd, setReachedEnd] = useState(false);
 
   const progressIntervalRef = useRef(null);
   const currentPositionRef  = useRef(0);
   const playerWrapRef       = useRef(null);
+  const iframeRef           = useRef(null);
+
+  // The signed, expiring embed URL. `startTime` is resolved from saved
+  // progress below and clamped into the trim window server-side.
+  const {
+    embedUrl,
+    error: playbackError,
+    trimStart,
+    trimEnd,
+    effectiveDuration,
+  } = useRecordingPlayback(videoId, { start: startTime });
 
   // ── 1. load recording + saved progress ───────────────────────────────────
   useEffect(() => {
@@ -55,25 +75,64 @@ export default function RecordingDetail() {
     fetchAll();
   }, [videoId]);
 
-  // ── 2. save progress periodically via postMessage from Bunny iframe ──────
-  // Bunny player emits: { event: "timeupdate", currentTime: N, duration: N }
+  // ── 2. track position over the Player.js protocol ────────────────────────
+  //
+  // Bunny's player speaks Player.js: it posts a JSON *string* shaped
+  // {context:"player.js", event, value:{seconds, duration}}, and it sends
+  // nothing at all until we ask. The old handler here expected a flat OBJECT
+  // with `currentTime` and never subscribed, so it never once fired — which
+  // is why last_position has only ever been 0 and the progress bar below has
+  // always been decorative. See utils/playerjs.js.
   useEffect(() => {
     const handleMessage = (e) => {
-      if (!e.data || typeof e.data !== "object") return;
-      const { event, currentTime, duration } = e.data;
+      const msg = parsePlayerJsMessage(e.data);
+      if (!msg) return;
 
-      if (event === "timeupdate" && typeof currentTime === "number") {
-        currentPositionRef.current = currentTime;
+      // The player announces itself when it's ready; that is the moment a
+      // subscription is guaranteed to stick. We also subscribe on load below,
+      // because `ready` can fire before this listener is attached.
+      if (msg.event === "ready") {
+        subscribePlayerJs(iframeRef.current, ["timeupdate", "ended"]);
+        return;
+      }
 
-        if (duration && duration > 0) {
-          setProgressPct(Math.round((currentTime / duration) * 100));
-        }
+      if (msg.event === "ended") {
+        setReachedEnd(true);
+        return;
+      }
+
+      if (msg.event !== "timeupdate") return;
+      const t = readTimeupdate(msg);
+      if (!t) return;
+
+      currentPositionRef.current = t.seconds;
+
+      // Percent is measured against the VISIBLE window, not the raw file, so
+      // a trimmed recording reads 100% at its trimmed end rather than at the
+      // end of footage nobody is shown. effectiveDuration is resolved by the
+      // server precisely so three apps don't each reimplement this.
+      const span = effectiveDuration || t.duration;
+      if (span && span > 0) {
+        const watched = t.seconds - (trimStart || 0);
+        setProgressPct(
+          Math.round(Math.min(Math.max((watched / span) * 100, 0), 100)),
+        );
+      }
+
+      // Trim end is BEST-EFFORT and cannot be anything else: the iframe is
+      // cross-origin, so there is no pause() to call. Remounting it with no
+      // src is the only lever that actually stops the audio. A viewer can
+      // still reach the trimmed tail by editing the URL — a trim tidies
+      // playback, it does not restrict access.
+      if (trimEnd && t.seconds >= trimEnd && !reachedEnd) {
+        setReachedEnd(true);
+        setIframeKey((k) => k + 1);
       }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [effectiveDuration, trimStart, trimEnd, reachedEnd]);
 
   // ── 3. auto-save on interval ─────────────────────────────────────────────
   const saveProgress = useCallback(async () => {
@@ -152,20 +211,46 @@ export default function RecordingDetail() {
 
           <div className="recDetail__player">
             <div className="recDetail__video" ref={playerWrapRef}>
-              {BUNNY_LIBRARY_ID ? (
+              {playbackError ? (
+                <ErrorState
+                  title="Can't play this recording"
+                  message={playbackError}
+                />
+              ) : embedUrl ? (
                 <iframe
-                  src={`https://iframe.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${videoData.bunny_video_id}?autoplay=false&start=${startTime}`}
+                  key={iframeKey}
+                  ref={iframeRef}
+                  src={reachedEnd ? undefined : embedUrl}
                   loading="lazy"
                   allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
                   allowFullScreen
                   className="recDetail__videoElement"
                   title={videoData.title}
+                  onLoad={() =>
+                    // `ready` may fire before the message listener mounts, so
+                    // subscribe here too. Duplicate addEventListener frames
+                    // are harmless.
+                    subscribePlayerJs(iframeRef.current, ["timeupdate", "ended"])
+                  }
                 />
               ) : (
-                <ErrorState
-                  title="Playback isn't configured"
-                  message="This recording can't be played right now — the video library isn't set up. Contact support."
-                />
+                <LoadingState label="Preparing video" />
+              )}
+
+              {reachedEnd && (
+                <div className="recDetail__endCard">
+                  <p className="recDetail__endTitle">End of clip</p>
+                  <button
+                    type="button"
+                    className="ac-linkbtn"
+                    onClick={() => {
+                      setReachedEnd(false);
+                      setIframeKey((k) => k + 1);
+                    }}
+                  >
+                    Replay
+                  </button>
+                </div>
               )}
               <button
                 type="button"
