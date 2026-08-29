@@ -129,3 +129,36 @@
   .recDetail__player,
   .recDetail__meta { padding: 12px; }
 }
+
+/* ── End of trimmed clip ──────────────────────────────────────────────────
+   Covers the player slot once the trim end is reached. The iframe is
+   remounted with no src at the same moment (a cross-origin player cannot be
+   paused from here), so this card is what the viewer sees instead of a dead
+   black rectangle. */
+.recDetail__endCard {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  /* The player well is deliberately black (see .recDetail__video), so this
+     one overlay is on black rather than on a surface token. */
+  background: rgba(0, 0, 0, 0.82);
+  color: #fff;
+  text-align: center;
+  padding: 16px;
+}
+
+.recDetail__endTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.recDetail__endCard .ac-linkbtn {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.55);
+}
