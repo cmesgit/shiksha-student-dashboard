@@ -465,6 +465,17 @@
   line-height: 1.4;
 }
 
+/* The meta line under a notification's title: "Physics · Class 10 Science".
+   `.notif-bell-subject` was rendered by NotificationBell.jsx but had NO rule
+   anywhere in either dashboard, so it inherited the title's 13px/dark and
+   read as a second headline. */
+.notif-bell-subject {
+  font-size: 11px;
+  color: var(--ink-muted);
+  margin: 0 0 3px;
+  line-height: 1.35;
+}
+
 .notif-bell-time {
   font-size: 11px;
   color: #9ca3af;

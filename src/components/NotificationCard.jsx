@@ -18,7 +18,7 @@ const TYPE_CLASSES = {
 export default function NotificationCard({ notification, onRead }) {
   const navigate = useNavigate();
   const item = notification || {};
-  const { id, type, title, subject_name, subject_id, due_date, created_at, is_read } = item;
+  const { id, type, title, subject_name, course_name, subject_id, due_date, created_at, is_read } = item;
   const typeClass = TYPE_CLASSES[type] || "";
   const displayLabel = TYPE_LABELS[type] || type;
 
@@ -51,7 +51,12 @@ export default function NotificationCard({ notification, onRead }) {
           <span className={"notifItem__badge notifItem__badge--" + typeClass}>{displayLabel}</span>
         </div>
         <p className="notifItem__title">{title}</p>
-        {subject_name && <p className="notifItem__sub">{subject_name}</p>}
+        {/* course_name as well as subject_name — see NotificationBell.jsx. */}
+        {(subject_name || course_name) && (
+          <p className="notifItem__sub">
+            {[subject_name, course_name].filter(Boolean).join(" \u00b7 ")}
+          </p>
+        )}
         {formattedDate && <p className="notifItem__time">{formattedDate}</p>}
       </div>
     </div>
