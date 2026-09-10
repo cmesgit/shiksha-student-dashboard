@@ -1,0 +1,61 @@
+/* "From ShikshaCom" — the dashboard rail ticker (Phase 7).
+ *
+ * ⚠ TOKEN-ONLY, unlike dashboard.css beside it. That file predates the token
+ * rule and carries 69 literal hex values, grandfathered on purpose (root
+ * CLAUDE.md: don't migrate the legacy call sites). Copying its
+ * `.dashboardCard` rule verbatim would therefore produce NEW code that fails
+ * this repo's own no-literal-hex rule. So the card reuses `.dashboardCard`
+ * for its grid and overflow behaviour and adds everything else through
+ * var(--…), which renders pixel-identical — `--border` IS #e5eaed and
+ * `--r-lg` IS 12px. Same approach, and same reasoning, as
+ * quiz-result-analytics.css:182.
+ *
+ * ⚠ Prefixed `.stk-`, not `.tk-`: this app's own tokens.css already defines
+ * 14 `.tk-*` rules.
+ */
+
+.stk { display: grid; gap: 10px; }
+
+.stk__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+.stk__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.stk__list { margin: 0; padding: 0; list-style: none; display: grid; }
+
+.stk__row { border-top: 1px solid var(--border); }
+.stk__row:first-child { border-top: 0; }
+
+.stk__link {
+  display: grid;
+  gap: 3px;
+  padding: 10px 0;
+  text-decoration: none;
+}
+a.stk__link:hover .stk__text { color: var(--action); }
+
+.stk__kind {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* ⚠ 700, not the design's "Montserrat 800". No weight token exists in this
+   app, and a card title here is 700 — 800 would make the ticker shout over
+   the Assignments card sitting directly beneath it. */
+.stk__text {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.stk__metric { font-size: 11.5px; color: var(--ink-muted); }
+.stk__metric b { font-size: 15px; font-weight: 800; color: var(--action); }
