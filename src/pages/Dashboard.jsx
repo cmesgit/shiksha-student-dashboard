@@ -37,6 +37,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { PiHandWavingFill } from "react-icons/pi";
 import SessionCard from "../components/SessionCard";
+import DashboardTicker from "../components/DashboardTicker";
 import AssignmentCard from "../components/AssignmentCard";
 import QuizCard from "../components/QuizCard";
 import NotificationCard from "../components/NotificationCard";
@@ -797,6 +798,11 @@ export default function Dashboard() {
           </div>
 
           <div className="dashboardRight">
+            {/* Live ticker, dashboard slot. Renders nothing unless the flag
+                is on and something is queued, so the rail is unchanged until
+                then. Inside .desktopOnly, so it is absent below 768px by
+                construction — see DashboardTicker.jsx. */}
+            <DashboardTicker />
             <section className="dashboardCard dashboardCard--assignments">
               <div className="cardHeader">
                 <div className="assignmentToggle" role="tablist" aria-label="Assignments or Quizzes">
