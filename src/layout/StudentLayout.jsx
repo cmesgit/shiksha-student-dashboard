@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import RouteContent from "../components/RouteContent";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import Breadcrumbs from "../components/Breadcrumbs";
@@ -55,7 +56,7 @@ export default function StudentLayout() {
     return (
       <div className="studentLayout studentLayout--live">
         <div className="studentLayout__page studentLayout__page--live" key={identityKey}>
-          <Outlet />
+          <RouteContent><Outlet /></RouteContent>
         </div>
       </div>
     );
@@ -93,7 +94,7 @@ export default function StudentLayout() {
               rather than adding a new wrapper — Academy pages simply never
               call useSkillToast(). */}
           <SkillToastProvider>
-            <Outlet />
+            <RouteContent><Outlet /></RouteContent>
           </SkillToastProvider>
         </div>
       </div>

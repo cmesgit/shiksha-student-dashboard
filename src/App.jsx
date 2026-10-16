@@ -10,7 +10,8 @@
  *   - Added <Route path="skill-dev/sessions/:id" element={<SkillSessionDetail />} />
  *   - Added fullscreen <Route path="/skill-session/live/:id" element={<SkillSessionLive />} />  (NEW)
  */
-import { useEffect } from "react";
+import { lazy, useEffect } from "react";
+import RouteContent from "./components/RouteContent";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CourseProvider, useCourse } from "./contexts/CourseContext";
@@ -23,44 +24,44 @@ import { tourRegistry } from "./tour/tourRegistry";
 import StudentLayout from "./layout/StudentLayout";
 
 import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
-import PrivateDetails from "./pages/PrivateDetails";
-import ChangePassword from "./pages/ChangePassword";
-import Chat from "./pages/Chat";
-import SkillMessages from "./pages/SkillMessages";
-import SkillSessionDetail from "./pages/SkillSessionDetail";
-import SkillSessionLive from "./pages/SkillSessionLive";
+const Profile = lazy(() => import("./pages/Profile"));
+const PrivateDetails = lazy(() => import("./pages/PrivateDetails"));
+const ChangePassword = lazy(() => import("./pages/ChangePassword"));
+const Chat = lazy(() => import("./pages/Chat"));
+const SkillMessages = lazy(() => import("./pages/SkillMessages"));
+const SkillSessionDetail = lazy(() => import("./pages/SkillSessionDetail"));
+const SkillSessionLive = lazy(() => import("./pages/SkillSessionLive"));
 
-import Subjects from "./pages/Subjects";
-import SubjectDetails from "./pages/SubjectDetails";
-import SubjectsAssignments from "./pages/SubjectsAssignments";
-import AssignmentDetail from "./pages/AssignmentDetail";
-import QuizHub from "./pages/QuizHub";
-import QuizMock from "./pages/QuizMock";
-import QuizPractice from "./pages/QuizPractice";
-import QuizResult from "./pages/QuizResult";
-import QuizAttempts from "./pages/QuizAttempts";
-import ChapterPractice from "./pages/ChapterPractice";
-import SubjectsRecordings from "./pages/SubjectsRecordings";
-import RecordingDetail from "./pages/RecordingDetail";
-import StudyMaterialList from "./pages/StudyMaterialList";
-import StudyMaterialDetail from "./pages/StudyMaterialDetail";
-import LiveSessionDetail from "./pages/LiveSessionDetail";
-import LiveSessions from "./pages/LiveSessions";
-import PrivateSessions from "./pages/PrivateSessions";
-import PrivateSessionLive from "./pages/PrivateSessionLive";
-import GroupSessions from "./pages/GroupSessions";
-import GroupSessionLive from "./pages/GroupSessionLive";
-import Quiz from "./pages/Quiz";
-import Teachers from "./pages/Teachers";
-import TeacherDetail from "./pages/TeacherDetail";
-import MyCourseDetail from "./pages/MyCourseDetail";
-import Progress from "./pages/Progress";
-import MyCourses from "./pages/MyCourses";
-import BrowseCourses from "./pages/BrowseCourses";
-import BlogFeed from "./pages/BlogFeed";
-import MyCounselling from "./pages/counselling/MyCounselling";
-import CounsellingAssessment from "./pages/counselling/CounsellingAssessment";
+const Subjects = lazy(() => import("./pages/Subjects"));
+const SubjectDetails = lazy(() => import("./pages/SubjectDetails"));
+const SubjectsAssignments = lazy(() => import("./pages/SubjectsAssignments"));
+const AssignmentDetail = lazy(() => import("./pages/AssignmentDetail"));
+const QuizHub = lazy(() => import("./pages/QuizHub"));
+const QuizMock = lazy(() => import("./pages/QuizMock"));
+const QuizPractice = lazy(() => import("./pages/QuizPractice"));
+const QuizResult = lazy(() => import("./pages/QuizResult"));
+const QuizAttempts = lazy(() => import("./pages/QuizAttempts"));
+const ChapterPractice = lazy(() => import("./pages/ChapterPractice"));
+const SubjectsRecordings = lazy(() => import("./pages/SubjectsRecordings"));
+const RecordingDetail = lazy(() => import("./pages/RecordingDetail"));
+const StudyMaterialList = lazy(() => import("./pages/StudyMaterialList"));
+const StudyMaterialDetail = lazy(() => import("./pages/StudyMaterialDetail"));
+const LiveSessionDetail = lazy(() => import("./pages/LiveSessionDetail"));
+const LiveSessions = lazy(() => import("./pages/LiveSessions"));
+const PrivateSessions = lazy(() => import("./pages/PrivateSessions"));
+const PrivateSessionLive = lazy(() => import("./pages/PrivateSessionLive"));
+const GroupSessions = lazy(() => import("./pages/GroupSessions"));
+const GroupSessionLive = lazy(() => import("./pages/GroupSessionLive"));
+const Quiz = lazy(() => import("./pages/Quiz"));
+const Teachers = lazy(() => import("./pages/Teachers"));
+const TeacherDetail = lazy(() => import("./pages/TeacherDetail"));
+const MyCourseDetail = lazy(() => import("./pages/MyCourseDetail"));
+const Progress = lazy(() => import("./pages/Progress"));
+const MyCourses = lazy(() => import("./pages/MyCourses"));
+const BrowseCourses = lazy(() => import("./pages/BrowseCourses"));
+const BlogFeed = lazy(() => import("./pages/BlogFeed"));
+const MyCounselling = lazy(() => import("./pages/counselling/MyCounselling"));
+const CounsellingAssessment = lazy(() => import("./pages/counselling/CounsellingAssessment"));
 
 import {
   
@@ -123,6 +124,7 @@ export default function App() {
         <CourseProvider>
           <DocumentTitle />
           <TourMount>
+          <RouteContent>
           <Routes>
             <Route
               path="/"
@@ -252,6 +254,7 @@ export default function App() {
                 the safe default in an app where every route needs auth. */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </RouteContent>
           </TourMount>
         </CourseProvider>
       </AuthProvider>

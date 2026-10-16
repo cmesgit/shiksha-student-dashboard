@@ -5,13 +5,14 @@
 // are reached contextually (Explore/Profile/Dashboard "Book"/"View profile"),
 // not from the sidebar — `bookFrom` in router state drives their back-link.
 
+import { lazy } from "react";
 import { useNavigate } from "react-router-dom";
-import SkillSessions from "./SkillSessions";
-import SkillBookTutor from "./SkillBookTutor";
-import SkillExplore from "./SkillExplore";
-import SkillExpertProfile from "./SkillExpertProfile";
-import SkillMyCourses from "./SkillMyCourses";
-import SkillReviews from "./SkillReviews";
+const SkillSessions = lazy(() => import("./SkillSessions"));
+const SkillBookTutor = lazy(() => import("./SkillBookTutor"));
+const SkillExplore = lazy(() => import("./SkillExplore"));
+const SkillExpertProfile = lazy(() => import("./SkillExpertProfile"));
+const SkillMyCourses = lazy(() => import("./SkillMyCourses"));
+const SkillReviews = lazy(() => import("./SkillReviews"));
 import "./skillDash.css";
 
 function useSkillNav() {
