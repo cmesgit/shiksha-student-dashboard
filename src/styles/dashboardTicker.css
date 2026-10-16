@@ -36,6 +36,19 @@
   padding: 10px 0;
   text-decoration: none;
 }
+.stk__link--with-img {
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.stk__thumb {
+  display: block;
+  width: 72px;
+  height: 54px;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+}
+.stk__content { min-width: 0; display: grid; gap: 3px; }
 a.stk__link:hover .stk__text { color: var(--action); }
 
 .stk__kind {

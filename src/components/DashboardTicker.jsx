@@ -48,20 +48,23 @@ export default function DashboardTicker() {
         {items.slice(0, 4).map((it) => {
           const inner = (
             <>
-              <span className="stk__kind">{KIND_LABEL[it.kind] || "Update"}</span>
-              <span className="stk__text">{it.message}</span>
-              {it.metric && (
-                <span className="stk__metric">
-                  <b>{it.metric.value}</b> {it.metric.label}
-                </span>
-              )}
+              {it.img && <img className="stk__thumb" src={it.img} alt="" />}
+              <span className="stk__content">
+                <span className="stk__kind">{KIND_LABEL[it.kind] || "Update"}</span>
+                <span className="stk__text">{it.message}</span>
+                {it.metric && (
+                  <span className="stk__metric">
+                    <b>{it.metric.value}</b> {it.metric.label}
+                  </span>
+                )}
+              </span>
             </>
           );
           return (
             <li className="stk__row" key={it.id}>
               {it.link_url
-                ? <a className="stk__link" href={it.link_url}>{inner}</a>
-                : <span className="stk__link">{inner}</span>}
+                ? <a className={`stk__link${it.img ? " stk__link--with-img" : ""}`} href={it.link_url}>{inner}</a>
+                : <span className={`stk__link${it.img ? " stk__link--with-img" : ""}`}>{inner}</span>}
             </li>
           );
         })}
