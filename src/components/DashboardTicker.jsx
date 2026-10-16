@@ -27,14 +27,37 @@ export default function DashboardTicker() {
 
   useEffect(() => {
     let alive = true;
-    getPublicConfig()
-      .then((cfg) => {
-        if (!alive || !cfg.live_ticker_enabled) return null;
-        return api.get("/content/announcements/", { params: { slot: "dashboard" } });
-      })
-      .then((res) => { if (alive && res) setItems(res.data || []); })
-      .catch(() => { /* leave the rail as it was — never render an empty shell */ });
-    return () => { alive = false; };
+    let request = 0;
+    let lastRefresh = 0;
+    const load = () => {
+      const current = ++request;
+      getPublicConfig()
+        .then((cfg) => {
+          if (!alive || !cfg.live_ticker_enabled) return null;
+          return api.get("/content/announcements/", { params: { slot: "dashboard" } });
+        })
+        .then((res) => {
+          if (alive && current === request) setItems(Array.isArray(res?.data) ? res.data : []);
+        })
+        .catch(() => { /* Keep the previous content during a temporary outage. */ });
+    };
+    const refresh = () => {
+      if (document.visibilityState !== "visible" || Date.now() - lastRefresh < 1000) return;
+      lastRefresh = Date.now();
+      load();
+    };
+    load();
+    // Match the public ticker: open dashboards pick up image removals,
+    // publishing and expired windows without a manual page reload.
+    const timer = setInterval(refresh, 60000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, []);
 
   if (!items.length) return null;
