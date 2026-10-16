@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { HOME_URL } from "../config/urls";
+import { advertisementLink } from "../utils/advertisementLink";
 import api from "../api/apiClient";
 import { getPublicConfig } from "../api/publicConfig";
 import "../styles/dashboardTicker.css";
@@ -69,6 +71,7 @@ export default function DashboardTicker() {
       </div>
       <ul className="stk__list">
         {items.slice(0, 4).map((it) => {
+          const destination = advertisementLink(it.link_url, HOME_URL);
           const inner = (
             <>
               {it.img && <img className="stk__thumb" src={it.img} alt="" />}
@@ -85,8 +88,8 @@ export default function DashboardTicker() {
           );
           return (
             <li className="stk__row" key={it.id}>
-              {it.link_url
-                ? <a className={`stk__link${it.img ? " stk__link--with-img" : ""}`} href={it.link_url}>{inner}</a>
+              {destination
+                ? <a className={`stk__link${it.img ? " stk__link--with-img" : ""}`} href={destination}>{inner}</a>
                 : <span className={`stk__link${it.img ? " stk__link--with-img" : ""}`}>{inner}</span>}
             </li>
           );
