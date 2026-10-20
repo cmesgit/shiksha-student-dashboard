@@ -207,8 +207,10 @@ export default function App() {
                   notification link_urls exactly, so bell clicks
                   deep-link to the right appointment/report. */}
               <Route path="counseling" element={<MyCounselling />} />
-              <Route path="counseling/appointments" element={<MyCounselling />} />
-              <Route path="counseling/appointments/:id" element={<MyCounselling />} />
+              <Route path="counseling/appointments" element={<MyCounselling initialTab="upcoming" />} />
+              <Route path="counseling/appointments/:id" element={<MyCounselling initialTab="upcoming" />} />
+              <Route path="counseling/history" element={<MyCounselling initialTab="past" />} />
+              <Route path="counseling/notifications" element={<MyCounselling initialTab="notifications" />} />
               <Route path="counseling/appointments/:id/assessment" element={<CounsellingAssessment />} />
               <Route path="counseling/reports" element={<MyCounselling initialTab="reports" />} />
               <Route path="counselling/*" element={<Navigate to="/counseling" replace />} />
