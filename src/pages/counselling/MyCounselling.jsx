@@ -18,9 +18,13 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import PageHeader from "../../components/PageHeader";
-import ConfirmDialog from "../../components/ConfirmDialog";
-import { cancelAppointment, getAppointments, getReports } from "../../api/counsellingService";
+import { useAuth } from "../../contexts/AuthContext";
+import { cancelAppointment, getAppointments, getReports, getGuideProgressList, getCounsellingIntake, getCounsellingNotifications } from "../../api/counsellingService";
+import ReviewWidget from "./ReviewWidget";
+import RescheduleDialog from "./RescheduleDialog";
 import { HOME_URL } from "../../config/urls";
+import CounsellingNotifications from "./CounsellingNotifications";
+import CounsellingHome from "./CounsellingHome";
 import "../../styles/counselling.css";
 
 const fmtWhen = (iso) =>
@@ -30,10 +34,12 @@ const fmtWhen = (iso) =>
   });
 
 const STATUS_META = {
+  pending: ["Pending", "mc-chip--amber"],
   confirmed: ["Confirmed", "mc-chip--green"],
   completed: ["Completed", "mc-chip--grey"],
   cancelled: ["Cancelled", "mc-chip--red"],
   no_show:   ["Missed", "mc-chip--red"],
+  rejected: ["Declined", "mc-chip--red"],
 };
 
 const assessmentMeta = (a) => {
@@ -43,27 +49,47 @@ const assessmentMeta = (a) => {
     : ["Assessment pending", "mc-chip--amber"];
 };
 
-export default function MyCounselling({ initialTab = "upcoming" }) {
+export default function MyCounselling({ initialTab = "home" }) {
   const { id: focusId } = useParams(); // /counseling/appointments/:id
   const navigate = useNavigate();
+  const { activeProfile, user } = useAuth();
   const [tab, setTab] = useState(initialTab);
   const [upcoming, setUpcoming] = useState(null);
   const [past, setPast] = useState(null);
   const [reports, setReports] = useState(null);
-  const [dlg, setDlg] = useState(null);
+  const [progress, setProgress] = useState(null);
+  const [intake, setIntake] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [cancelling, setCancelling] = useState(null);
+  const [rescheduling, setRescheduling] = useState(null);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [sessionFilter, setSessionFilter] = useState("all");
+  const [historyFilter, setHistoryFilter] = useState("completed");
+  const [sort, setSort] = useState("soonest");
 
   const load = () => {
-    getAppointments({ upcoming: 1 })
-      .then((d) => setUpcoming(d.results || []))
-      .catch(() => setError("Couldn't load your sessions — please refresh."));
     getAppointments()
-      .then((d) => setPast((d.results || []).filter((a) => a.status !== "confirmed" || new Date(a.scheduled_at) < new Date())))
-      .catch(() => {});
+      .then((d) => {
+        const all = d.results || [];
+        const now = new Date();
+        setUpcoming(all.filter((a) => ["pending", "confirmed"].includes(a.status) && new Date(a.scheduled_at) >= now)
+          .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)));
+        setPast(all.filter((a) => ["completed", "cancelled", "no_show", "rejected"].includes(a.status)));
+      })
+      .catch(() => { setUpcoming([]); setPast([]); setError("Couldn't load your sessions — please refresh."); });
     getReports().then((d) => setReports(d.results || [])).catch(() => setReports([]));
+    getGuideProgressList().then((d) => setProgress(d.results || [])).catch(() => setProgress([]));
+    getCounsellingIntake().then(setIntake).catch(() => setIntake(null));
   };
-  useEffect(load, []);
+  useEffect(load, [activeProfile?.id]);
+  useEffect(() => {
+    const identity = activeProfile?.id ? `L:${activeProfile.id}` : undefined;
+    getCounsellingNotifications({ identity, unread: 1, page_size: 1 })
+      .then((data) => setUnreadCount(data.count || 0))
+      .catch(() => setUnreadCount(0));
+  }, [activeProfile?.id]);
+  useEffect(() => { setTab(initialTab); }, [initialTab]);
 
   // A notification deep link to a past/report item should land on the right tab
   useEffect(() => {
@@ -72,21 +98,24 @@ export default function MyCounselling({ initialTab = "upcoming" }) {
     else if (past.some((a) => String(a.id) === String(focusId))) setTab("past");
   }, [focusId, upcoming, past]);
 
-  const askCancel = (appt) => setDlg({
-    title: "Cancel this session?",
-    message: `${appt.counselor?.display_name} will be notified. The slot opens up for other students.`,
-    confirmLabel: "Yes, cancel session",
-    danger: true,
-    onConfirm: async () => {
-      setDlg(null);
-      try {
-        await cancelAppointment(appt.id);
-        load();
-      } catch {
-        setError("Couldn't cancel — please try again.");
-      }
-    },
-  });
+  const askCancel = (appt) => setCancelling(appt);
+  const doCancel = async (reason) => {
+    if (!cancelling) return;
+    try {
+      await cancelAppointment(cancelling.id, reason);
+      setCancelling(null);
+      load();
+    } catch { setError("Couldn't cancel — please try again."); }
+  };
+
+  // Patch one appointment in both lists rather than reloading. A full
+  // refetch re-renders SessionList, which collapses the open card the
+  // student is in the middle of rating.
+  const patchAppointment = (updated) => {
+    const swap = (list) => (list || []).map((a) => (a.id === updated.id ? { ...a, ...updated } : a));
+    setUpcoming((l) => (l === null ? l : swap(l)));
+    setPast((l) => (l === null ? l : swap(l)));
+  };
 
   const shown = (list) => {
     if (!list) return null;
@@ -98,12 +127,47 @@ export default function MyCounselling({ initialTab = "upcoming" }) {
   };
 
   const bookUrl = `${HOME_URL}/counselling/counsellors`;
+  const rail = [
+    ["home", "Home", "/counseling"],
+    ["matches", "Find counsellors", bookUrl],
+    ["path", "Career report", `${HOME_URL}/counselling/path`],
+    ["wizard", "Profile wizard", `${HOME_URL}/counselling/profile`],
+    ["spark", "Spark Finder", `${HOME_URL}/counselling/spark`],
+    ["library", "Resource library", `${HOME_URL}/counselling/guides`],
+    ["notifications", "Notifications", "/counseling/notifications"],
+    ["upcoming", "My sessions", "/counseling/appointments"],
+    ["past", "Session history", "/counseling/history"],
+  ];
+
+  const sessionList = shown(upcoming)?.filter((a) => sessionFilter === "all" || a.status === sessionFilter)
+    .sort((a, b) => (sort === "soonest" ? 1 : -1) * (new Date(a.scheduled_at) - new Date(b.scheduled_at))) ?? null;
+  const historyList = shown(past)?.filter((a) => historyFilter === "completed" ? a.status === "completed" : a.status !== "completed")
+    .sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at)) ?? null;
+  const homeSessions = (rows) => rows?.filter((a) =>
+    !activeProfile?.id || String(a.learner?.id) === String(activeProfile.id)) ?? rows;
 
   return (
     <div className="mc-page">
       <PageHeader title="My Counselling" onSearch={setSearch} />
 
-      <div className="mc-tabs">
+      <div className="mc-shell">
+        <nav className="mc-rail" aria-label="Counselling">
+          {rail.map(([key, label, href]) => href.startsWith("http") ?
+            <a key={key} href={href} className={tab === key ? "mc-rail-link on" : "mc-rail-link"}>{label} ↗</a> :
+            <Link key={key} to={href} onClick={() => setTab(key)} className={tab === key ? "mc-rail-link on" : "mc-rail-link"}>
+              {label}{key === "notifications" && unreadCount > 0 && <span className="mc-rail-count">{unreadCount}</span>}
+            </Link>)}
+        </nav>
+        <div className="mc-main">
+
+      {tab === "home" && <CounsellingHome
+        profile={activeProfile} user={user} intake={intake} upcoming={homeSessions(upcoming)}
+        past={homeSessions(past)} progress={progress} bookUrl={bookUrl} />}
+
+      {tab === "notifications" && <CounsellingNotifications identity={activeProfile?.id ? `L:${activeProfile.id}` : undefined}
+        onUnreadChange={setUnreadCount} />}
+
+      {["upcoming", "past", "reports"].includes(tab) && <div className="mc-tabs">
         {[["upcoming", "Upcoming"], ["past", "Past sessions"], ["reports", "My reports"]].map(([k, label]) => (
           <button key={k} className={`mc-tab${tab === k ? " mc-tab--on" : ""}`} onClick={() => setTab(k)}>
             {label}
@@ -112,13 +176,26 @@ export default function MyCounselling({ initialTab = "upcoming" }) {
           </button>
         ))}
         <a className="mc-book-link" href={bookUrl}>+ Book a new session</a>
-      </div>
+      </div>}
 
       {error && <div className="mc-error">{error}</div>}
 
       {tab === "upcoming" && (
+        <>
+        <div className="mc-list-controls">
+          <div className="mc-tabs" role="tablist" aria-label="Session status">
+            {[["all", "All"], ["confirmed", "Confirmed"], ["pending", "Pending"]].map(([key, label]) =>
+              <button key={key} role="tab" aria-selected={sessionFilter === key} className={`mc-tab${sessionFilter === key ? " mc-tab--on" : ""}`}
+                onClick={() => setSessionFilter(key)}>{label}</button>)}
+          </div>
+          <select className="mc-sort" aria-label="Sort sessions" value={sort} onChange={(e) => setSort(e.target.value)}>
+            <option value="soonest">Soonest first</option><option value="latest">Latest first</option>
+          </select>
+        </div>
         <SessionList
-          list={shown(upcoming)}
+          key={`upcoming-${focusId || "list"}`}
+          onReschedule={setRescheduling}
+          list={sessionList}
           focusId={focusId}
           onCancel={askCancel}
           onOpenAssessment={(a) => navigate(`/counseling/appointments/${a.id}/assessment`)}
@@ -132,29 +209,49 @@ export default function MyCounselling({ initialTab = "upcoming" }) {
             </>
           }
         />
+        </>
       )}
 
       {tab === "past" && (
+        <>
+        <div className="mc-tabs" role="tablist" aria-label="Session history status">
+          {[["completed", "Completed"], ["cancelled", "Cancelled & declined"]].map(([key, label]) =>
+            <button key={key} role="tab" aria-selected={historyFilter === key} className={`mc-tab${historyFilter === key ? " mc-tab--on" : ""}`}
+              onClick={() => setHistoryFilter(key)}>{label}</button>)}
+        </div>
         <SessionList
-          list={shown(past)}
+          key={`past-${focusId || "list"}`}
+          onReviewSaved={patchAppointment}
+          list={historyList}
           focusId={focusId}
           past
           empty={<><div className="mc-empty-title">No past sessions yet</div>Your session history will appear here.</>}
         />
+        </>
       )}
 
       {tab === "reports" && <ReportsList list={shown(reports)} />}
 
-      <ConfirmDialog dialog={dlg} onClose={() => setDlg(null)} />
+      {rescheduling && (
+        <RescheduleDialog
+          appointment={rescheduling}
+          onClose={() => setRescheduling(null)}
+          onDone={(updated) => { patchAppointment(updated); setRescheduling(null); }}
+        />
+      )}
+
+      {cancelling && <CancelDialog appointment={cancelling} onClose={() => setCancelling(null)} onConfirm={doCancel} />}
+        </div>
+      </div>
     </div>
   );
 }
 
 /* ── session cards ── */
 
-function SessionList({ list, focusId, past = false, onCancel, onOpenAssessment, empty }) {
+function SessionList({ list, focusId, past = false, onCancel, onOpenAssessment,
+                      onReschedule, onReviewSaved, empty }) {
   const [openId, setOpenId] = useState(focusId ? Number(focusId) : null);
-  useEffect(() => { if (focusId) setOpenId(Number(focusId)); }, [focusId]);
 
   if (list === null) return <div className="mc-skel" style={{ height: 150 }} />;
   if (list.length === 0) return <div className="mc-empty">{empty}</div>;
@@ -194,9 +291,9 @@ function SessionList({ list, focusId, past = false, onCancel, onOpenAssessment, 
                   {a.has_report && <span className="mc-chip mc-chip--green">Report published</span>}
                 </div>
                 <div className="mc-actions">
-                  {!past && a.status === "confirmed" && (
+                  {!past && ["confirmed", "pending"].includes(a.status) && (
                     <>
-                      {soon ? (
+                      {a.status === "pending" ? <span className="mc-chip mc-chip--amber">Awaiting counsellor approval</span> : soon ? (
                         <a className="mc-btn" href={a.meeting_link} target="_blank" rel="noreferrer">
                           Join session
                         </a>
@@ -205,11 +302,14 @@ function SessionList({ list, focusId, past = false, onCancel, onOpenAssessment, 
                           Meeting link coming soon
                         </span>
                       )}
-                      {a.has_assessment && !a.assessment_submitted && (
+                      {a.status === "confirmed" && a.has_assessment && !a.assessment_submitted && (
                         <button className="mc-btn mc-btn--outline" onClick={() => onOpenAssessment(a)}>
                           Complete assessment
                         </button>
                       )}
+                      <button className="mc-btn mc-btn--outline" onClick={() => onReschedule(a)}>
+                        Reschedule
+                      </button>
                       <button className="mc-btn mc-btn--danger" onClick={() => onCancel(a)}>
                         Cancel
                       </button>
@@ -221,6 +321,13 @@ function SessionList({ list, focusId, past = false, onCancel, onOpenAssessment, 
                     </Link>
                   )}
                 </div>
+
+                {/* Rating is offered only on a COMPLETED session — the
+                    endpoint refuses anything else, so showing it on a
+                    cancelled or no-show card would be a dead control. */}
+                {past && a.status === "completed" && onReviewSaved && (
+                  <ReviewWidget appointment={a} onSaved={onReviewSaved} />
+                )}
               </div>
             )}
           </div>
@@ -281,3 +388,26 @@ const ReportSection = ({ title, text }) => (
     <p className="mc-report-text">{text}</p>
   </div>
 );
+
+function CancelDialog({ appointment, onClose, onConfirm }) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    if (!reason.trim()) return;
+    setBusy(true);
+    try { await onConfirm(reason.trim()); } finally { setBusy(false); }
+  };
+  return <div className="rs-mask" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="rs-dialog" role="dialog" aria-modal="true" aria-labelledby="mc-cancel-title">
+      <div className="rs-head"><div><h2 className="rs-title" id="mc-cancel-title">Cancel this session?</h2>
+        <p className="rs-sub">{appointment.counselor?.display_name} will be notified and the slot will open for others.</p></div>
+        <button className="rs-x" onClick={onClose} aria-label="Close">×</button></div>
+      <div className="rs-body"><label className="mc-label" htmlFor="mc-cancel-reason">Reason for cancelling</label>
+        <textarea id="mc-cancel-reason" className="mc-textarea" value={reason} onChange={(e) => setReason(e.target.value)}
+          placeholder="Briefly explain why you need to cancel" maxLength={300} /></div>
+      <div className="rs-foot"><button className="mc-btn mc-btn--outline" onClick={onClose}>Keep session</button>
+        <button className="mc-btn mc-btn--danger" disabled={!reason.trim() || busy} onClick={submit}>
+          {busy ? "Cancelling…" : "Cancel session"}</button></div>
+    </div>
+  </div>;
+}
