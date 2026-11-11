@@ -32,3 +32,45 @@ export async function submitAssessment(appointmentId) {
 export async function getReports() {
   return (await api.get("/counseling/reports/")).data;
 }
+
+export async function getGuideProgressList() {
+  return (await api.get("/counseling/guide-progress/")).data;
+}
+
+export async function getCounsellingIntake() {
+  return (await api.get("/counseling/intake/")).data;
+}
+
+export async function getCounsellingNotifications(params = {}) {
+  return (await api.get("/notifications/", {
+    params: { role: "STUDENT", verb_prefix: "counseling.", page_size: 100, ...params },
+  })).data;
+}
+
+export async function markCounsellingNotificationRead(id) {
+  return (await api.post(`/notifications/${id}/read/`)).data;
+}
+
+// ── Reschedule + reviews (workflow §8) ──────────────────────────────────
+
+export async function getSlots(counselorId, days = 14) {
+  return (await api.get(`/counseling/counselors/${counselorId}/slots/`,
+                        { params: { days } })).data;
+}
+
+export async function rescheduleAppointment(id, scheduledAt) {
+  // 409 when the slot was taken between loading the picker and confirming —
+  // the server re-validates, so callers must handle it rather than assume.
+  return (await api.patch(`/counseling/appointments/${id}/reschedule/`,
+                          { scheduled_at: scheduledAt })).data;
+}
+
+export async function saveReview(id, { rating, comment }) {
+  // Upsert: the endpoint creates on first call and updates after.
+  return (await api.post(`/counseling/appointments/${id}/review/`,
+                         { rating, comment })).data;
+}
+
+export async function deleteReview(id) {
+  return (await api.delete(`/counseling/appointments/${id}/review/`)).data;
+}
