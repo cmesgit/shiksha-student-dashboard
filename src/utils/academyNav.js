@@ -30,6 +30,9 @@ export const ACAD_NAV = [
 // Pages reachable outside the sidebar (profile menu, notification deep links,
 // the course catalogue) still need a header title.
 const EXTRA_TITLES = [
+  // Dashboards v2 lives off-nav while it is being reviewed; without a title
+  // here the header humanises the path and reads "V2".
+  { to: "/v2", l: "Dashboard" },
   { to: "/browse-courses", l: "Browse Courses" },
   { to: "/counseling", l: "Counselling" },
   { to: "/private-details", l: "Private Details" },

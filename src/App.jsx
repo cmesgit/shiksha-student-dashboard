@@ -24,6 +24,9 @@ import { tourRegistry } from "./tour/tourRegistry";
 import StudentLayout from "./layout/StudentLayout";
 
 import Dashboard from "./pages/Dashboard";
+// Dashboards v2 — ships on its own route alongside the existing Dashboard
+// so the redesign can be reviewed without regressing the live home.
+const DashboardV2 = lazy(() => import("./pages/DashboardV2"));
 const Profile = lazy(() => import("./pages/Profile"));
 const PrivateDetails = lazy(() => import("./pages/PrivateDetails"));
 const ChangePassword = lazy(() => import("./pages/ChangePassword"));
@@ -135,6 +138,7 @@ export default function App() {
               }
             >
               <Route index element={<Dashboard />} />
+              <Route path="v2" element={<DashboardV2 />} />
               <Route path="profile" element={<Profile />} />
               <Route path="private-details" element={<PrivateDetails />} />
               <Route path="change-password" element={<ChangePassword />} />
