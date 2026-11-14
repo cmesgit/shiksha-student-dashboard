@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams, useLocation, useSearchParams } from "react-router-dom";
 import { FiClock, FiBookOpen, FiAlertTriangle, FiPauseCircle } from "react-icons/fi";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
@@ -50,14 +50,24 @@ export default function QuizHub() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { subjectId } = useParams();
+  const [searchParams] = useSearchParams();
+  const wantedCourseId = searchParams.get("course");
   // A learner profile can hold live subscriptions to several courses at once,
   // so every read here is course-scoped — without it the hub listed every
   // subscribed course's quizzes under whichever class was selected.
-  const { activeCourse } = useCourse();
+  const { activeCourse, courses, selectCourse } = useCourse();
+
+  useEffect(() => {
+    if (!wantedCourseId || String(activeCourse?.id) === wantedCourseId) return;
+    if ((courses || []).some((course) => String(course.id) === wantedCourseId)) selectCourse(wantedCourseId);
+    // selectCourse is recreated by CourseProvider on each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantedCourseId, activeCourse?.id, courses]);
 
   const [quizzes, setQuizzes] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [resumeAttempt, setResumeAttempt] = useState(null);
+  const [resumeHasDraft, setResumeHasDraft] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [startingChapter, setStartingChapter] = useState(null);
@@ -65,6 +75,9 @@ export default function QuizHub() {
 
   useEffect(() => {
     let cancelled = false;
+
+    if (wantedCourseId && String(activeCourse?.id) !== wantedCourseId &&
+        (courses || []).some((course) => String(course.id) === wantedCourseId)) return undefined;
 
     if (!activeCourse) {
       setQuizzes([]);
@@ -81,25 +94,44 @@ export default function QuizHub() {
         const params = { course: activeCourse.id };
         const [quizRes, chapterRes] = await Promise.all([
           api.get("/student/quizzes/", { params }),
-          // The chapter list is scoped by subject, not course, and is
-          // optional to the page: a failure here must not blank the
+          // The chapter list follows the selected course as well as the
+          // optional subject. A failure here must not blank the
           // teacher's assigned tests, which are the more important half.
           api
             .get("/student/practice/chapters/",
-                 { params: subjectId ? { subject: subjectId } : {} })
+                 { params: { course: activeCourse.id, ...(subjectId ? { subject: subjectId } : {}) } })
             .catch(() => ({ data: [] })),
         ]);
         if (cancelled) return;
         setQuizzes(quizRes.data);
         setChapters(chapterRes.data || []);
 
+        // Phase A4. This used to key on localStorage["quiz_<id>_start"],
+        // which NOTHING writes — the key was retired when the timer moved
+        // server-side — so the banner was dead code and never rendered.
+        //
+        // "PENDING" is the real signal: QuizListSerializer.get_status returns
+        // it when an attempt row exists and has not been submitted, which is
+        // exactly "in progress". NOT_STARTED and SUBMITTED are the other two.
         const resumable = quizRes.data.find(
-          (q) =>
-            q.quiz_type === "mock" &&
-            localStorage.getItem(`quiz_${q.id}_start`) &&
-            q.status !== "SUBMITTED"
+          (q) => q.quiz_type === "mock" && q.status === "PENDING"
         );
         setResumeAttempt(resumable || null);
+
+        // ⚠ The attempt and its TIMER are server-side, but the ANSWERS are
+        // not: QuizMock keeps them in localStorage under
+        // `quiz_<id>_<attemptKey>_draft`. Resuming on another device
+        // therefore hands back the same ticking attempt with zero answers.
+        // We cannot promise recovery we cannot perform, so check whether THIS
+        // device actually holds a draft and let the banner say which case it
+        // is. attemptKey is not on the list payload, so match on the prefix.
+        if (resumable) {
+          const prefix = `quiz_${resumable.id}_`;
+          const hasLocalDraft = Object.keys(localStorage).some(
+            (k) => k.startsWith(prefix) && k.endsWith("_draft")
+          );
+          setResumeHasDraft(hasLocalDraft);
+        }
       } catch (err) {
         if (cancelled) return;
         console.error("Failed to load the practice hub:", err);
@@ -113,7 +145,7 @@ export default function QuizHub() {
     return () => {
       cancelled = true;
     };
-  }, [activeCourse, subjectId]);
+  }, [activeCourse, subjectId, courses, wantedCourseId]);
 
   // Deep links land on /subjects/quiz/:subjectId. Pin the assigned list to
   // that subject too, so both halves of the page agree on what is shown.
@@ -237,7 +269,15 @@ export default function QuizHub() {
             <div className="qhResumeTitle">
               Mock in progress — {resumeAttempt.title}
             </div>
-            <div className="qhResumeMeta">Your timer is still running</div>
+            {/* The design's copy, which is honest: the TIMER really is
+                server-side. The second line only appears when this device has
+                no saved draft — the answers live in localStorage, so saying
+                nothing would let the learner expect them back. */}
+            <div className="qhResumeMeta">
+              {resumeHasDraft
+                ? "Your timer is still running"
+                : "Your timer is still running — but your answers were saved on another device, so you'll start this attempt with a blank paper."}
+            </div>
           </div>
           <button
             className="qhResumeBtn"
