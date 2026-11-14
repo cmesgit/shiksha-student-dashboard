@@ -49,6 +49,8 @@ import { subjectChipPalette, subjectInitials } from "../utils/subjectChips";
 import { fmtClockTime, startsInText } from "../utils/sessionTime";
 import useTheme from "../hooks/useTheme";
 import CommandPalette from "../components/CommandPalette";
+import OfflineBanner from "../components/OfflineBanner";
+import { FiVideo, FiFileText, FiTrendingUp, FiHelpCircle } from "react-icons/fi";
 import "../styles/dashboardV2.css";
 
 const REFRESH_TYPES = new Set(["ASSIGNMENT", "QUIZ", "SESSION", "LIVE_SESSION"]);
@@ -159,6 +161,7 @@ export default function DashboardV2() {
   const { theme, toggleTheme } = useTheme();
 
   const [data, setData] = useState(null);
+  const [lastLoadedAt, setLastLoadedAt] = useState(null);
   const [progress, setProgress] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -181,6 +184,9 @@ export default function DashboardV2() {
         signal: controller.signal,
       });
       setData(res.data);
+      // Stamped only on SUCCESS — the offline banner cites this as "what was
+      // saved at …", so it must mean a load that actually landed.
+      setLastLoadedAt(Date.now());
       setError("");
     } catch (err) {
       if (controller.signal.aborted) return;
@@ -241,6 +247,39 @@ export default function DashboardV2() {
   const sessions = data?.sessions ?? [];
   const assignments = data?.assignments ?? [];
   const privateSessions = data?.private_sessions ?? [];
+
+  // ── The design's four stat tiles ────────────────────────────────────────
+  // "Dashboard Home.dc.html" :433 — Classes this week / Assignments due /
+  // Average quiz score / Quizzes available. All four come from the SAME
+  // /dashboard/ payload this screen already fetches; two of its keys
+  // (quizzes, quiz_avg_pct) were simply going unread until now.
+  const stats = useMemo(() => {
+    const weekEnd = new Date();
+    weekEnd.setHours(23, 59, 59, 999);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const allSessions = data?.all_sessions ?? sessions;
+    const thisWeek = allSessions.filter((s) => {
+      const d = parseDate(s.dateTime || s.start_time);
+      return d && d <= weekEnd && s.status !== "CANCELLED";
+    }).length;
+
+    const quizzes = data?.quizzes ?? [];
+    const avg = data?.quiz_avg_pct;
+
+    return [
+      { key: "classes", tone: "teal", icon: <FiVideo size={18} />,
+        value: String(thisWeek), label: "Classes this week" },
+      { key: "due", tone: "success", icon: <FiFileText size={18} />,
+        value: String(assignments.length), label: "Assignments due" },
+      // null, not 0: quiz_avg_pct is null until something has been marked,
+      // and "0%" reads as "you scored zero" rather than "nothing yet".
+      { key: "avg", tone: "info", icon: <FiTrendingUp size={18} />,
+        value: typeof avg === "number" ? `${Math.round(avg)}%` : null,
+        label: "Average quiz score" },
+      { key: "quizzes", tone: "violet", icon: <FiHelpCircle size={18} />,
+        value: String(quizzes.length), label: "Quizzes available" },
+    ];
+  }, [data, sessions, assignments.length]);
 
   const heroSession = useMemo(
     () => sessions.find((s) => s.live) || null,
@@ -344,6 +383,34 @@ export default function DashboardV2() {
       </header>
 
       {/* ── Grid ───────────────────────────────────────────────────────── */}
+      <OfflineBanner
+        lastLoadedAt={lastLoadedAt}
+        onRetry={() => fetchAll()}
+        retrying={loading}
+      />
+
+      <div className="dv2-stats">
+        {stats.map((st) => (
+          <div className="dv2-stat" key={st.key}>
+            <div
+              className="dv2-statIcon"
+              style={{
+                background: `var(--${st.tone}-soft)`,
+                color: `var(--${st.tone})`,
+              }}
+            >
+              {st.icon}
+            </div>
+            <div className="dv2-statBody">
+              <div className={`dv2-statValue${st.value === null ? " dv2-statValue--na" : ""}`}>
+                {st.value ?? "—"}
+              </div>
+              <div className="dv2-statLabel">{st.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <div className="dv2-grid">
         {/* hero */}
         <section className="dv2-panel dv2-hero" style={{ gridArea: "hero" }}>
