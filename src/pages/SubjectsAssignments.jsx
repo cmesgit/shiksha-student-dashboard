@@ -25,12 +25,13 @@
 // working — it just preselects that subject's pill instead of scoping the fetch.
 // ──────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Fragment, useState, useEffect, useMemo } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../api/apiClient";
 import { useCourse } from "../contexts/CourseContext";
 import { LoadingState, ErrorState, EmptyState } from "../components/StateViews";
 import { subjectChipSlot } from "../utils/subjectChips";
+import AcademyRail from "../components/academy/AcademyRail";
 import "../styles/academyCommon.css";
 import "../styles/academyScreens.css";
 
@@ -62,7 +63,9 @@ const teacherLabelFor = (subject) =>
 export default function SubjectsAssignments() {
   const navigate = useNavigate();
   const { subjectId } = useParams();
-  const { activeCourse, subjects } = useCourse();
+  const [searchParams] = useSearchParams();
+  const wantedCourseId = searchParams.get("course");
+  const { activeCourse, subjects, courses, selectCourse } = useCourse();
 
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +79,15 @@ export default function SubjectsAssignments() {
   }, [subjectId]);
 
   useEffect(() => {
+    if (!wantedCourseId || String(activeCourse?.id) === wantedCourseId) return;
+    if ((courses || []).some((course) => String(course.id) === wantedCourseId)) selectCourse(wantedCourseId);
+    // selectCourse is recreated by CourseProvider on each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantedCourseId, activeCourse?.id, courses]);
+
+  useEffect(() => {
+    if (wantedCourseId && String(activeCourse?.id) !== wantedCourseId &&
+        (courses || []).some((course) => String(course.id) === wantedCourseId)) return;
     const list = subjects || [];
     if (!activeCourse || list.length === 0) {
       setAssignments([]);
@@ -139,7 +151,7 @@ export default function SubjectsAssignments() {
 
     fetchAll();
     return () => { cancelled = true; };
-  }, [activeCourse, subjects]);
+  }, [activeCourse, subjects, courses, wantedCourseId]);
 
   const now = Date.now();
 
@@ -207,6 +219,111 @@ export default function SubjectsAssignments() {
     [decorated, subjectFilter, statusFilter]
   );
 
+  // The design's segmented control carries a count per state
+  // (Academy Lists.dc.html: [['All','9'],['Due','3'],['Overdue','1'],
+  // ['Submitted','2'],['Graded','3']]). Counts are computed BEFORE the status
+  // filter is applied but AFTER the subject filter — otherwise picking
+  // "Overdue" would zero every other tab and the control becomes a one-way
+  // door, the same trap the admin Teachers facets hit.
+  const statusCounts = useMemo(() => {
+    const inSubject = decorated.filter(
+      (a) => !subjectFilter || String(a.subjectId) === subjectFilter
+    );
+    const n = (want) =>
+      want === "all"
+        ? inSubject.length
+        : want === "submitted"
+          ? inSubject.filter((a) => a.stKey === "submitted" || a.stKey === "graded").length
+          : inSubject.filter((a) => a.stKey === want).length;
+    return Object.fromEntries(STATUS_FILTERS.map((f) => [f, n(f.toLowerCase())]));
+  }, [decorated, subjectFilter]);
+
+  // "To do" / "Turned in" — the design's two sections. stKey is exclusive, so
+  // anything submitted or graded is turned in and everything else is still
+  // owed. Empty sections are dropped rather than printed as "Turned in 0",
+  // which reads as a reproach.
+  const sections = useMemo(() => {
+    const todo = rows.filter((a) => a.stKey === "due" || a.stKey === "overdue");
+    const done = rows.filter((a) => a.stKey === "submitted" || a.stKey === "graded");
+    const out = [];
+    if (todo.length) out.push({ key: "todo", label: "To do", count: `${todo.length} open`, items: todo });
+    if (done.length) out.push({ key: "done", label: "Turned in", count: String(done.length), items: done });
+    return out;
+  }, [rows]);
+
+  // ── Right rail ──────────────────────────────────────────────────────────
+  // Spec: Academy Lists.dc.html, role=student screen=assignments.
+  const railItems = useMemo(() => {
+    const owed = rows.filter((a) => a.stKey === "due" || a.stKey === "overdue");
+
+    // ── 1. Most urgent ──
+    // Overdue first, then soonest due. `rows` is already sorted by due date,
+    // so the first overdue row IS the most overdue.
+    const urgent = owed.find((a) => a.stKey === "overdue") || owed[0];
+    const callout = urgent ? {
+      kind: "callout",
+      tone: urgent.stKey === "overdue" ? "danger" : "warning",
+      kicker: "Most urgent",
+      title: urgent.title,
+      // "Late submissions are still accepted" is TRUE here and worth saying:
+      // SubmitAssignmentView has no due-date gate, and the teacher's roster
+      // labels a late row "Late" rather than refusing it. Only claimed for
+      // work that is actually overdue.
+      text: [
+        [urgent.subjectName, urgent.due_date ? `due ${fmtDue(urgent.due_date)}` : null]
+          .filter(Boolean).join(", ") + ".",
+        urgent.stKey === "overdue" ? "Late submissions are still accepted." : null,
+      ].filter(Boolean).join(" "),
+      btn: {
+        label: "Open assignment",
+        onClick: () => urgent.subjectId &&
+          navigate(`/subjects/${urgent.subjectId}/assignments/${urgent.id}`),
+        disabled: !urgent.subjectId,
+      },
+    } : null;
+
+    // ── 2. At a glance ──
+    const weekEnd = new Date();
+    weekEnd.setHours(23, 59, 59, 999);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    const dueThisWeek = owed.filter(
+      (a) => a.due_date && new Date(a.due_date) <= weekEnd
+    ).length;
+    const waiting = rows.filter((a) => a.stKey === "submitted").length;
+
+    const graded = rows.filter(
+      (a) => a.stKey === "graded" &&
+        typeof a.marks_obtained === "number" && a.max_marks
+    );
+    const avg = graded.length
+      ? Math.round(
+          (graded.reduce((n, a) => n + a.marks_obtained / a.max_marks, 0) / graded.length) * 100
+        )
+      : null;
+
+    const glance = {
+      kind: "card",
+      title: "At a glance",
+      kv: [
+        { k: "Overdue", v: String(rows.filter((a) => a.stKey === "overdue").length),
+          tone: rows.some((a) => a.stKey === "overdue") ? "danger" : undefined },
+        { k: "Due this week", v: String(dueThisWeek), tone: dueThisWeek > 0 ? "warning" : undefined },
+        { k: "Waiting for marks", v: String(waiting) },
+        avg === null
+          // Averaging nothing is 0%, which reads as "you scored zero".
+          ? { k: "Average marks", unavailable: true,
+              reason: "Nothing has been marked yet." }
+          // Averaged as a RATIO per assignment, not raw marks: a 10-mark and
+          // a 100-mark assignment must weigh the same. Same trap as the quiz
+          // rail's average_score.
+          : { k: "Average marks", v: `${avg}%`, tone: avg >= 70 ? "success" : avg >= 50 ? "warning" : "danger" },
+      ],
+    };
+
+    return [callout, glance];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, navigate]);
+
   if (loading) return <div className="ac-screen"><LoadingState label="Loading assignments" /></div>;
   if (error) return <div className="ac-screen"><ErrorState message={error} /></div>;
 
@@ -240,20 +357,29 @@ export default function SubjectsAssignments() {
           ))}
         </div>
 
-        <select
-          className="ac-select"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          aria-label="Filter by status"
-        >
-          {STATUS_FILTERS.map((s) => (
-            <option key={s} value={s}>{s}</option>
+        {/* The design specifies a segmented control WITH counts, not a
+            <select>. A select hides every option until opened, so the learner
+            could not see at a glance that one thing was overdue — which is
+            the single most useful number on this screen. */}
+        <div className="ac-seg" role="group" aria-label="Filter by status">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              className={`ac-seg__btn${statusFilter === f ? " is-active" : ""}`}
+              onClick={() => setStatusFilter(f)}
+              aria-pressed={statusFilter === f}
+            >
+              {f}
+              <span className="ac-seg__count">{statusCounts[f] ?? 0}</span>
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
+      <div className="ac-railLayout">
       <section className="ac-listCard">
-        <div className="ac-list">
+        <div className="ac-list ac-list--twoCol">
           {rows.length === 0 ? (
             <EmptyState
               plain
@@ -266,7 +392,17 @@ export default function SubjectsAssignments() {
               }
             />
           ) : (
-            rows.map((a) => (
+            sections.map((sec) => (
+              <Fragment key={sec.key}>
+                {/* One section means the heading says nothing the list does
+                    not already — skip it rather than print a lone "To do". */}
+                {sections.length > 1 && (
+                  <div className="ac-sectionHead ac-sectionHead--full">
+                    <span>{sec.label}</span>
+                    <span className="ac-sectionCount">{sec.count}</span>
+                  </div>
+                )}
+                {sec.items.map((a) => (
               <div key={a.id} className="ac-row ac-row--tall">
                 <div className="ac-row__body">
                   <div className="ac-row__meta">
@@ -306,10 +442,17 @@ export default function SubjectsAssignments() {
                   {a.stKey === "graded" ? "Feedback" : "Open"}
                 </button>
               </div>
+                ))}
+              </Fragment>
             ))
           )}
         </div>
       </section>
+
+      {/* Derived from the SAME `rows` the list renders, so the rail follows
+          the active subject and status filters. */}
+      <AcademyRail items={railItems} />
+      </div>
     </div>
   );
 }

@@ -24,6 +24,10 @@ import { tourRegistry } from "./tour/tourRegistry";
 import StudentLayout from "./layout/StudentLayout";
 
 import Dashboard from "./pages/Dashboard";
+// Dashboards v2 — ships on its own route alongside the existing Dashboard
+// so the redesign can be reviewed without regressing the live home.
+const DashboardV2 = lazy(() => import("./pages/DashboardV2"));
+import RequireFlag from "./components/RequireFlag";
 const Profile = lazy(() => import("./pages/Profile"));
 const PrivateDetails = lazy(() => import("./pages/PrivateDetails"));
 const ChangePassword = lazy(() => import("./pages/ChangePassword"));
@@ -135,6 +139,17 @@ export default function App() {
               }
             >
               <Route index element={<Dashboard />} />
+              {/* Gated on dashboards_v2_enabled (default OFF): while the
+                  redesign is under review the route must not be reachable by
+                  anyone who merely knows the URL. */}
+              <Route
+                path="v2"
+                element={
+                  <RequireFlag flag="dashboards_v2_enabled">
+                    <DashboardV2 />
+                  </RequireFlag>
+                }
+              />
               <Route path="profile" element={<Profile />} />
               <Route path="private-details" element={<PrivateDetails />} />
               <Route path="change-password" element={<ChangePassword />} />

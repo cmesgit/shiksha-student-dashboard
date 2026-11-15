@@ -5,14 +5,21 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { pageTitleFor } from "../utils/academyNav";
 
 const APP_NAME = "ShikshaCom";
 
-function pageLabel(pathname) {
-  const seg = pathname.split("/").filter(Boolean)[0];
-  if (!seg) return "Dashboard";
-  return seg.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
+// The tab title comes from the SAME table as the in-app header
+// (academyNav.js's ACAD_NAV + EXTRA_TITLES) rather than a second, private
+// copy. This file used to carry its own pageLabel() that just humanised the
+// first path segment, which silently diverged the moment a route needed an
+// explicit title: /v2 rendered "Dashboard" in the header — academyNav has an
+// EXTRA_TITLES entry for it — while the browser tab said "V2".
+//
+// Fixed in the teacher app first; this is the parallel copy, found because
+// the student /v2 tab still read "V2" after that fix. pageTitleFor falls back
+// to the same humanise() this used to do, so paths that were already correct
+// stay correct.
 
 export default function DocumentTitle() {
   const { pathname } = useLocation();
@@ -24,7 +31,7 @@ export default function DocumentTitle() {
       return;
     }
     const who = activeProfile?.display_name || "Learner";
-    document.title = `${pageLabel(pathname)} · ${who} — ${APP_NAME}`;
+    document.title = `${pageTitleFor(pathname)} · ${who} — ${APP_NAME}`;
   }, [pathname, isAuthenticated, activeProfile?.display_name, activeProfile?.id]);
 
   return null;
