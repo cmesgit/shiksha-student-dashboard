@@ -46,6 +46,7 @@ export default function SkillDevStudentSection() {
 
   const [data, setData] = useState({
     stats: {}, upcoming_sessions: [], top_experts: [], rebook: null,
+    skill_courses: [], reviewable: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -53,18 +54,30 @@ export default function SkillDevStudentSection() {
   const load = () => {
     setError(false);
     api.get("/skill/student/dashboard/")
+      // This mapping is a WHITELIST, so a key missing here is discarded even
+      // though the endpoint sends it — which is why skill_courses and
+      // reviewable were invisible to this screen despite arriving on every
+      // response. Add the key here as well as reading it below.
       .then(r => setData({
         stats:             r.data.stats || {},
         upcoming_sessions: r.data.upcoming_sessions || [],
         top_experts:       r.data.top_experts || [],
         rebook:            r.data.rebook || null,
+        skill_courses:     r.data.skill_courses || [],
+        reviewable:        r.data.reviewable || [],
       }))
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   };
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
-  const { stats, upcoming_sessions: sessions, top_experts: experts, rebook } = data;
+  const {
+    stats, upcoming_sessions: sessions, top_experts: experts, rebook,
+    // The design's "Continue learning" and "Rate your last session" panels.
+    // Both keys arrive on every /skill/student/dashboard/ response; they were
+    // being dropped by load()'s whitelist above, not missing from the API.
+    skill_courses: courses = [], reviewable = [],
+  } = data;
 
   const statTiles = [
     { icon: "book",  value: stats.courses_enrolled_count ?? 0, label: "Courses enrolled" },
@@ -178,6 +191,71 @@ export default function SkillDevStudentSection() {
           ))}
         </div>
       </div>
+
+      {/* ── Continue learning (design: Skill Dev Home, learner, grid-area b) ──
+          Only in-progress enrollments reach `skill_courses`; a finished course
+          moves to `completed_courses`, so this never asks someone to continue
+          something they have already finished. */}
+      {!loading && courses.length > 0 && (
+        <div className="sd-col sd-continue">
+          <div className="sd-sectionHead">
+            <h3>Continue learning</h3>
+            <button className="sd-link" onClick={() => navigate("/skill-dev/courses")}>My courses →</button>
+          </div>
+          {courses.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className="sd-courseRow"
+              onClick={() => navigate(`/skill-dev/courses/${c.id}`)}
+            >
+              <div className="sd-courseTop">
+                <span className="sd-courseTitle">{c.title}</span>
+                <span className="sd-coursePct">{c.pct}%</span>
+              </div>
+              <div className="sd-courseBar">
+                <div className="sd-courseBarFill" style={{ width: `${c.pct}%` }} />
+              </div>
+              {/* The design's sub-line is "resume here", not a lesson count —
+                  it answers "where was I", which is the point of the panel. */}
+              <div className="sd-courseSub">
+                {c.resume?.mod
+                  ? `${c.resume.mod} · ${c.resume.lesson}`
+                  : `${c.done} of ${c.total} lessons`}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Rate your last session (design: grid-area c) ──
+          `reviewable` is COMPLETED sessions the learner has not reviewed.
+          The backend already excludes LAPSED ones — asking someone to rate a
+          session that never happened would both insult them and pollute the
+          expert's rating. */}
+      {!loading && reviewable.length > 0 && (
+        <div className="sd-col sd-rateCard">
+          <h3>Rate your last session</h3>
+          <p className="sd-rateSub">
+            With {reviewable[0].expert_name}
+            {reviewable[0].completed_at
+              ? `, ${new Date(reviewable[0].completed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
+              : ""}
+            . Your review appears on their public page.
+          </p>
+          <button
+            className="sd-rateBtn"
+            onClick={() => navigate(`/skill-dev/sessions?review=${reviewable[0].session_id}`)}
+          >
+            Write a review
+          </button>
+          {reviewable.length > 1 && (
+            <div className="sd-rateMore">
+              {reviewable.length - 1} more session{reviewable.length - 1 === 1 ? "" : "s"} waiting for a review
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
