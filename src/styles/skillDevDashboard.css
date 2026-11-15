@@ -256,3 +256,75 @@
   font-weight: 700;
 }
 
+
+/* ── Continue learning + Rate your last session ──────────────────────────
+   Design: Skill Dev Home, learner, grid areas b and c. Both panels read
+   payload keys (`skill_courses`, `reviewable`) that this screen has always
+   received and never rendered. */
+
+.sd-continue { margin-top: 18px; }
+
+.sd-courseRow {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--divider);
+  padding: 12px 2px;
+  cursor: pointer;
+}
+.sd-courseRow:first-of-type { border-top: none; }
+.sd-courseRow:hover .sd-courseTitle { text-decoration: underline; }
+
+.sd-courseTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sd-courseTitle { font-size: 13px; font-weight: 700; color: var(--ink); }
+
+.sd-coursePct {
+  font-family: "Montserrat", "Poppins", "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--skill, var(--acc-ink));
+  flex-shrink: 0;
+}
+
+.sd-courseBar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--toggle-track);
+  margin-top: 5px;
+  overflow: hidden;
+}
+.sd-courseBarFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--skill, var(--acc-ink));
+}
+
+.sd-courseSub { font-size: 11.5px; color: var(--ink-muted); margin-top: 4px; }
+
+.sd-rateCard { margin-top: 18px; }
+.sd-rateSub  { margin: 4px 0 12px; font-size: 12.5px; color: var(--ink-muted); line-height: 1.5; }
+
+/* --on-accent, never --surface: this sits on a filled accent that does not
+   darken under data-theme="dark". */
+.sd-rateBtn {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  cursor: pointer;
+  background: var(--skill, var(--acc-ink));
+  color: var(--on-accent);
+}
+
+.sd-rateMore { margin-top: 8px; font-size: 11.5px; color: var(--ink-muted); }
