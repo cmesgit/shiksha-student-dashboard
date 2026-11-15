@@ -283,8 +283,16 @@ function SessionList({ list, focusId, past = false, onCancel, onOpenAssessment,
                 {a.student_note && (
                   <div className="mc-note">"{a.student_note}"</div>
                 )}
-                {a.status === "cancelled" && a.cancel_reason && (
-                  <div className="mc-note mc-note--cancel">Cancelled: {a.cancel_reason}</div>
+                {/* A counsellor's decline sets status "rejected", not
+                    "cancelled", and stores the typed reason in the same
+                    cancel_reason field. Guarding on "cancelled" alone hid
+                    that reason on the one screen a student goes back to —
+                    while the counsellor's compose box says "The student
+                    sees this." Both statuses, labelled for which it was. */}
+                {["cancelled", "rejected"].includes(a.status) && a.cancel_reason && (
+                  <div className="mc-note mc-note--cancel">
+                    {a.status === "rejected" ? "Declined" : "Cancelled"}: {a.cancel_reason}
+                  </div>
                 )}
                 <div className="mc-row-chips">
                   {assessLabel && !past && <span className={`mc-chip ${assessCls}`}>{assessLabel}</span>}
